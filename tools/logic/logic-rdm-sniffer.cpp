@@ -16,6 +16,10 @@
  * logic-rdm-sniffer.cpp
  * RDM Sniffer software for the Saleae Logic Device.
  * Copyright (C) 2013 Simon Newton
+ *
+ * Add support for viewing the timing parameters of rdm and dmx
+ * Add support for outputing to a pcap file
+ *
  */
 
 #if HAVE_CONFIG_H

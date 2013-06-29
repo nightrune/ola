@@ -86,6 +86,9 @@ class DMXSignalProcessor {
     bool m_may_be_in_break;
     unsigned int m_ticks_in_break;
 
+    //TODO: Need to track how much time each section takes
+    //Break, MAB, Interslot time, and MBB
+
     // Used to accumulate the bits in the current byte.
     std::vector<bool> m_bits_defined;
     std::vector<bool> m_current_byte;
