@@ -36,12 +36,27 @@ using ola::thread::Mutex;
 using ola::thread::MutexLocker;
 using ola::NewSingleCallback;
 
+/*
+ * Data storage structure
+*/
+
+typedef struct {
+    double mark_before_break_time;
+    double break_time;
+    double mark_after_break_time;
+    double max_interslot_time;
+    double min_interslot_time;
+} FrameTimingInfo;
+
 /**
  * Process a DMX signal.
  */
 class DMXSignalProcessor {
   public:
-    typedef ola::Callback2<void, const uint8_t*, unsigned int> DataCallback;
+    typedef ola::Callback3<void, 
+                           const uint8_t*, 
+                           unsigned int,
+                           FrameTimingInfo> DataCallback;
 
     DMXSignalProcessor(DataCallback *callback, unsigned int sample_rate);
 
@@ -86,8 +101,13 @@ class DMXSignalProcessor {
     bool m_may_be_in_break;
     unsigned int m_ticks_in_break;
 
-    //TODO: Need to track how much time each section takes
+    //Used to track how much time each section takes
     //Break, MAB, Interslot time, and MBB
+    unsigned int m_break_ticks;
+    unsigned int m_mab_ticks;
+    unsigned int m_min_interslot_ticks;
+    unsigned int m_max_interslot_ticks;
+    unsigned int m_mark_before_break_ticks;
 
     // Used to accumulate the bits in the current byte.
     std::vector<bool> m_bits_defined;
@@ -104,7 +124,8 @@ class DMXSignalProcessor {
 
     void SetState(State state, unsigned int ticks = 1);
     bool DurationExceeds(double micro_seconds);
-    double TicksAsMicroSeconds();
+    double TicksAsMicroSeconds(unsigned int ticks) const;
+    FrameTimingInfo TimingInfo() const;
 
     static const unsigned int DMX_BITRATE = 250000;
     // These are all in microseconds.

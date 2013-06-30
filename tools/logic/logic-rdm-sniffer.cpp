@@ -111,7 +111,9 @@ class LogicReader {
     void DeviceConnected(U64 device, GenericInterface *interface);
     void DeviceDisconnected(U64 device);
     void DataReceived(U64 device, U8 *data, uint32_t data_length);
-    void FrameReceived(const uint8_t *data, unsigned int length);
+    void FrameReceived(const uint8_t *data,
+                       unsigned int length,
+                       FrameTimingInfo timing);
 
     void Stop();
 
@@ -127,6 +129,11 @@ class LogicReader {
     std::queue<U8*> m_free_data;
 
     void ProcessData(U8 *data, uint32_t data_length);
+    void DisplayTimingInfo(double mark_before_break_time,
+                           double break_time,
+                           double mark_after_break_time,
+                           double max_interslot_time,
+                           double min_interslot_time);
     void DisplayDMXFrame(const uint8_t *data, unsigned int length);
     void DisplayRDMFrame(const uint8_t *data, unsigned int length);
     void DisplayAlternateFrame(const uint8_t *data, unsigned int length);
@@ -204,11 +211,23 @@ void LogicReader::DataReceived(U64 device, U8 *data, uint32_t data_length) {
   }
 }
 
-
-void LogicReader::FrameReceived(const uint8_t *data, unsigned int length) {
+//Callback function DMXSignalHandler
+// @param data is a buffer with the new frame data
+// @param mark_before_break_time is the length timein usecs the line is idle before
+// the start of the break
+// @param break_time is the length of hte frame
+void LogicReader::FrameReceived(const uint8_t *data,
+                                unsigned int length,
+                                FrameTimingInfo timing) {
   if (!length) {
     return;
   }
+
+  DisplayTimingInfo(timing.mark_before_break_time,
+                    timing.break_time,
+                    timing.mark_after_break_time,
+                    timing.max_interslot_time,
+                    timing.min_interslot_time);
 
   switch (data[0]) {
     case 0:
@@ -253,6 +272,36 @@ void LogicReader::ProcessData(U8 *data, uint32_t data_length) {
     m_free_data.push(data);
   }
   */
+}
+
+//DisplayTimingInfo
+//Creates a pretty display to show the timing information for the logic sniffer
+// @param mark_before_break_time is the time in usecs that the line was idle
+//   before the start of the break
+// @param break_time is the time in usec that break lasted
+// @param mark_after_break_time is the time in usec that the line is high after
+//   the break
+// @param max_interslot_time is the maximum amount of time between two slots
+//  in usecs
+// @param min_interslot_time is the minimum amount of time between two slots
+//  in usecs
+void LogicReader::DisplayTimingInfo(double mark_before_break_time,
+                                    double break_time,
+                                    double mark_after_break_time,
+                                    double max_interslot_time,
+                                    double min_interslot_time) {
+  if(!FLAGS_timestamp)
+    return;
+
+  cout << "Frame Recieved at:  " << //frame time << "\n";
+  cout << "MBB: " <<  mark_before_break_time << " ";
+  cout << "Break: " << break_time << " ";
+  cout << "MAB: " << mark_after_break_time << " ";
+  cout << "Max Interslot: " << max_interslot_time << " ";
+  cout << "Min Interslot: " << min_interslot_time << " ";
+  cout << "\n";
+
+  return;
 }
 
 
