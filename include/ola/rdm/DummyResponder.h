@@ -13,33 +13,35 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * RDMManufacturerPIDs.h
- * Provide OLA's RDM Manufacturer PIDs.
- * Copyright (C) 2013 Peter Newman
+ * DummyResponder_h
+ * The dummy responder is a simple software RDM responder. It's useful for
+ * testing RDM controllers.
+ * Copyright (C) 2009 Simon Newton
  */
 
-#ifndef INCLUDE_OLA_RDM_RDMMANUFACTURERPIDS_H_
-#define INCLUDE_OLA_RDM_RDMMANUFACTURERPIDS_H_
+#ifndef INCLUDE_OLA_RDM_DUMMYRESPONDER_H_
+#define INCLUDE_OLA_RDM_DUMMYRESPONDER_H_
 
-#include <stdint.h>
+#include <vector>
+#include "ola/rdm/DummyRDMDevice.h"
+#include "ola/rdm/RDMControllerInterface.h"
+#include "ola/rdm/RDMEnums.h"
+#include "ola/rdm/UID.h"
 
 namespace ola {
 namespace rdm {
 
-/**
- * Please discuss on open-lighting@googlegroups.com before claiming additional
- * manufacturer PIDs and update http://opendmx.net/index.php/Open_Lighting_PIDs
- * ANSI E1.20 section 6.2.10.2 Parameter ID (PID) for info on assigning
- * manufacturer PIDs, although we're not currently sticking entirely to the
- * specification, like a number of other companies
- */
-typedef enum {
-  // OLA Arduino
-  OLA_MANUFACTURER_PID_SERIAL_NUMBER = 0x8000,
-  // OLA Dummy RDM Responder
-  OLA_MANUFACTURER_PID_CODE_VERSION = 0x8001,
-} rdm_ola_manufacturer_pid;
+class DummyResponder: public RDMControllerInterface {
+  public:
+    DummyResponder(const UID &uid, unsigned int number_of_subdevices = 0);
+    virtual ~DummyResponder();
 
+    void SendRDMRequest(const RDMRequest *request, RDMCallback *callback);
+
+  private:
+    UID m_uid;
+    std::vector<DummyRDMDevice*> m_subdevices;
+};
 }  // namespace rdm
 }  // namespace ola
-#endif  // INCLUDE_OLA_RDM_RDMMANUFACTURERPIDS_H_
+#endif  // INCLUDE_OLA_RDM_DUMMYRESPONDER_H_

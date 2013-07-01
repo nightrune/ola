@@ -26,10 +26,10 @@
 #include "ola/BaseTypes.h"
 #include "ola/Logging.h"
 #include "ola/network/NetworkUtils.h"
+#include "ola/rdm/OpenLightingEnums.h"
 #include "ola/rdm/RDMAPI.h"
 #include "ola/rdm/RDMCommand.h"
 #include "ola/rdm/RDMControllerInterface.h"
-#include "ola/rdm/RDMManufacturerPIDs.h"
 #include "ola/rdm/UID.h"
 #include "ola/rdm/UIDSet.h"
 #include "ola/testing/TestUtils.h"
@@ -51,8 +51,8 @@ using ola::rdm::UIDSet;
 
 class MockDummyPort: public DummyPort {
   public:
-    MockDummyPort():
-      DummyPort(NULL, 0, 10, 0) {
+    MockDummyPort()
+      : DummyPort(NULL, DummyPort::Options(), 0) {
     }
 };
 
@@ -224,13 +224,13 @@ void DummyPortTest::testSupportedParams() {
       0);  // data length
 
   uint16_t supported_params[] = {
+    ola::rdm::PID_PRODUCT_DETAIL_ID_LIST,
+    ola::rdm::PID_DEVICE_MODEL_DESCRIPTION,
+    ola::rdm::PID_MANUFACTURER_LABEL,
     ola::rdm::PID_DEVICE_LABEL,
     ola::rdm::PID_FACTORY_DEFAULTS,
-    ola::rdm::PID_DEVICE_MODEL_DESCRIPTION,
     ola::rdm::PID_DMX_PERSONALITY,
     ola::rdm::PID_DMX_PERSONALITY_DESCRIPTION,
-    ola::rdm::PID_MANUFACTURER_LABEL,
-    ola::rdm::PID_PRODUCT_DETAIL_ID_LIST,
     ola::rdm::PID_LAMP_STRIKES,
     ola::rdm::PID_REAL_TIME_CLOCK,
     ola::rdm::OLA_MANUFACTURER_PID_CODE_VERSION
@@ -712,7 +712,7 @@ void DummyPortTest::testOlaManufacturerPidCodeVersion() {
 
 void DummyPortTest::VerifyUIDs(const UIDSet &uids) {
   UIDSet expected_uids;
-  for (unsigned int i = 0; i < 10; i++) {
+  for (unsigned int i = 0; i < 3; i++) {
     UID uid(OPEN_LIGHTING_ESTA_CODE, 0xffffff00 + i);
     expected_uids.AddUID(uid);
   }
