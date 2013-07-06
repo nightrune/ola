@@ -91,7 +91,6 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
     m_ticks_in_break++;
   }
 
-  m_ticks++;
   switch (m_state) {
     case UNDEFINED:
       if (bit) {
@@ -100,14 +99,14 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
       break;
     case IDLE:
       if (!bit) {
-        m_mark_before_break_ticks = m_ticks;
+        m_timing_info.mark_before_break_time = TicksAsMicroSeconds(m_ticks);
         SetState(BREAK);
       }
       break;
     case BREAK:
       if (bit) {
         if (DurationExceeds(MIN_BREAK_TIME)) {
-          m_break_ticks = m_ticks;
+          m_timing_info.break_time = TicksAsMicroSeconds(m_ticks);
           SetState(MAB);
         } else {
           OLA_INFO << "Break too short, was " << TicksAsMicroSeconds(m_ticks)
@@ -124,10 +123,11 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
       } else {
         if (DurationExceeds(MIN_MAB_TIME)) {
           // OLA_INFO << "In start bit!";
-          m_mab_ticks = m_ticks;
+          m_timing_info.mark_after_break_time = TicksAsMicroSeconds(m_ticks);
           SetState(START_BIT);
         } else {
-          OLA_INFO << "Mark too short, was " << TicksAsMicroSeconds(m_ticks) << "us";
+          OLA_INFO << "Mark too short, was " << TicksAsMicroSeconds(m_ticks) <<
+            "us";
           SetState(UNDEFINED);
         }
       }
@@ -147,10 +147,16 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
       if (bit) {
         if (DurationExceeds(2 * MIN_BIT_TIME)) {
           AppendDataByte();
-          SetState(MARK_BETWEEN_SLOTS);
+          //Save the m_max_interslot_ticks in case we timeout since the new
+          //value would most likely be the MBB
+          m_old_max_interslot_time = m_timing_info.max_interslot_time;
+          SetState(MARK_BETWEEN_SLOTS, 1);
         }
       } else {
         if (m_may_be_in_break) {
+          m_timing_info.mark_before_break_time =
+            m_timing_info.max_interslot_time;
+          m_timing_info.max_interslot_time = m_old_max_interslot_time;
           HandleFrame();
           SetState(BREAK, m_ticks_in_break);
         } else {
@@ -165,20 +171,26 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
       if (bit) {
         if (DurationExceeds(MAX_MARK_BETWEEN_SLOTS)) {
           // ok, that was the end of the frame.
+          m_timing_info.max_interslot_time = m_old_max_interslot_time;
           HandleFrame();
-          SetState(IDLE);
+          SetState(IDLE, m_ticks);
         }
       } else {
         m_may_be_in_break = true;
         // Assume it's a start bit for now, but flag that we may be in a break.
-        m_max_interslot_ticks = std::max(m_max_interslot_ticks, m_ticks);
-        m_min_interslot_ticks = std::min(m_min_interslot_ticks, m_ticks);
+        m_timing_info.max_interslot_time =
+          std::max(m_timing_info.max_interslot_time,
+                   TicksAsMicroSeconds(m_ticks));
+        m_timing_info.min_interslot_time =
+          std::min(m_timing_info.min_interslot_time,
+                   TicksAsMicroSeconds(m_ticks));
         SetState(START_BIT);
       }
       break;
     default:
       break;
   }
+  m_ticks++;
 }
 
 /**
@@ -199,7 +211,7 @@ void DMXSignalProcessor::ProcessBit(bool bit) {
 
   if (bit == current_bit) {
     if (DurationExceeds(MAX_BIT_TIME)) {
-      SetState(static_cast<State>(m_state + 1));
+      SetState(static_cast<State>(m_state + 1), 1);
     }
   } else {
     // Because we force a transition into the next state (bit) after
@@ -262,22 +274,11 @@ void DMXSignalProcessor::HandleFrame() {
   // OLA_INFO << "--------------- END OF FRAME ------------------";
   OLA_INFO << "Got frame of size " << m_dmx_data.size();
   if (m_callback && !m_dmx_data.empty()) {
-    m_callback->Run(&m_dmx_data[0],
-                    m_dmx_data.size(),
-                    TimingInfo());
+    m_callback->Run(m_timing_info,
+                    &m_dmx_data[0],
+                    m_dmx_data.size());
   }
   m_dmx_data.clear();
-}
-
-FrameTimingInfo DMXSignalProcessor::TimingInfo() const {
-  FrameTimingInfo info;
-  info.mark_before_break_time = TicksAsMicroSeconds(m_mark_before_break_ticks);
-  info.break_time = TicksAsMicroSeconds(m_break_ticks);
-  info.mark_after_break_time = TicksAsMicroSeconds(m_mab_ticks);
-  info.max_interslot_time = TicksAsMicroSeconds(m_max_interslot_ticks);
-  info.min_interslot_time = TicksAsMicroSeconds(m_min_interslot_ticks);
-
-  return info;
 }
 
 /**
@@ -290,17 +291,20 @@ void DMXSignalProcessor::SetState(State state, unsigned int ticks) {
   m_ticks = ticks;
   // OLA_INFO << "moving to state " << state;
   if (state == IDLE) {
-    m_break_ticks = 0;
-    m_mab_ticks = 0;
-    m_min_interslot_ticks = 0xFFFFFFFF;
-    m_max_interslot_ticks = 0;
-    m_mark_before_break_ticks = 0;
+    m_timing_info.mark_before_break_time = 0;
   } else if (state == MAB) {
     m_dmx_data.clear();
   } else if (state == START_BIT) {
     // The reset should be done in AppendDataByte but do it again to be safe.
     m_bits_defined.assign(8, false);
     m_current_byte.clear();
+    m_ticks_in_break = 0;
+  } else if(state == BREAK) {
+    m_timing_info.break_time = 0;
+    m_timing_info.mark_after_break_time = 0;
+    m_timing_info.min_interslot_time = 0xFFFFFFFF;
+    m_timing_info.max_interslot_time = 0;
+    m_old_max_interslot_time = 0;
   }
 }
 

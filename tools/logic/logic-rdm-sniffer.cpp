@@ -111,9 +111,9 @@ class LogicReader {
     void DeviceConnected(U64 device, GenericInterface *interface);
     void DeviceDisconnected(U64 device);
     void DataReceived(U64 device, U8 *data, uint32_t data_length);
-    void FrameReceived(const uint8_t *data,
-                       unsigned int length,
-                       FrameTimingInfo timing);
+    void FrameReceived(DMXSignalProcessor::FrameTimingInfo timing,
+                       const uint8_t *data,
+                       unsigned int length);
 
     void Stop();
 
@@ -129,13 +129,13 @@ class LogicReader {
     std::queue<U8*> m_free_data;
 
     void ProcessData(U8 *data, uint32_t data_length);
-    void DisplayTimingInfo(double mark_before_break_time,
-                           double break_time,
-                           double mark_after_break_time,
-                           double max_interslot_time,
-                           double min_interslot_time);
-    void DisplayDMXFrame(const uint8_t *data, unsigned int length);
-    void DisplayRDMFrame(const uint8_t *data, unsigned int length);
+    void DisplayTimingInfo(DMXSignalProcessor::FrameTimingInfo &info);
+    void DisplayDMXFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+                         const uint8_t *data,
+                         unsigned int length);
+    void DisplayRDMFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+                         const uint8_t *data,
+                         unsigned int length);
     void DisplayAlternateFrame(const uint8_t *data, unsigned int length);
     void DisplayRawData(const uint8_t *data, unsigned int length);
 
@@ -213,28 +213,22 @@ void LogicReader::DataReceived(U64 device, U8 *data, uint32_t data_length) {
 
 //Callback function DMXSignalHandler
 // @param data is a buffer with the new frame data
-// @param mark_before_break_time is the length timein usecs the line is idle before
-// the start of the break
+// @param mark_before_break_time is the length timein usecs the line is idle
+//   before the start of the break
 // @param break_time is the length of hte frame
-void LogicReader::FrameReceived(const uint8_t *data,
-                                unsigned int length,
-                                FrameTimingInfo timing) {
+void LogicReader::FrameReceived(DMXSignalProcessor::FrameTimingInfo timing,
+                                const uint8_t *data,
+                                unsigned int length) {
   if (!length) {
     return;
   }
 
-  DisplayTimingInfo(timing.mark_before_break_time,
-                    timing.break_time,
-                    timing.mark_after_break_time,
-                    timing.max_interslot_time,
-                    timing.min_interslot_time);
-
   switch (data[0]) {
     case 0:
-      DisplayDMXFrame(data + 1, length - 1);
+      DisplayDMXFrame(timing, data + 1, length - 1);
       break;
     case RDMCommand::START_CODE:
-      DisplayRDMFrame(data + 1, length - 1);
+      DisplayRDMFrame(timing, data + 1, length - 1);
       break;
     default:
       DisplayAlternateFrame(data, length);
@@ -285,41 +279,41 @@ void LogicReader::ProcessData(U8 *data, uint32_t data_length) {
 //  in usecs
 // @param min_interslot_time is the minimum amount of time between two slots
 //  in usecs
-void LogicReader::DisplayTimingInfo(double mark_before_break_time,
-                                    double break_time,
-                                    double mark_after_break_time,
-                                    double max_interslot_time,
-                                    double min_interslot_time) {
-  if(!FLAGS_timestamp)
-    return;
-
-  cout << "Frame Recieved at:  " << //frame time << "\n";
-  cout << "MBB: " <<  mark_before_break_time << " ";
-  cout << "Break: " << break_time << " ";
-  cout << "MAB: " << mark_after_break_time << " ";
-  cout << "Max Interslot: " << max_interslot_time << " ";
-  cout << "Min Interslot: " << min_interslot_time << " ";
-  cout << "\n";
-
+void LogicReader::DisplayTimingInfo(DMXSignalProcessor::FrameTimingInfo &info) {
+  cout << "MBB: " <<  info.mark_before_break_time;
+  cout << "  Break: " << info.break_time;
+  cout << "  MAB: " << info.mark_after_break_time;
+  cout << "  Min Interslot: " << info.min_interslot_time;
+  cout << "  Max Interslot: " << info.max_interslot_time << endl;
   return;
 }
 
 
-void LogicReader::DisplayDMXFrame(const uint8_t *data, unsigned int length) {
+void LogicReader::DisplayDMXFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+                                  const uint8_t *data,
+                                  unsigned int length) {
   if (!FLAGS_display_dmx)
     return;
+
+  if(FLAGS_timestamp)
+    DisplayTimingInfo(timing);
 
   cout << "DMX " << std::dec;
   cout << length << ":" << std::hex;
   DisplayRawData(data, length);
 }
 
-void LogicReader::DisplayRDMFrame(const uint8_t *data, unsigned int length) {
+void LogicReader::DisplayRDMFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+                                  const uint8_t *data,
+                                  unsigned int length) {
   auto_ptr<RDMCommand> command(
       RDMCommand::Inflate(reinterpret_cast<const uint8_t*>(data), length));
   if (command.get()) {
     if (FLAGS_full_rdm)
       cout << "---------------------------------------" << endl;
+
+      if(FLAGS_timestamp)
+        DisplayTimingInfo(timing);
 
     command->Print(&m_command_printer, FLAGS_full_rdm, true);
   } else {
