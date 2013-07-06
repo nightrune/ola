@@ -43,6 +43,7 @@
 
 #include <ola/Logging.h>
 #include <vector>
+#include <algorithm>
 
 #include "tools/logic/DMXSignalProcessor.h"
 
@@ -147,8 +148,8 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
       if (bit) {
         if (DurationExceeds(2 * MIN_BIT_TIME)) {
           AppendDataByte();
-          //Save the m_max_interslot_ticks in case we timeout since the new
-          //value would most likely be the MBB
+          // Save the m_max_interslot_ticks in case we timeout since the new
+          // value would most likely be the MBB
           m_old_max_interslot_time = m_timing_info.max_interslot_time;
           SetState(MARK_BETWEEN_SLOTS, 1);
         }
@@ -299,7 +300,7 @@ void DMXSignalProcessor::SetState(State state, unsigned int ticks) {
     m_bits_defined.assign(8, false);
     m_current_byte.clear();
     m_ticks_in_break = 0;
-  } else if(state == BREAK) {
+  } else if (state == BREAK) {
     m_timing_info.break_time = 0;
     m_timing_info.mark_after_break_time = 0;
     m_timing_info.min_interslot_time = 0xFFFFFFFF;
@@ -319,6 +320,6 @@ bool DMXSignalProcessor::DurationExceeds(double micro_seconds) {
 /*
  * Return the current number of ticks in microseconds.
  */
-double DMXSignalProcessor::TicksAsMicroSeconds(unsigned int ticks) const{
+double DMXSignalProcessor::TicksAsMicroSeconds(unsigned int ticks) const {
   return ticks * m_microseconds_per_tick;
 }

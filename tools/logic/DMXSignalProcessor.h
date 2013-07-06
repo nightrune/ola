@@ -45,7 +45,7 @@ class DMXSignalProcessor {
      * Data storage structure
     */
 
-    struct FrameTimingInfo{
+    struct FrameTimingInfo {
         double mark_before_break_time;
         double break_time;
         double mark_after_break_time;
@@ -101,8 +101,8 @@ class DMXSignalProcessor {
     bool m_may_be_in_break;
     unsigned int m_ticks_in_break;
 
-    //Used to track how much time each section takes
-    //Break, MAB, Interslot time, and MBB
+    // Used to track how much time each section takes
+    // Break, MAB, Interslot time, and MBB
     FrameTimingInfo m_timing_info;
     double m_old_max_interslot_time;
 

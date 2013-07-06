@@ -129,11 +129,11 @@ class LogicReader {
     std::queue<U8*> m_free_data;
 
     void ProcessData(U8 *data, uint32_t data_length);
-    void DisplayTimingInfo(DMXSignalProcessor::FrameTimingInfo &info);
-    void DisplayDMXFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+    void DisplayTimingInfo(const DMXSignalProcessor::FrameTimingInfo &info);
+    void DisplayDMXFrame(const DMXSignalProcessor::FrameTimingInfo &timing,
                          const uint8_t *data,
                          unsigned int length);
-    void DisplayRDMFrame(DMXSignalProcessor::FrameTimingInfo &timing,
+    void DisplayRDMFrame(const DMXSignalProcessor::FrameTimingInfo &timing,
                          const uint8_t *data,
                          unsigned int length);
     void DisplayAlternateFrame(const uint8_t *data, unsigned int length);
@@ -179,8 +179,6 @@ void LogicReader::DeviceDisconnected(U64 device) {
   m_logic = NULL;
 
   m_ss->Terminate();
-
-  //
 }
 
 /**
@@ -211,14 +209,17 @@ void LogicReader::DataReceived(U64 device, U8 *data, uint32_t data_length) {
   }
 }
 
-//Callback function DMXSignalHandler
-// @param data is a buffer with the new frame data
-// @param mark_before_break_time is the length timein usecs the line is idle
-//   before the start of the break
-// @param break_time is the length of hte frame
-void LogicReader::FrameReceived(DMXSignalProcessor::FrameTimingInfo timing,
-                                const uint8_t *data,
-                                unsigned int length) {
+/**
+ * Callback function DMXSignalHandler
+ * @param timing is a structure that holds all the timing information for a
+ *   frame
+ * @param data is a pointer to the frame data
+ * @param length is the length of the data pointed to by data
+ */
+void LogicReader::FrameReceived(
+      const DMXSignalProcessor::FrameTimingInfo timing,
+      const uint8_t *data,
+      unsigned int length) {
   if (!length) {
     return;
   }
@@ -268,18 +269,13 @@ void LogicReader::ProcessData(U8 *data, uint32_t data_length) {
   */
 }
 
-//DisplayTimingInfo
-//Creates a pretty display to show the timing information for the logic sniffer
-// @param mark_before_break_time is the time in usecs that the line was idle
-//   before the start of the break
-// @param break_time is the time in usec that break lasted
-// @param mark_after_break_time is the time in usec that the line is high after
-//   the break
-// @param max_interslot_time is the maximum amount of time between two slots
-//  in usecs
-// @param min_interslot_time is the minimum amount of time between two slots
-//  in usecs
-void LogicReader::DisplayTimingInfo(DMXSignalProcessor::FrameTimingInfo &info) {
+/**
+ *DisplayTimingInfo
+ *Creates a pretty display to show the timing information for the logic sniffer
+ * @param info is a sturcture that holds all the information to show.
+ */
+void LogicReader::DisplayTimingInfo(
+      const DMXSignalProcessor::FrameTimingInfo &info) {
   cout << "MBB: " <<  info.mark_before_break_time;
   cout << "  Break: " << info.break_time;
   cout << "  MAB: " << info.mark_after_break_time;
@@ -289,13 +285,14 @@ void LogicReader::DisplayTimingInfo(DMXSignalProcessor::FrameTimingInfo &info) {
 }
 
 
-void LogicReader::DisplayDMXFrame(DMXSignalProcessor::FrameTimingInfo &timing,
-                                  const uint8_t *data,
-                                  unsigned int length) {
+void LogicReader::DisplayDMXFrame(
+      const DMXSignalProcessor::FrameTimingInfo &timing,
+      const uint8_t *data,
+      unsigned int length) {
   if (!FLAGS_display_dmx)
     return;
 
-  if(FLAGS_timestamp)
+  if (FLAGS_timestamp)
     DisplayTimingInfo(timing);
 
   cout << "DMX " << std::dec;
@@ -303,16 +300,17 @@ void LogicReader::DisplayDMXFrame(DMXSignalProcessor::FrameTimingInfo &timing,
   DisplayRawData(data, length);
 }
 
-void LogicReader::DisplayRDMFrame(DMXSignalProcessor::FrameTimingInfo &timing,
-                                  const uint8_t *data,
-                                  unsigned int length) {
+void LogicReader::DisplayRDMFrame(
+      const DMXSignalProcessor::FrameTimingInfo &timing,
+      const uint8_t *data,
+      unsigned int length) {
   auto_ptr<RDMCommand> command(
       RDMCommand::Inflate(reinterpret_cast<const uint8_t*>(data), length));
   if (command.get()) {
     if (FLAGS_full_rdm)
       cout << "---------------------------------------" << endl;
 
-      if(FLAGS_timestamp)
+      if (FLAGS_timestamp)
         DisplayTimingInfo(timing);
 
     command->Print(&m_command_printer, FLAGS_full_rdm, true);
