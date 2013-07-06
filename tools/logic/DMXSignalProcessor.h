@@ -122,7 +122,6 @@ class DMXSignalProcessor {
     void SetState(State state, unsigned int ticks = 0);
     bool DurationExceeds(double micro_seconds);
     double TicksAsMicroSeconds(unsigned int ticks) const;
-    FrameTimingInfo TimingInfo() const;
 
     static const unsigned int DMX_BITRATE = 250000;
     // These are all in microseconds.
