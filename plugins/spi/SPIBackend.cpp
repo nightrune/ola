@@ -343,31 +343,25 @@ void SPIBackend::WriteSPIData(const uint8_t *data, unsigned int length) {
 
 const RDMResponse *SPIBackend::GetDeviceInfo(const RDMRequest *request) {
   uint16_t footprint = m_personality_manager.ActivePersonalityFootprint();
+  if (request->ParamDataSize()) {
+    return NackWithReason(request, NR_FORMAT_ERROR);
+  }
   return ResponderHelper::GetDeviceInfo(
       request, ola::rdm::OLA_SPI_DEVICE_MODEL,
       ola::rdm::PRODUCT_CATEGORY_FIXTURE, 1,
       footprint,
       m_personality_manager.ActivePersonalityNumber(),
       m_personality_manager.PersonalityCount(),
-      footprint ? m_start_address : 0xffff,
+      footprint ? m_start_address : ola::rdm::ZERO_FOOTPRINT_DMX_ADDRESS,
       0, 0);
 }
 
 const RDMResponse *SPIBackend::GetProductDetailList(
     const RDMRequest *request) {
-  if (request->ParamDataSize()) {
-    return NackWithReason(request, NR_FORMAT_ERROR);
-  }
-
-  uint16_t product_details[] = { ola::rdm::PRODUCT_DETAIL_LED };
-
-  for (unsigned int i = 0; i < arraysize(product_details); i++)
-    product_details[i] = HostToNetwork(product_details[i]);
-
-  return GetResponseFromData(
-      request,
-      reinterpret_cast<uint8_t*>(&product_details),
-      sizeof(product_details));
+  // Shortcut for only one item in the vector
+  return ResponderHelper::GetProductDetailList(request,
+    std::vector<ola::rdm::rdm_product_detail>
+        (1, ola::rdm::PRODUCT_DETAIL_LED));
 }
 
 const RDMResponse *SPIBackend::GetDeviceModelDescription(
@@ -377,7 +371,9 @@ const RDMResponse *SPIBackend::GetDeviceModelDescription(
 
 const RDMResponse *SPIBackend::GetManufacturerLabel(
     const RDMRequest *request) {
-  return ResponderHelper::GetString(request, "Open Lighting Project");
+  return ResponderHelper::GetString(
+      request,
+      ola::rdm::OLA_MANUFACTURER_LABEL);
 }
 
 const RDMResponse *SPIBackend::GetDeviceLabel(const RDMRequest *request) {
@@ -410,14 +406,11 @@ const RDMResponse *SPIBackend::GetDmxPersonality(const RDMRequest *request) {
 }
 
 const RDMResponse *SPIBackend::SetDmxPersonality(const RDMRequest *request) {
-  uint8_t personality_number = 0;
-  if (request->ParamDataSize() != sizeof(personality_number)) {
+  uint8_t personality_number;
+  if (!ResponderHelper::ExtractUInt8(request, &personality_number)) {
     return NackWithReason(request, NR_FORMAT_ERROR);
   }
 
-  memcpy(reinterpret_cast<uint8_t*>(&personality_number), request->ParamData(),
-         sizeof(personality_number));
-  personality_number = NetworkToHost(personality_number);
   const Personality *personality = m_personality_manager.Lookup(
       personality_number);
 
@@ -443,14 +436,10 @@ const RDMResponse *SPIBackend::SetDmxPersonality(const RDMRequest *request) {
 
 const RDMResponse *SPIBackend::GetPersonalityDescription(
     const RDMRequest *request) {
-  uint8_t personality_number = 0;
-  if (request->ParamDataSize() != sizeof(personality_number)) {
+  uint8_t personality_number;
+  if (!ResponderHelper::ExtractUInt8(request, &personality_number)) {
     return NackWithReason(request, NR_FORMAT_ERROR);
   }
-
-  memcpy(reinterpret_cast<uint8_t*>(&personality_number), request->ParamData(),
-         sizeof(personality_number));
-  personality_number = NetworkToHost(personality_number);
 
   const Personality *personality = m_personality_manager.Lookup(
       personality_number);
@@ -478,31 +467,17 @@ const RDMResponse *SPIBackend::GetPersonalityDescription(
 }
 
 const RDMResponse *SPIBackend::GetDmxStartAddress(const RDMRequest *request) {
-  uint16_t footprint = m_personality_manager.ActivePersonalityFootprint();
-
-  if (request->ParamDataSize()) {
-    return NackWithReason(request, ola::rdm::NR_FORMAT_ERROR);
-  }
-
-  uint16_t address = HostToNetwork(m_start_address);
-  if (footprint == 0)
-    address = 0xffff;
-
-  return GetResponseFromData(
+  return ResponderHelper::GetUInt16Value(
     request,
-    reinterpret_cast<const uint8_t*>(&address),
-    sizeof(address));
+    ((m_personality_manager.ActivePersonalityFootprint() == 0) ?
+     ola::rdm::ZERO_FOOTPRINT_DMX_ADDRESS : m_start_address));
 }
 
 const RDMResponse *SPIBackend::SetDmxStartAddress(const RDMRequest *request) {
-  if (request->ParamDataSize() != sizeof(m_start_address)) {
-    return NackWithReason(request, ola::rdm::NR_FORMAT_ERROR);
-  }
-
   uint16_t address;
-  memcpy(reinterpret_cast<uint8_t*>(&address), request->ParamData(),
-         sizeof(address));
-  address = NetworkToHost(address);
+  if (!ResponderHelper::ExtractUInt16(request, &address)) {
+    return NackWithReason(request, NR_FORMAT_ERROR);
+  }
   if (!SetStartAddress(address)) {
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
   }
@@ -533,7 +508,8 @@ const RDMResponse *SPIBackend::SetIdentify(const RDMRequest *request) {
         m_identify_mode ? "on" : "off");
     DmxBuffer identify_buffer;
     if (m_identify_mode)
-      identify_buffer.SetRangeToValue(0, 255, DMX_UNIVERSE_SIZE);
+      identify_buffer.SetRangeToValue(0, DMX_MAX_CHANNEL_VALUE,
+                                      DMX_UNIVERSE_SIZE);
     else
       identify_buffer.Blackout();
   }

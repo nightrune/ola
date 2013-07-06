@@ -39,6 +39,19 @@ using std::vector;
 
 DimmerSubDevice::RDMOps *DimmerSubDevice::RDMOps::instance = NULL;
 
+const DimmerSubDevice::Personalities *
+    DimmerSubDevice::Personalities::Instance() {
+  if (!instance) {
+    PersonalityList personalities;
+    personalities.push_back(new Personality(1, "8 bit dimming"));
+    personalities.push_back(new Personality(2, "16 bit dimming"));
+    instance = new Personalities(personalities);
+  }
+  return instance;
+}
+
+DimmerSubDevice::Personalities *DimmerSubDevice::Personalities::instance = NULL;
+
 const ResponderOps<DimmerSubDevice>::ParamHandler
     DimmerSubDevice::PARAM_HANDLERS[] = {
   { PID_DEVICE_INFO,
@@ -59,6 +72,12 @@ const ResponderOps<DimmerSubDevice>::ParamHandler
   { PID_SOFTWARE_VERSION_LABEL,
     &DimmerSubDevice::GetSoftwareVersionLabel,
     NULL},
+  { PID_DMX_PERSONALITY,
+    &DimmerSubDevice::GetPersonality,
+    &DimmerSubDevice::SetPersonality},
+  { PID_DMX_PERSONALITY_DESCRIPTION,
+    &DimmerSubDevice::GetPersonalityDescription,
+    NULL},
   { PID_DMX_START_ADDRESS,
     &DimmerSubDevice::GetDmxStartAddress,
     &DimmerSubDevice::SetDmxStartAddress},
@@ -67,6 +86,14 @@ const ResponderOps<DimmerSubDevice>::ParamHandler
     &DimmerSubDevice::SetIdentify},
   { 0, NULL, NULL},
 };
+
+DimmerSubDevice::DimmerSubDevice(const UID &uid, uint16_t sub_device_number)
+    : m_uid(uid),
+      m_sub_device_number(sub_device_number),
+      m_start_address(sub_device_number),
+      m_identify_mode(false),
+      m_personality_manager(Personalities::Instance()) {
+}
 
 /*
  * Handle an RDM Request
@@ -78,61 +105,47 @@ void DimmerSubDevice::SendRDMRequest(const RDMRequest *request,
 }
 
 const RDMResponse *DimmerSubDevice::GetDeviceInfo(const RDMRequest *request) {
-  if (request->ParamDataSize()) {
-    return NackWithReason(request, NR_FORMAT_ERROR);
-  }
-
   return ResponderHelper::GetDeviceInfo(
-      request, OLA_DUMMY_DIMMER_MODEL, PRODUCT_CATEGORY_DIMMER, 1, 0, 1,
-      1, 0, 0, 0);
+      request, OLA_DUMMY_DIMMER_MODEL,
+      PRODUCT_CATEGORY_DIMMER, 1,
+      &m_personality_manager,
+      m_start_address,
+      0, 0);
 }
 
 const RDMResponse *DimmerSubDevice::GetProductDetailList(
     const RDMRequest *request) {
-  if (request->ParamDataSize()) {
-    return NackWithReason(request, NR_FORMAT_ERROR);
-  }
+  // Shortcut for only one item in the vector
+  return ResponderHelper::GetProductDetailList(request,
+    std::vector<rdm_product_detail> (1, PRODUCT_DETAIL_TEST));
+}
 
-  uint16_t product_details[] = { PRODUCT_DETAIL_TEST };
+const RDMResponse *DimmerSubDevice::GetPersonality(
+    const RDMRequest *request) {
+  return ResponderHelper::GetPersonality(request, &m_personality_manager);
+}
 
-  for (unsigned int i = 0; i < arraysize(product_details); i++)
-    product_details[i] = HostToNetwork(product_details[i]);
+const RDMResponse *DimmerSubDevice::SetPersonality(
+    const RDMRequest *request) {
+  return ResponderHelper::SetPersonality(request, &m_personality_manager,
+                                         m_start_address);
+}
 
-  return GetResponseFromData(
-      request,
-      reinterpret_cast<uint8_t*>(&product_details),
-      sizeof(product_details));
+const RDMResponse *DimmerSubDevice::GetPersonalityDescription(
+    const RDMRequest *request) {
+  return ResponderHelper::GetPersonalityDescription(
+      request, &m_personality_manager);
 }
 
 const RDMResponse *DimmerSubDevice::GetDmxStartAddress(
     const RDMRequest *request) {
-  if (request->ParamDataSize()) {
-    return NackWithReason(request, NR_FORMAT_ERROR);
-  }
-
-  uint16_t address = HostToNetwork(m_start_address);
-  return GetResponseFromData(
-      request,
-      reinterpret_cast<const uint8_t*>(&address),
-      sizeof(address));
+  return ResponderHelper::GetUInt16Value(request, m_start_address);
 }
 
 const RDMResponse *DimmerSubDevice::SetDmxStartAddress(
     const RDMRequest *request) {
-  uint16_t address;
-  if (!ResponderHelper::ExtractUInt16(request, &address)) {
-    return NackWithReason(request, NR_FORMAT_ERROR);
-  }
-
-  if (address == 0 || address > DMX_UNIVERSE_SIZE) {
-    return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
-  } else {
-    m_start_address = address;
-    return new RDMSetResponse(
-        request->DestinationUID(), request->SourceUID(),
-        request->TransactionNumber(), RDM_ACK, 0,
-        request->SubDevice(), request->ParamId(), NULL, 0);
-  }
+  return ResponderHelper::SetDmxAddress(request, &m_personality_manager,
+                                        &m_start_address);
 }
 
 const RDMResponse *DimmerSubDevice::GetDeviceModelDescription(
@@ -142,7 +155,7 @@ const RDMResponse *DimmerSubDevice::GetDeviceModelDescription(
 
 const RDMResponse *DimmerSubDevice::GetManufacturerLabel(
     const RDMRequest *request) {
-  return ResponderHelper::GetString(request, "Open Lighting Project");
+  return ResponderHelper::GetString(request, OLA_MANUFACTURER_LABEL);
 }
 
 const RDMResponse *DimmerSubDevice::GetDeviceLabel(

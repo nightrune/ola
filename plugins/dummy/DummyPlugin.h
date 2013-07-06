@@ -51,7 +51,9 @@ class DummyPlugin: public Plugin {
     bool SetDefaultPreferences();
 
     DummyDevice *m_device;  // the dummy device
+    static const char ACK_TIMER_COUNT_KEY[];
     static const char DEFAULT_DEVICE_COUNT[];
+    static const char DEFAULT_ACK_TIMER_DEVICE_COUNT[];
     static const char DEFAULT_SUBDEVICE_COUNT[];
     static const char DEVICE_NAME[];
     static const char DIMMER_COUNT_KEY[];
@@ -60,6 +62,7 @@ class DummyPlugin: public Plugin {
     static const char MOVING_LIGHT_COUNT_KEY[];
     static const char PLUGIN_NAME[];
     static const char PLUGIN_PREFIX[];
+    static const char SENSOR_COUNT_KEY[];
     static const char SUBDEVICE_COUNT_KEY[];
 };
 }  // namespace dummy
