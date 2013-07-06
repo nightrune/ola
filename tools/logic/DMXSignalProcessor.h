@@ -43,7 +43,7 @@ class DMXSignalProcessor {
   public:
     /*
      * Data storage structure
-    */
+     */
 
     struct FrameTimingInfo {
       double mark_before_break_time;

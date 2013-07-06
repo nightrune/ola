@@ -217,9 +217,9 @@ void LogicReader::DataReceived(U64 device, U8 *data, uint32_t data_length) {
  * @param length is the length of the data pointed to by data
  */
 void LogicReader::FrameReceived(
-      const DMXSignalProcessor::FrameTimingInfo &timing,
-      const uint8_t *data,
-      unsigned int length) {
+    const DMXSignalProcessor::FrameTimingInfo &timing,
+    const uint8_t *data,
+    unsigned int length) {
   if (!length) {
     return;
   }
