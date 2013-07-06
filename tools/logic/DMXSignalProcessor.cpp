@@ -42,8 +42,8 @@
  */
 
 #include <ola/Logging.h>
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "tools/logic/DMXSignalProcessor.h"
 

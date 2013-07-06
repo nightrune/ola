@@ -17,9 +17,9 @@
  * RDM Sniffer software for the Saleae Logic Device.
  * Copyright (C) 2013 Simon Newton
  *
- * Add support for viewing the timing parameters of rdm and dmx
+ * Add support for Discovery replies without a break
  * Add support for outputing to a pcap file
- *
+ * Add total time transmission time for the frame, and DMX Frequency
  */
 
 #if HAVE_CONFIG_H
@@ -85,7 +85,7 @@ DEFINE_bool(display_asc, false,
             "Display non-RDM alternate start code frames");
 DEFINE_s_bool(display_dmx, d, false, "Display DMX Frames");
 DEFINE_s_bool(full_rdm, r, true, "Display the full RDM frame");
-DEFINE_bool(timestamp, false, "Include timestamps");
+DEFINE_bool(show_timing, false, "Show frame timing data");
 DEFINE_uint16(dmx_slot_limit, DMX_UNIVERSE_SIZE,
               "Only display the first N DMX slots");
 DEFINE_string(pid_location, PID_DATA_DIR,
@@ -111,7 +111,7 @@ class LogicReader {
     void DeviceConnected(U64 device, GenericInterface *interface);
     void DeviceDisconnected(U64 device);
     void DataReceived(U64 device, U8 *data, uint32_t data_length);
-    void FrameReceived(DMXSignalProcessor::FrameTimingInfo timing,
+    void FrameReceived(const DMXSignalProcessor::FrameTimingInfo &timing,
                        const uint8_t *data,
                        unsigned int length);
 
@@ -217,7 +217,7 @@ void LogicReader::DataReceived(U64 device, U8 *data, uint32_t data_length) {
  * @param length is the length of the data pointed to by data
  */
 void LogicReader::FrameReceived(
-      const DMXSignalProcessor::FrameTimingInfo timing,
+      const DMXSignalProcessor::FrameTimingInfo &timing,
       const uint8_t *data,
       unsigned int length) {
   if (!length) {
@@ -275,7 +275,7 @@ void LogicReader::ProcessData(U8 *data, uint32_t data_length) {
  * @param info is a sturcture that holds all the information to show.
  */
 void LogicReader::DisplayTimingInfo(
-      const DMXSignalProcessor::FrameTimingInfo &info) {
+    const DMXSignalProcessor::FrameTimingInfo &info) {
   cout << "MBB: " <<  info.mark_before_break_time;
   cout << "  Break: " << info.break_time;
   cout << "  MAB: " << info.mark_after_break_time;
@@ -286,13 +286,13 @@ void LogicReader::DisplayTimingInfo(
 
 
 void LogicReader::DisplayDMXFrame(
-      const DMXSignalProcessor::FrameTimingInfo &timing,
-      const uint8_t *data,
-      unsigned int length) {
+    const DMXSignalProcessor::FrameTimingInfo &timing,
+    const uint8_t *data,
+    unsigned int length) {
   if (!FLAGS_display_dmx)
     return;
 
-  if (FLAGS_timestamp)
+  if (FLAGS_show_timing)
     DisplayTimingInfo(timing);
 
   cout << "DMX " << std::dec;
@@ -301,20 +301,23 @@ void LogicReader::DisplayDMXFrame(
 }
 
 void LogicReader::DisplayRDMFrame(
-      const DMXSignalProcessor::FrameTimingInfo &timing,
-      const uint8_t *data,
-      unsigned int length) {
+    const DMXSignalProcessor::FrameTimingInfo &timing,
+    const uint8_t *data,
+    unsigned int length) {
   auto_ptr<RDMCommand> command(
       RDMCommand::Inflate(reinterpret_cast<const uint8_t*>(data), length));
   if (command.get()) {
     if (FLAGS_full_rdm)
       cout << "---------------------------------------" << endl;
 
-      if (FLAGS_timestamp)
-        DisplayTimingInfo(timing);
+    if (FLAGS_show_timing)
+      DisplayTimingInfo(timing);
 
     command->Print(&m_command_printer, FLAGS_full_rdm, true);
   } else {
+    if (FLAGS_show_timing)
+      DisplayTimingInfo(timing);
+
     DisplayRawData(data, length);
   }
 }

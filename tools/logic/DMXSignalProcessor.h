@@ -46,15 +46,15 @@ class DMXSignalProcessor {
     */
 
     struct FrameTimingInfo {
-        double mark_before_break_time;
-        double break_time;
-        double mark_after_break_time;
-        double max_interslot_time;
-        double min_interslot_time;
+      double mark_before_break_time;
+      double break_time;
+      double mark_after_break_time;
+      double max_interslot_time;
+      double min_interslot_time;
     };
 
     typedef ola::Callback3<void,
-                           FrameTimingInfo,
+                           const FrameTimingInfo &,
                            const uint8_t*,
                            unsigned int> DataCallback;
 
