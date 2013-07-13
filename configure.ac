@@ -31,6 +31,11 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT8_T
 
+# Doxygen
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN($PACKAGE_NAME, Doxyfile)
+
 # Checks for library functions.
 AC_FUNC_CLOSEDIR_VOID
 AC_FUNC_FORK
@@ -619,6 +624,7 @@ AC_OUTPUT( Makefile \
     common/web/Makefile \
     data/Makefile \
     data/rdm/Makefile \
+    doxygen/Makefile \
     examples/Makefile \
     debian/Makefile \
     include/Makefile \

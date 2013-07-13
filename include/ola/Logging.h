@@ -13,21 +13,32 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * logging.h
+ * Logging.h
  * Header file for the logging
  * Copyright (C) 2005-2009 Simon Newton
+ */
+/**
+ * @defgroup logging Logging
+ * @brief The OLA logging system.
  *
- * How to use:
- *
+ * @snippet
+ * ~~~~~~~~~~~~~~~~~~~~~
  * #include <ola/Logging.h>
  *
  * // Call this once
  * ola::InitLogging(ola::OLA_LOG_WARN, ola::OLA_LOG_STDERR);
  *
- * OLA_FATAL << "foo";
- * OLA_WARN << "foo";
- * OLA_INFO << "foo";
- * OLA_DEBUG << "foo";
+ * OLA_FATAL << "Null pointer!";
+ * OLA_WARN << "Could not connect to server: " << ip_address;
+ * OLA_INFO << "Reading configs from " << config_dir;
+ * OLA_DEBUG << "Counter was " << counter;
+ * ~~~~~~~~~~~~~~~~~~~~~
+ *
+ * @addtogroup logging
+ * @{
+ *
+ * @file Logging.h
+ * @brief Header file for OLA Logging
  */
 
 #ifndef INCLUDE_OLA_LOGGING_H_
@@ -41,63 +52,123 @@
 #include <string>
 #include <sstream>
 
+/**
+ * Provide a stream interface to log a message at the specified log level.
+ * Rather than calling this directly use one of the OLA_FATAL, OLA_WARN,
+ * OLA_INFO or OLA_DEBUG macros.
+ * @param level the log_level to log at.
+ */
 #define OLA_LOG(level) (level <= ola::LogLevel()) && \
-                       ola::LogLine(__FILE__, __LINE__, level).stream()
+                        ola::LogLine(__FILE__, __LINE__, level).stream()
+/**
+ * Provide a stream to log a fatal message. e.g.
+ * @code
+ *     OLA_FATAL << "Null pointer!";
+ * @endcode
+ */
 #define OLA_FATAL OLA_LOG(ola::OLA_LOG_FATAL)
+
+/**
+ * Provide a stream to log a warning message.
+ * @code
+ *     OLA_WARN << "Could not connect to server: " << ip_address;
+ * @endcode
+ */
 #define OLA_WARN OLA_LOG(ola::OLA_LOG_WARN)
+
+/**
+ * Provide a stream to log an infomational message.
+ * @code
+ *     OLA_INFO << "Reading configs from " << config_dir;
+ * @endcode
+ */
 #define OLA_INFO OLA_LOG(ola::OLA_LOG_INFO)
+
+/**
+ * Provide a stream to log a debug message.
+ * @code
+ *     OLA_DEBUG << "Counter was " << counter;
+ * @endcode
+ */
 #define OLA_DEBUG OLA_LOG(ola::OLA_LOG_DEBUG)
 
 namespace ola {
 
 using std::string;
 
-/*
- * The log levels
+/**
+ * @brief The OLA log levels.
+ * This controls the verbosity of logging. Each level also includes those below
+ * it.
  */
 enum log_level {
-  OLA_LOG_NONE,
-  OLA_LOG_FATAL,
-  OLA_LOG_WARN,
-  OLA_LOG_INFO,
-  OLA_LOG_DEBUG,
+  OLA_LOG_NONE,   /**< No messages are logged. */
+  OLA_LOG_FATAL,  /**< Fatal messages are logged. */
+  OLA_LOG_WARN,   /**< Warnings messages are logged. */
+  OLA_LOG_INFO,   /**< Informational messages are logged. */
+  OLA_LOG_DEBUG,  /**< Debug messages are logged. */
   OLA_LOG_MAX,
 };
 
+/**
+ * @private
+ * @brief Application global logging level
+ */
 extern log_level logging_level;
 
-/*
- * The log outputs
+/**
+ * @brief The destination to write log messages to
  */
 typedef enum {
-  OLA_LOG_STDERR,
-  OLA_LOG_SYSLOG,
+  OLA_LOG_STDERR,  /**< Log to stderr. */
+  OLA_LOG_SYSLOG,  /**< Log to syslog. */
   OLA_LOG_NULL,
 } log_output;
 
-/*
- * The base class for log destinations.
+/**
+ * @class LogDestination
+ * @brief The base class for log destinations.
  */
 class LogDestination {
   public:
+    /**
+     * @brief Destructor
+     */
     virtual ~LogDestination() {}
+
+    /**
+     * @brief An abstract function for writing to your log destination
+     * @note You must over load this if you want to create a new log
+     * destination
+     */
     virtual void Write(log_level level, const string &log_line) = 0;
 };
 
-/*
- * A LogDestination that writes to stderr
+/**
+ * @brief A LogDestination that writes to stderr
  */
 class StdErrorLogDestination: public LogDestination {
   public:
+    /**
+     * @brief Writes a messages out to stderr.
+     */
     void Write(log_level level, const string &log_line);
 };
 
-/*
- * A LogDestination that writes to syslog
+/**
+ * @brief A LogDestination that writes to syslog
  */
 class SyslogDestination: public LogDestination {
   public:
+    /**
+     * @brief Initialize the SyslogDestination
+     */
     bool Init();
+
+    /**
+     * @brief Write a line to the system logger.
+     * @note This is syslog on *nix or the event log on windows.
+     */
     void Write(log_level level, const string &log_line);
   private:
 #ifdef WIN32
@@ -105,8 +176,12 @@ class SyslogDestination: public LogDestination {
 #endif
 };
 
-/*
- * A LogLine, this represents a single log message.
+/**@}*/
+
+/**
+ * @cond HIDDEN_SYMBOLS
+ * @class LogLine
+ * @brief A LogLine, this represents a single log message.
  */
 class LogLine {
   public:
@@ -120,12 +195,53 @@ class LogLine {
     std::ostringstream m_stream;
     unsigned int m_prefix_length;
 };
+/**@endcond*/
 
+/**
+ * @addtogroup logging
+ * @{
+ */
+
+/**
+ * @brief Set the logging level.
+ * @param level the new log_level to use.
+ */
 void SetLogLevel(log_level level);
+
+/**
+ * @brief Fetch the current level of logging.
+ * @returns the current log_level.
+ */
 inline log_level LogLevel() { return logging_level; }
+
+/**
+ * @brief Increment the log level by one. The log level wraps to OLA_LOG_NONE.
+ */
 void IncrementLogLevel();
+
+/**
+ * @brief Initialize the OLA logging system from flags.
+ * @pre ParseFlags() must have been called before calling this.
+ * @returns true if logging was initialized sucessfully, false otherwise.
+ */
 bool InitLoggingFromFlags();
+
+/**
+ * @brief Initialize the OLA logging system
+ * @param level the level to log at
+ * @param output the destintion for the logs
+ * @returns true if logging was initialized sucessfully, false otherwise.
+ */
 bool InitLogging(log_level level, log_output output);
+
+/**
+ * @brief Initialize the OLA logging system using the specified LogDestination.
+ * @param level the level to log at
+ * @param destination the LogDestination to use.
+ * @returns true if logging was initialized sucessfully, false otherwise.
+ */
 void InitLogging(log_level level, LogDestination *destination);
+/***/
 }  // namespace ola
+/**@}*/
 #endif  // INCLUDE_OLA_LOGGING_H_

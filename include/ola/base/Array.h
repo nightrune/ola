@@ -17,21 +17,48 @@
  * A macro for determining array size.
  */
 
+/**
+ * @file Array.h
+ * @brief Helper macros / methods for static arrays.
+ */
+
 #ifndef INCLUDE_OLA_BASE_ARRAY_H_
 #define INCLUDE_OLA_BASE_ARRAY_H_
 
 namespace ola {
 
-/*
+/**
+ * @brief A helper to determine the size of a statically allocated array.
+ * @private
+ * @tparam T is the type of your object.
+ * @tparam N is the size of your type T.
+ *
+ * @note
+ * Please see
  * http://src.chromium.org/svn/trunk/src/third_party/cld/base/macros.h
- * See that file for the gory details.
+ * for all the gory details
  */
 template <typename T, size_t N>
   char (&ArraySizeHelper(T (&array)[N]))[N];
 
+/**
+ * @brief Part of a helper to determine the size of a statically allocated
+ * const array
+ * @private
+ *
+ * @tparam T is your class or variable
+ * @tparam N is the size of your type T
+ */
 template <typename T, size_t N>
   char (&ArraySizeHelper(const T (&array)[N]))[N];
 
+
+/**
+ * @def arraysize(array)
+ * @brief Computes the size of the statically allocated array.
+ * @param array the array to get the size of.
+ * @return the number of elements in the array.
+ */
 #define arraysize(array) (sizeof(ArraySizeHelper(array)))
 
 }  // namespace ola

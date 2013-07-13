@@ -16,10 +16,10 @@
  * StreamingClient.h
  * Interface to the Streaming Client class.
  * Copyright (C) 2005-2010 Simon Newton
- *
- * This client does one thing and one thing only. Sends DMX data to a OLA
- * server. It doesn't support any callbacks. This is very useful in integrating
- * OLA into programs like QLC and Max.
+ */
+/**
+ * @file
+ * @brief A client for sending DMX512 data to olad.
  */
 
 #ifndef OLA_STREAMINGCLIENT_H_
@@ -43,27 +43,93 @@ namespace proto {
 using ola::io::SelectServer;
 using ola::network::TCPSocket;
 
-/*
- * StreamingClient opens a connection and then sends data over the socket.
+/**
+ * @class StreamingClient ola/StreamingClient.h
+ * @brief Send DMX512 data to olad.
+ *
+ * StreamingClient sends DMX512 data to OLAD without waiting for an
+ * acknowledgement. It's best suited to simple clients which only ever send
+ * DMX512 data.
+ *
+ * Example:
+ * ~~~~~~~~~~~~~~~~~~~~~
+ *  unsigned int universe = 1;
+ *  ola::DmxBuffer dmx_data;
+ *  dmx_data.Blackout();
+ *  ola::StreamingClient client((ola::StreamingClient::Options()));
+ *
+ *  if (!client.SendDmx(universe, dmx_data)) {
+ *    // Failed to send
+ *    ...
+ *  }
+ * ~~~~~~~~~~~~~~~~~~~~~
  */
 class StreamingClient {
   public:
-    struct Options {
+    /**
+     * Controls the options for the StreamingClient class.
+     */
+    class Options {
       public:
+        /**
+         * Create a new options structure with the default options. This
+         * includes automatically starting olad if it's not already running.
+         */
         Options() : auto_start(true), server_port(OLA_DEFAULT_PORT) {}
 
+        /**
+         * If true, the client will automatically start olad if it's not
+         * already running.
+         */
         bool auto_start;
+
+        /**
+         * The RPC port olad is listening on.
+         */
         uint16_t server_port;
     };
 
+    /**
+     * Create a new StreamingClient.
+     * @param auto_start if set to true, this will automatically start olad if
+     *   it's not already running.
+     * @deprecated Use the constructor that takes an Options struct instead.
+     */
     explicit StreamingClient(bool auto_start = true);
+
+    /**
+     * Create a new StreamingClient.
+     * @param options an Options structure.
+     */
     explicit StreamingClient(const Options &options);
+
+    /**
+     * Destructor. This closes the connection to the olad server if it's still
+     * open.
+     */
     ~StreamingClient();
 
+    /**
+     * Initialize the client and connect to olad.
+     * @returns true if the initialization completed sucessfully, false if
+     *   there was a failure.
+     */
     bool Setup();
+
+    /**
+     * Close the connection to the olad server. This does not need to be called
+     * since ~StreamingClient() will close the connection if it's still open
+     * when the object is destroyed.
+     */
     void Stop();
 
+    /**
+     * Send a DmxBuffer to the olad server.
+     * @returns true if sent sucessfully, false if the connection to the server
+     *   has been closed.
+     */
     bool SendDmx(unsigned int universe, const DmxBuffer &data);
+
     void SocketClosed();
 
   private:
