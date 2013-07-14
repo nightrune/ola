@@ -59,9 +59,9 @@ DMXSignalProcessor::DMXSignalProcessor(DataCallback *callback,
       m_sample_rate(sample_rate),
       m_microseconds_per_tick(1000000.0 / sample_rate),
       m_state(IDLE),
-      m_ticks(0),
+      m_ticks(1),
       m_may_be_in_break(false),
-      m_ticks_in_break(0) {
+      m_ticks_in_break(1) {
   if (m_sample_rate % DMX_BITRATE) {
     OLA_WARN << "Sample rate is not a multiple of " << DMX_BITRATE;
   }
@@ -299,7 +299,7 @@ void DMXSignalProcessor::SetState(State state, unsigned int ticks) {
     // The reset should be done in AppendDataByte but do it again to be safe.
     m_bits_defined.assign(8, false);
     m_current_byte.clear();
-    m_ticks_in_break = 0;
+    m_ticks_in_break = 1;
   } else if (state == BREAK) {
     m_timing_info.break_time = 0;
     m_timing_info.mark_after_break_time = 0;
