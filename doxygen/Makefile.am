@@ -1,2 +1,4 @@
 
-EXTRA_DIST = *.dox
+EXTRA_DIST = *.dox OLALayout.xml
+
+SUBDIRS = examples

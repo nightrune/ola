@@ -20,13 +20,14 @@
 
 /**
  * @defgroup stl STL
- * @brief STL Helper Functions.
+ * @brief Various helper functions related to STL classes.
  *
  * @addtogroup stl
  * @{
  *
  * @file STLUtils.h
- * @brief Helper functions for STL types.
+ * @brief Helper functions for STL classes.
+ * @}
  */
 
 #ifndef INCLUDE_OLA_STL_STLUTILS_H_
@@ -46,6 +47,11 @@ using std::set;
 using std::vector;
 
 /**
+ * @addtogroup stl
+ * @{
+ */
+
+/**
  * @brief Delete the elements of a Sequence.
  * @param sequence the Sequence to delete the elements from.
  * @tparam T A Sequence.
@@ -53,7 +59,7 @@ using std::vector;
  *
  * All elements in the sequence will be deleted. The sequence will be cleared.
  *
- * @snippet
+ * @examplepara
  * ~~~~~~~~~~~~~~~~~~~~~
  * class Foo() {
  *  public:
@@ -84,7 +90,7 @@ void STLDeleteElements(T *sequence) {
  *
  * All elements in the container will be deleted. The container will be cleared.
  *
- * @snippet
+ * @examplepara
  * ~~~~~~~~~~~~~~~~~~~~~
  * class Foo() {
  *  public:

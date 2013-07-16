@@ -27,6 +27,7 @@
  * @{
  * @file CID.h
  * @brief The ACN component identifier.
+ * @}
  */
 
 #include <stdint.h>
@@ -37,7 +38,11 @@ namespace ola {
 namespace acn {
 
 /**
+ * @addtogroup acn
+ * @{
+ * @class CID
  * @brief The ACN component identifier.
+ * @}
  */
 class CID {
   public :
@@ -77,7 +82,7 @@ class CID {
 
     /**
      * @brief Return the CID as a human readable string.
-     * @snippet
+     * @examplepara
      * @code
      * "D5D46622-ECCB-410D-BC9A-267C6099C136"
      * @endcode

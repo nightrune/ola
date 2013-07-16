@@ -21,7 +21,7 @@
 /**
  * @addtogroup flags
  * @{
- * @file Flags.cpp
+ * @file common/base/Flags.cpp
  * @}
  */
 
@@ -52,7 +52,7 @@ using std::endl;
 
 /**
  * @brief the prefix used on inverted bool flags
- * @snippet'
+ * @examplepara
  *   @code
  *   DEFINE_s_bool(noMaster, d, false, "Dummy flag to show NO_PREFIX")
  *   @endcode
@@ -62,7 +62,6 @@ using std::endl;
  *   bash$myappliation -d
  *   @endcode
  *   Then the noMaster flag would be true.
- *
  */
 const char Flag<bool>::NO_PREFIX[] = "no";
 

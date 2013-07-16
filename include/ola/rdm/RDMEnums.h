@@ -18,6 +18,14 @@
  * Copyright (C) 2010 Simon Newton
  */
 
+/**
+ * @addtogroup rdm_helpers
+ * @{
+ * @file RDMENUMS.h
+ * @brief Provides a generic RDM ENUMS that can use different implementations
+ * @}
+ */
+
 #ifndef INCLUDE_OLA_RDM_RDMENUMS_H_
 #define INCLUDE_OLA_RDM_RDMENUMS_H_
 
@@ -517,7 +525,6 @@ typedef enum {
   LAMP_ON_MODE_ON = 0x02,
   LAMP_ON_MODE_AFTER_CAL = 0x03,
 } rdm_lamp_mode;
-
 
 typedef enum {
   POWER_STATE_FULL_OFF = 0x00,

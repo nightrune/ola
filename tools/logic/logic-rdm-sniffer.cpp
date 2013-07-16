@@ -88,6 +88,7 @@ DEFINE_s_bool(full_rdm, r, true, "Display the full RDM frame");
 DEFINE_bool(show_timing, false, "Show frame timing data");
 DEFINE_uint16(dmx_slot_limit, DMX_UNIVERSE_SIZE,
               "Only display the first N DMX slots");
+DEFINE_uint32(sample_rate, 4000000, "Sample rate in MHz");
 DEFINE_string(pid_location, PID_DATA_DIR,
               "The directory containing the PID definitions");
 
@@ -98,12 +99,13 @@ void ProcessData(U8 *data, uint32_t data_length);
 
 class LogicReader {
   public:
-    explicit LogicReader(SelectServer *ss)
-      : m_device_id(0),
+    explicit LogicReader(SelectServer *ss, unsigned int sample_rate)
+      : m_sample_rate(sample_rate),
+        m_device_id(0),
         m_logic(NULL),
         m_ss(ss),
         m_signal_processor(ola::NewCallback(this, &LogicReader::FrameReceived),
-                           SAMPLE_HZ),
+                           sample_rate),
         m_pid_helper(FLAGS_pid_location.str(), 4),
         m_command_printer(&cout, &m_pid_helper) {
     }
@@ -118,6 +120,7 @@ class LogicReader {
     void Stop();
 
   private:
+    const unsigned int m_sample_rate;
     U64 m_device_id;  // GUARDED_BY(mu_);
     LogicInterface *m_logic;  // GUARDED_BY(mu_);
     Mutex m_mu;
@@ -138,13 +141,12 @@ class LogicReader {
                          unsigned int length);
     void DisplayAlternateFrame(const uint8_t *data, unsigned int length);
     void DisplayRawData(const uint8_t *data, unsigned int length);
-
-    static const uint32_t SAMPLE_HZ = 4000000;
 };
 
 
 void LogicReader::DeviceConnected(U64 device, GenericInterface *interface) {
-  OLA_INFO << "Device " << device << " connected";
+  OLA_INFO << "Device " << device << " connected, setting sample rate to "
+           << m_sample_rate << "Hz";
   MutexLocker lock(&m_mu);
   if (m_logic != NULL) {
     OLA_WARN << "More than one device is connected";
@@ -164,7 +166,7 @@ void LogicReader::DeviceConnected(U64 device, GenericInterface *interface) {
   m_logic->RegisterOnReadData(&OnReadData, this);
   m_logic->RegisterOnError(&OnError);
 
-  m_logic->SetSampleRateHz(SAMPLE_HZ);
+  m_logic->SetSampleRateHz(m_sample_rate);
   m_logic->ReadStart();
 }
 
@@ -389,7 +391,7 @@ int main(int argc, char *argv[]) {
   ola::InitLoggingFromFlags();
 
   SelectServer ss;
-  LogicReader reader(&ss);
+  LogicReader reader(&ss, FLAGS_sample_rate);
 
   DevicesManagerInterface::RegisterOnConnect(&OnConnect, &reader);
   DevicesManagerInterface::RegisterOnDisconnect(&OnDisconnect, &reader);
