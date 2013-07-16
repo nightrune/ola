@@ -119,7 +119,7 @@ class DMXSignalProcessor {
     void AppendDataByte();
     void HandleFrame();
 
-    void SetState(State state, unsigned int ticks = 0);
+    void SetState(State state, unsigned int ticks = 1);
     bool DurationExceeds(double micro_seconds);
     double TicksAsMicroSeconds(unsigned int ticks) const;
 

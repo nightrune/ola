@@ -92,6 +92,12 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
     m_ticks_in_break++;
   }
 
+  /*
+  if(m_state != IDLE && m_ticks < 10000){
+    OLA_WARN << "Current Tick: " << m_ticks << " Bit: " << bit;
+  }
+  */
+
   switch (m_state) {
     case UNDEFINED:
       if (bit) {
@@ -151,7 +157,7 @@ void DMXSignalProcessor::ProcessSample(bool bit) {
           // Save the m_max_interslot_ticks in case we timeout since the new
           // value would most likely be the MBB
           m_old_max_interslot_time = m_timing_info.max_interslot_time;
-          SetState(MARK_BETWEEN_SLOTS, 1);
+          SetState(MARK_BETWEEN_SLOTS);
         }
       } else {
         if (m_may_be_in_break) {
