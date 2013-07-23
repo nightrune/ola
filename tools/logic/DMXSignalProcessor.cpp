@@ -77,7 +77,7 @@ DMXSignalProcessor::DMXSignalProcessor(DataCallback *callback,
  *   signal is high or low.
  */
 void DMXSignalProcessor::Process(uint8_t *ptr, unsigned int size,
-                               uint8_t mask) {
+                                 uint8_t mask) {
   for (unsigned int i = 0 ; i < size; i++) {
     ProcessSample(ptr[i] & mask);
   }

@@ -272,8 +272,8 @@ void LogicReader::ProcessData(U8 *data, uint32_t data_length) {
 }
 
 /**
- *DisplayTimingInfo
- *Creates a pretty display to show the timing information for the logic sniffer
+ * DisplayTimingInfo
+ * Creates a pretty display to show the timing information for the logic sniffer
  * @param info is a sturcture that holds all the information to show.
  */
 void LogicReader::DisplayTimingInfo(
