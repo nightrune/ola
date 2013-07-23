@@ -50,9 +50,9 @@
 using std::vector;
 
 /**
-* Create a new DMXSignalProcessor which runs the specified callback when a new
-* frame is received.
-*/
+ * Create a new DMXSignalProcessor which runs the specified callback when a new
+ * frame is received.
+ */
 DMXSignalProcessor::DMXSignalProcessor(DataCallback *callback,
                                      unsigned int sample_rate)
   : m_callback(callback),
@@ -68,14 +68,14 @@ if (m_sample_rate % DMX_BITRATE) {
 }
 
 /*
-* Process the data stream. We pass in a uint8_t array rather than a bool
-* array, since it's the same size anyway. The mask is used to indicate how to
-* interpret the data.
-* @param ptr the data stream to process
-* @param size the number of samples in the stream
-* @param mask the value to be AND'ed with each sample to determine if the
-*   signal is high or low.
-*/
+ * Process the data stream. We pass in a uint8_t array rather than a bool
+ * array, since it's the same size anyway. The mask is used to indicate how to
+ * interpret the data.
+ * @param ptr the data stream to process
+ * @param size the number of samples in the stream
+ * @param mask the value to be AND'ed with each sample to determine if the
+ *   signal is high or low.
+ */
 void DMXSignalProcessor::Process(uint8_t *ptr, unsigned int size,
                                uint8_t mask) {
 for (unsigned int i = 0 ; i < size; i++) {
@@ -84,19 +84,13 @@ for (unsigned int i = 0 ; i < size; i++) {
 }
 
 /**
-* Process one bit of data through the state machine.
-*/
+ * Process one bit of data through the state machine.
+ */
 void DMXSignalProcessor::ProcessSample(bool bit) {
 if (m_may_be_in_break && !bit) {
   // if we may be in a break, keep track of the time since the falling edge.
   m_ticks_in_break++;
 }
-
-/*
-if(m_state != IDLE && m_ticks < 10000){
-  OLA_WARN << "Current Tick: " << m_ticks << " Bit: " << bit;
-}
-*/
 
 switch (m_state) {
   case UNDEFINED:
