@@ -1,45 +1,45 @@
 /*
-* This program is free software; you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation; either version 2 of the License, or
-* (at your option) any later version.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU Library General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
-* Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*
-* DMXSignalProcessor.cpp
-* Process a stream of bits and decode into DMX frames.
-* Copyright (C) 2013 Simon Newton
-*
-* See E1.11 for the details including timing. It generally goes something
-* like:
-*  Mark (Idle) - High
-*  Break - Low
-*  Mark After Break - High
-*  Start bit (low)
-*  LSB to MSB (8)
-*  2 stop bits (high)
-*  Mark between slots (high)
-*
-* There are a number of interesting cases which we need to handle:
-*
-* Varible bit length
-*
-* Start bit vs Break.
-*  After the stop bits comes an optional mark time between slots, that can
-*  range up to 1s. When the next falling edge occurs, it could either be a
-*  break (indicating the previous frame is now complete) or a start bit. If a
-*  rising edge occurs before 35.28 (9 * 3.92) us then it was a start-bit. If
-*  36.72 (9 * 4.08) useconds passes and there was no rising edge it's a break.
-*
-* The implementation is based on a state machine, with a couple of tweaks.
-*/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *
+ * DMXSignalProcessor.cpp
+ * Process a stream of bits and decode into DMX frames.
+ * Copyright (C) 2013 Simon Newton
+ *
+ * See E1.11 for the details including timing. It generally goes something
+ * like:
+ *  Mark (Idle) - High
+ *  Break - Low
+ *  Mark After Break - High
+ *  Start bit (low)
+ *  LSB to MSB (8)
+ *  2 stop bits (high)
+ *  Mark between slots (high)
+ *
+ * There are a number of interesting cases which we need to handle:
+ *
+ * Varible bit length
+ *
+ * Start bit vs Break.
+ *  After the stop bits comes an optional mark time between slots, that can
+ *  range up to 1s. When the next falling edge occurs, it could either be a
+ *  break (indicating the previous frame is now complete) or a start bit. If a
+ *  rising edge occurs before 35.28 (9 * 3.92) us then it was a start-bit. If
+ *  36.72 (9 * 4.08) useconds passes and there was no rising edge it's a break.
+ *
+ * The implementation is based on a state machine, with a couple of tweaks.
+ */
 
 #include <ola/Logging.h>
 #include <algorithm>
@@ -54,17 +54,17 @@ using std::vector;
  * frame is received.
  */
 DMXSignalProcessor::DMXSignalProcessor(DataCallback *callback,
-                                     unsigned int sample_rate)
-  : m_callback(callback),
-    m_sample_rate(sample_rate),
-    m_microseconds_per_tick(1000000.0 / sample_rate),
-    m_state(IDLE),
-    m_ticks(1),
-    m_may_be_in_break(false),
-    m_ticks_in_break(1) {
-if (m_sample_rate % DMX_BITRATE) {
-  OLA_WARN << "Sample rate is not a multiple of " << DMX_BITRATE;
-}
+                                       unsigned int sample_rate)
+    : m_callback(callback),
+      m_sample_rate(sample_rate),
+      m_microseconds_per_tick(1000000.0 / sample_rate),
+      m_state(IDLE),
+      m_ticks(1),
+      m_may_be_in_break(false),
+      m_ticks_in_break(1) {
+  if (m_sample_rate % DMX_BITRATE) {
+    OLA_WARN << "Sample rate is not a multiple of " << DMX_BITRATE;
+  }
 }
 
 /*
@@ -78,41 +78,41 @@ if (m_sample_rate % DMX_BITRATE) {
  */
 void DMXSignalProcessor::Process(uint8_t *ptr, unsigned int size,
                                uint8_t mask) {
-for (unsigned int i = 0 ; i < size; i++) {
-  ProcessSample(ptr[i] & mask);
-}
+  for (unsigned int i = 0 ; i < size; i++) {
+    ProcessSample(ptr[i] & mask);
+  }
 }
 
 /**
  * Process one bit of data through the state machine.
  */
 void DMXSignalProcessor::ProcessSample(bool bit) {
-if (m_may_be_in_break && !bit) {
-  // if we may be in a break, keep track of the time since the falling edge.
-  m_ticks_in_break++;
-}
+  if (m_may_be_in_break && !bit) {
+    // if we may be in a break, keep track of the time since the falling edge.
+    m_ticks_in_break++;
+  }
 
-switch (m_state) {
-  case UNDEFINED:
-    if (bit) {
-      SetState(IDLE);
-    }
-    break;
-  case IDLE:
-    if (!bit) {
-      m_timing_info.mark_before_break_time = TicksAsMicroSeconds(m_ticks);
-      SetState(BREAK);
-    }
-    break;
-  case BREAK:
-    if (bit) {
-      if (DurationExceeds(MIN_BREAK_TIME)) {
-        m_timing_info.break_time = TicksAsMicroSeconds(m_ticks);
-        SetState(MAB);
-      } else {
-          OLA_INFO << "Break too short, was " << TicksAsMicroSeconds(m_ticks)
-                   << " us";
-          SetState(IDLE);
+  switch (m_state) {
+    case UNDEFINED:
+      if (bit) {
+        SetState(IDLE);
+      }
+      break;
+    case IDLE:
+      if (!bit) {
+        m_timing_info.mark_before_break_time = TicksAsMicroSeconds(m_ticks);
+        SetState(BREAK);
+      }
+      break;
+    case BREAK:
+      if (bit) {
+        if (DurationExceeds(MIN_BREAK_TIME)) {
+          m_timing_info.break_time = TicksAsMicroSeconds(m_ticks);
+          SetState(MAB);
+        } else {
+            OLA_INFO << "Break too short, was " << TicksAsMicroSeconds(m_ticks)
+                     << " us";
+            SetState(IDLE);
         }
       }
       break;
@@ -212,7 +212,7 @@ void DMXSignalProcessor::ProcessBit(bool bit) {
 
   if (bit == current_bit) {
     if (DurationExceeds(MAX_BIT_TIME)) {
-      SetState(static_cast<State>(m_state + 1), 1);
+      SetState(static_cast<State>(m_state + 1));
     }
   } else {
     // Because we force a transition into the next state (bit) after
