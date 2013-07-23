@@ -17,9 +17,9 @@
  * RDM Sniffer software for the Saleae Logic Device.
  * Copyright (C) 2013 Simon Newton
  *
- * Add support for Discovery replies without a break
- * Add support for outputing to a pcap file
- * Add total time transmission time for the frame, and DMX Frequency
+ * TODO(sean) Add support for Discovery replies without a break
+ * TODO(sean) Add support for outputing to a pcap file
+ * TODO(sean) Add total time transmission time for the frame, and DMX Frequency
  */
 
 #if HAVE_CONFIG_H
