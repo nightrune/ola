@@ -46,18 +46,13 @@ using ola::DmxBuffer;
 
 ShowPlayer::ShowPlayer(const string &filename)
     : m_loader(filename),
-      m_infinte_loop(false),
+      m_infinite_loop(false),
       m_iteration_remaining(0),
       m_loop_delay(0) {
 }
 
-
 ShowPlayer::~ShowPlayer() {}
 
-
-/**
- * Init the ShowPlayer
- */
 int ShowPlayer::Init() {
   if (!m_client.Setup()) {
     OLA_FATAL << "Client Setup failed";
@@ -70,25 +65,25 @@ int ShowPlayer::Init() {
   return ola::EXIT_OK;
 }
 
-
-/**
- * Playback the show
- */
 int ShowPlayer::Playback(unsigned int iterations,
+                         unsigned int duration,
                          unsigned int delay) {
-  m_infinte_loop = iterations == 0;
+  m_infinite_loop = iterations == 0 || duration != 0;
   m_iteration_remaining = iterations;
   m_loop_delay = delay;
   SendNextFrame();
-  m_client.GetSelectServer()->Run();
+
+  ola::io::SelectServer *ss = m_client.GetSelectServer();
+
+  if (duration != 0) {
+    ss->RegisterSingleTimeout(
+        duration * 1000,
+        ola::NewSingleCallback(ss, &ola::io::SelectServer::Terminate));
+  }
+  ss->Run();
   return ola::EXIT_OK;
 }
 
-
-
-/**
- * Send the next dmx frame
- */
 void ShowPlayer::SendNextFrame() {
   DmxBuffer buffer;
   unsigned int universe;
@@ -144,7 +139,7 @@ ShowLoader::State ShowPlayer::RegisterNextTimeout() {
  */
 void ShowPlayer::HandleEndOfFile() {
   m_iteration_remaining--;
-  if (m_infinte_loop || m_iteration_remaining > 0) {
+  if (m_infinite_loop || m_iteration_remaining > 0) {
     m_loader.Reset();
     m_client.GetSelectServer()->RegisterSingleTimeout(
         m_loop_delay,

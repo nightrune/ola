@@ -27,8 +27,8 @@
 #include "ola/io/SelectServerInterface.h"
 #include "ola/network/SocketAddress.h"
 #include "olad/Device.h"
-#include "plugins/osc/OSCNode.h"
 #include "plugins/osc/OSCTarget.h"
+#include "plugins/osc/OSCNode.h"
 
 namespace ola {
 
@@ -37,25 +37,31 @@ class AbstractPlugin;
 namespace plugin {
 namespace osc {
 
-using std::string;
-using ola::network::IPV4SocketAddress;
-
 class OSCDevice: public Device {
-  public:
+ public:
+    struct PortConfig {
+      PortConfig() : data_format(OSCNode::FORMAT_BLOB) {}
+
+      std::vector<OSCTarget> targets;
+      OSCNode::DataFormat data_format;
+    };
+
+    typedef std::vector<PortConfig> PortConfigs;
+
     OSCDevice(AbstractPlugin *owner,
               PluginAdaptor *plugin_adaptor,
               uint16_t udp_port,
-              const vector<string> &addresses,
-              const vector<vector<OSCTarget> > &targets);
-    string DeviceId() const { return "1"; }
+              const std::vector<std::string> &addresses,
+              const PortConfigs &port_configs);
+    std::string DeviceId() const { return "1"; }
 
     bool AllowMultiPortPatching() const { return true; }
 
-  protected:
+ protected:
     PluginAdaptor *m_plugin_adaptor;
-    const vector<string> m_port_addresses;
-    const vector<vector<OSCTarget> > m_port_targets;
-    std::auto_ptr<OSCNode> m_osc_node;
+    const std::vector<std::string> m_port_addresses;
+    const PortConfigs m_port_configs;
+    std::auto_ptr<class OSCNode> m_osc_node;
 
     bool StartHook();
 

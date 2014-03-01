@@ -45,6 +45,10 @@ namespace ola {
 namespace plugin {
 namespace usbpro {
 
+using ola::io::ConnectedDescriptor;
+using std::string;
+using std::vector;
+
 
 /**
  * Constructor
@@ -250,6 +254,9 @@ void WidgetDetectorThread::UsbProWidgetReady(
         // DMXKing devices are drop in replacements for a Usb Pro
         EnttecUsbProWidget::EnttecUsbProWidgetOptions options(
             information->esta_id, information->serial);
+        if (information->device_id == DMX_KING_ULTRA_RDM_ID) {
+          options.enable_rdm = true;
+        }
         DispatchWidget(
             new EnttecUsbProWidget(descriptor, options),
             information);
@@ -301,8 +308,16 @@ void WidgetDetectorThread::UsbProWidgetReady(
   EnttecUsbProWidget::EnttecUsbProWidgetOptions options(
       information->esta_id, information->serial);
   options.dual_ports = information->dual_port;
-  DispatchWidget(new EnttecUsbProWidget(descriptor, options),
-                 information);
+  if (information->has_firmware_version) {
+    // 2.4 is the first version that properly supports RDM.
+    options.enable_rdm = information->firmware_version >= 0x0204;
+    if (!options.enable_rdm) {
+      OLA_WARN << "USB Pro Firmware >= 2.4 is required for RDM support, this "
+               << "widget is running " << (information->firmware_version >> 8)
+               << "." << (information->firmware_version & 0xff);
+    }
+  }
+  DispatchWidget(new EnttecUsbProWidget(descriptor, options), information);
 }
 
 

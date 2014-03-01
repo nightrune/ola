@@ -39,6 +39,7 @@ using ola::acn::CID;
 using ola::io::IOQueue;
 using ola::io::OutputStream;
 using ola::network::NetworkToHost;
+using ola::network::HostToNetwork;
 using ola::testing::ASSERT_DATA_EQUALS;
 
 class RootPDUTest: public CppUnit::TestFixture {
@@ -49,7 +50,7 @@ class RootPDUTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testNestedRootPDUToOutputStream);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testSimpleRootPDU();
     void testSimpleRootPDUToOutputStream();
     void testNestedRootPDU();
@@ -59,7 +60,7 @@ class RootPDUTest: public CppUnit::TestFixture {
       ola::InitLogging(ola::OLA_LOG_DEBUG, ola::OLA_LOG_STDERR);
     }
 
-  private:
+ private:
     static const unsigned int TEST_VECTOR = 4;
     static const unsigned int TEST_VECTOR2 = 99;
 };

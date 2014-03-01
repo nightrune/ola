@@ -36,19 +36,19 @@ namespace usbpro {
  * An Arduino RGB Mixer Device
  */
 class ArduinoRGBDevice: public UsbSerialDevice {
-  public:
+ public:
     ArduinoRGBDevice(ola::io::SelectServerInterface *ss,
                      ola::AbstractPlugin *owner,
-                     const string &name,
+                     const std::string &name,
                      ArduinoWidget *widget,
                      uint16_t esta_id,
                      uint16_t device_id,
                      uint32_t serial);
 
-    string DeviceId() const { return m_device_id; }
+    std::string DeviceId() const { return m_device_id; }
 
-  private:
-    string m_device_id;
+ private:
+    std::string m_device_id;
 };
 
 
@@ -56,7 +56,7 @@ class ArduinoRGBDevice: public UsbSerialDevice {
  * A single Output port per device
  */
 class ArduinoRGBOutputPort: public BasicOutputPort {
-  public:
+ public:
     ArduinoRGBOutputPort(ArduinoRGBDevice *parent,
                          ArduinoWidget *widget,
                          uint32_t serial,
@@ -64,7 +64,7 @@ class ArduinoRGBOutputPort: public BasicOutputPort {
                          unsigned int initial_count,
                          unsigned int rate);
 
-    string Description() const { return m_description; }
+    std::string Description() const { return m_description; }
 
     bool WriteDMX(const DmxBuffer &buffer, uint8_t) {
       if (m_bucket.GetToken(*m_wake_time))
@@ -87,11 +87,11 @@ class ArduinoRGBOutputPort: public BasicOutputPort {
       m_widget->RunIncrementalDiscovery(callback);
     }
 
-  private:
+ private:
     ArduinoWidget *m_widget;
     TokenBucket m_bucket;
     const TimeStamp *m_wake_time;
-    string m_description;
+    std::string m_description;
 };
 }  // namespace usbpro
 }  // namespace plugin

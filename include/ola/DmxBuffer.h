@@ -33,8 +33,6 @@
 
 namespace ola {
 
-using std::string;
-
 /**
  * @class DmxBuffer ola/DmxBuffer.h
  * @brief Used to hold a single universe of DMX data.
@@ -49,7 +47,7 @@ using std::string;
  * @note This class is <b>NOT</b> thread safe.
  */
 class DmxBuffer {
-  public:
+ public:
     /**
      * Constructor
      * This initializes and empty DmxBuffer, Size() == 0
@@ -78,7 +76,7 @@ class DmxBuffer {
      * @deprecated Use DmxBuffer(const uint8_t *data, unsigned int length)
      * instead
      */
-    explicit DmxBuffer(const string &data);
+    explicit DmxBuffer(const std::string &data);
 
     /**
      * @brief Destructor
@@ -134,7 +132,7 @@ class DmxBuffer {
      * @return true if the set was successful and false if it failed
      * @post Size() == data.length()
      */
-    bool Set(const string &data);
+    bool Set(const std::string &data);
 
     /**
      * @brief Sets the data in this buffer to be the same as the other one.
@@ -146,7 +144,7 @@ class DmxBuffer {
     bool Set(const DmxBuffer &other);
 
     /**
-     * @brief Set values from a string
+     * @brief Set values from a string.
      * Convert a comma separated list of values into for the DmxBuffer. Invalid
      * values are set to 0. 0s can be dropped between the commas.
      * @param data the string to split
@@ -165,7 +163,7 @@ class DmxBuffer {
      * would set channel 1 through 5 to 0 and channel 6,7 to 255 and channel
      * 8 to 128.
      */
-    bool SetFromString(const string &data);
+    bool SetFromString(const std::string &data);
 
     /**
      * @brief Set a Range of data to a single value. Calling this on an
@@ -240,7 +238,7 @@ class DmxBuffer {
      * @brief Get the raw contents of the DmxBuffer as a string.
      * @return a string of raw channel values
      */
-    string Get() const;
+    std::string Get() const;
 
     /**
      * @brief Set the buffer to all zeros.
@@ -264,9 +262,9 @@ class DmxBuffer {
      * "0,0,255,128,100"
      * @endcode
      */
-    string ToString() const;
+    std::string ToString() const;
 
-  private:
+ private:
     bool Init();
     bool DuplicateIfNeeded();
     void CopyFromOther(const DmxBuffer &other);

@@ -81,16 +81,17 @@ const BaseDMPAddress *NewRangeAddress(unsigned int value,
 const BaseDMPAddress *DecodeAddress(dmp_address_size size,
                                     dmp_address_type type,
                                     const uint8_t *data,
-                                    unsigned int &length) {
+                                    unsigned int *length) {
   unsigned int byte_count = (type == NON_RANGE ? 1 : 3) *
                             DMPSizeToByteSize(size);
 
-  if (size == RES_BYTES || length < byte_count) {
-    length = 0;
+  if (size == RES_BYTES || *length < byte_count) {
+    *length = 0;
     return NULL;
   }
 
-  length = byte_count;
+  *length = byte_count;
+  const uint8_t *addr1 = data;
   // We have to do a memcpy to avoid the word alignment issues on ARM
   uint16_t addr2[3];
   uint32_t addr4[3];
@@ -112,7 +113,7 @@ const BaseDMPAddress *DecodeAddress(dmp_address_size size,
 
   switch (size) {
     case ONE_BYTES:
-      return new OneByteRangeDMPAddress(*data++, *data++, *data);
+      return new OneByteRangeDMPAddress(addr1[0], addr1[1], addr1[2]);
     case TWO_BYTES:
       return new TwoByteRangeDMPAddress(NetworkToHost(addr2[0]),
                                         NetworkToHost(addr2[1]),

@@ -31,17 +31,17 @@ namespace plugin {
 namespace sandnet {
 
 class SandNetPlugin: public ola::Plugin {
-  public:
+ public:
     explicit SandNetPlugin(ola::PluginAdaptor *plugin_adaptor)
         : Plugin(plugin_adaptor),
           m_device(NULL) {}
 
-    string Name() const { return PLUGIN_NAME; }
-    string Description() const;
+    std::string Name() const { return PLUGIN_NAME; }
+    std::string Description() const;
     ola_plugin_id Id() const { return OLA_PLUGIN_SANDNET; }
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     class SandNetDevice *m_device;  // only have one device
 
     bool StartHook();

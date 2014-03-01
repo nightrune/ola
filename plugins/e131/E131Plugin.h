@@ -30,18 +30,18 @@ namespace plugin {
 namespace e131 {
 
 class E131Plugin: public ola::Plugin {
-  public:
+ public:
     explicit E131Plugin(ola::PluginAdaptor *plugin_adaptor):
       ola::Plugin(plugin_adaptor),
       m_device(NULL) {}
     ~E131Plugin() {}
 
-    string Name() const { return PLUGIN_NAME; }
+    std::string Name() const { return PLUGIN_NAME; }
     ola_plugin_id Id() const { return OLA_PLUGIN_E131; }
-    string Description() const;
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string Description() const;
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();

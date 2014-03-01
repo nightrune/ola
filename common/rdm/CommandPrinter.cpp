@@ -31,10 +31,12 @@
 namespace ola {
 namespace rdm {
 
+using ola::messaging::Descriptor;
 using ola::messaging::Message;
 using ola::network::NetworkToHost;
 using std::auto_ptr;
 using std::endl;
+using std::string;
 using std::stringstream;
 
 /**
@@ -172,7 +174,7 @@ void CommandPrinter::DisplayResponse(const RDMResponse *response,
 
 /**
  * Write out a RDM discovery request
- * @param response the request to format
+ * @param request the request to format
  * @param summarize enable the one line summary
  * @param unpack_param_data if the summary isn't enabled, this controls if we
  *   unpack and display parameter data.

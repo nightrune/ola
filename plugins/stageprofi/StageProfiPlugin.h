@@ -31,24 +31,21 @@ namespace ola {
 namespace plugin {
 namespace stageprofi {
 
-using ola::io::ConnectedDescriptor;
-using std::string;
-
 class StageProfiDevice;
 
 class StageProfiPlugin: public Plugin {
-  public:
+ public:
     explicit StageProfiPlugin(PluginAdaptor *plugin_adaptor):
       Plugin(plugin_adaptor) {}
     ~StageProfiPlugin() {}
 
-    string Name() const { return PLUGIN_NAME; }
+    std::string Name() const { return PLUGIN_NAME; }
     ola_plugin_id Id() const { return OLA_PLUGIN_STAGEPROFI; }
-    string Description() const;
-    int SocketClosed(ConnectedDescriptor *socket);
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string Description() const;
+    int SocketClosed(ola::io::ConnectedDescriptor *socket);
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();

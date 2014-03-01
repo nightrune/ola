@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <ola/Clock.h>
 #include <ola/DmxBuffer.h>
+#include <ola/dmx/SourcePriorities.h>
 
 namespace ola {
 
@@ -33,11 +34,11 @@ namespace ola {
  * The DmxSource class
  */
 class DmxSource {
-  public:
+ public:
     DmxSource():
         m_buffer(),
         m_timestamp(),
-        m_priority(PRIORITY_MIN) {
+        m_priority(ola::dmx::SOURCE_PRIORITY_MIN) {
     }
 
     DmxSource(const DmxBuffer &buffer,
@@ -66,7 +67,6 @@ class DmxSource {
       }
       return *this;
     }
-
 
     /*
      * Equality check
@@ -123,11 +123,7 @@ class DmxSource {
      */
     uint8_t Priority() const { return m_priority; }
 
-    static const uint8_t PRIORITY_MIN;
-    static const uint8_t PRIORITY_MAX;
-    static const uint8_t PRIORITY_DEFAULT;
-
-  private:
+ private:
     DmxBuffer m_buffer;
     TimeStamp m_timestamp;
     uint8_t m_priority;

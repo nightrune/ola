@@ -40,11 +40,11 @@ class DMPAddressTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testAddressData);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testAddress();
     void testRangeAddress();
     void testAddressData();
-  private:
+ private:
     void checkAddress(
         const BaseDMPAddress *address,
         unsigned int start,
@@ -86,7 +86,7 @@ void DMPAddressTest::checkAddress(
   const BaseDMPAddress *addr = DecodeAddress(
       address_size,
       is_range ? RANGE_SINGLE: NON_RANGE,
-      buffer, length);
+      buffer, &length);
   OLA_ASSERT_EQ(size, length);
   OLA_ASSERT_EQ(start, address->Start());
   OLA_ASSERT_EQ(increment, address->Increment());
@@ -95,11 +95,11 @@ void DMPAddressTest::checkAddress(
   length--;
   OLA_ASSERT_FALSE(DecodeAddress(address_size,
                                 is_range ? RANGE_SINGLE: NON_RANGE,
-                                buffer, length));
+                                buffer, &length));
   length = 0;
   OLA_ASSERT_FALSE(DecodeAddress(address_size,
                                 is_range ? RANGE_SINGLE: NON_RANGE,
-                                buffer, length));
+                                buffer, &length));
   delete[] buffer;
   delete addr;
 }

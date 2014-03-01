@@ -22,8 +22,9 @@
 #define INCLUDE_OLA_E133_E133RECEIVER_H_
 
 #include <ola/Callback.h>
-#include <ola/network/Socket.h>
+#include <ola/base/Macro.h>
 #include <ola/network/IPV4Address.h>
+#include <ola/network/Socket.h>
 #include <ola/rdm/RDMCommand.h>
 
 #include <memory>
@@ -51,7 +52,7 @@ namespace e131 {
 namespace e133 {
 
 class E133Message {
-  public:
+ public:
     E133Message(const IPV4Address &ip,
                 uint16_t endpoint,
                 uint32_t sequence_number)
@@ -71,7 +72,7 @@ class E133Message {
  * Wraps a E1.33 Status message.
  */
 class E133StatusMessage : public E133Message {
-  public:
+ public:
     E133StatusMessage(const IPV4Address &ip,
                       uint16_t endpoint,
                       uint32_t sequence_number,
@@ -92,7 +93,7 @@ class E133StatusMessage : public E133Message {
  * TODO(simon): sort out ownership here
  */
 class E133RDMMessage : public E133Message {
-  public:
+ public:
     E133RDMMessage(const IPV4Address &ip,
                    uint16_t endpoint,
                    uint32_t sequence_number,
@@ -112,7 +113,7 @@ class E133RDMMessage : public E133Message {
  * Given a UDP socket, handle all the message extraction.
  */
 class E133Receiver {
-  public:
+ public:
     typedef ola::Callback1<void, const E133StatusMessage&> StatusCallback;
     typedef ola::Callback1<void, const E133RDMMessage&> RDMCallback;
 
@@ -121,7 +122,7 @@ class E133Receiver {
                           RDMCallback *rdm_callback);
     ~E133Receiver();
 
-  private:
+ private:
     ola::network::UDPSocket *m_udp_socket;
     StatusCallback *m_status_callback;
     RDMCallback *m_rdm_callback;
@@ -142,6 +143,8 @@ class E133Receiver {
         const ola::plugin::e131::TransportHeader *transport_header,
         const ola::plugin::e131::E133Header *e133_header,
         const std::string &raw_response);
+
+    DISALLOW_COPY_AND_ASSIGN(E133Receiver);
 };
 }  // namespace e133
 }  // namespace ola

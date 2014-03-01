@@ -71,7 +71,7 @@ typedef enum {
  *   as expensive.
  */
 class RDMCommand {
-  public:
+ public:
     /**
      * @brief A set of values representing CommandClasses in E1.20.
      * @note Please see section 6.2.10 of ANSI E1.20 for more information.
@@ -127,12 +127,17 @@ class RDMCommand {
      * @returns A string containing the source and destination UIDS, transaction
      * number, port ID, Message count, Sub Device, Cmd Class, Param ID, Data,
      * and a raw string of the parameter data.
-     * @param out ostream to output to
-     * @param command is the RDMCommand to print
      */
     std::string ToString() const;
 
-    friend ostream& operator<< (ostream &out, const RDMCommand &command) {
+    /**
+     * @brief Output an RDMCommand object to an ostream.
+     * @param out ostream to output to
+     * @param command is the RDMCommand to print
+     * @sa ToString()
+     */
+    friend std::ostream& operator<< (std::ostream &out,
+                                     const RDMCommand &command) {
       return out << command.ToString();
     }
 
@@ -179,7 +184,7 @@ class RDMCommand {
 
     /**
      * @brief Used to print the data in an RDM Command to a CommandPrinter
-     * @param print CommandPrinter wish will use the information
+     * @param printer CommandPrinter which will use the information
      * @param summarize enable a one line summary
      * @param unpack_param_data if the summary isn't enabled, this controls if
      * we unpack and display parameter data
@@ -200,7 +205,7 @@ class RDMCommand {
 
     static RDMCommand *Inflate(const uint8_t *data, unsigned int length);
 
-  protected:
+ protected:
     uint8_t m_port_id;
 
     RDMCommand(const UID &source,
@@ -222,7 +227,7 @@ class RDMCommand {
 
     static RDMCommandClass ConvertCommandClass(uint8_t command_type);
 
-  private:
+ private:
     UID m_source;
     UID m_destination;
     uint8_t m_transaction_number;
@@ -244,7 +249,7 @@ class RDMCommand {
  * @brief RDM Commands that represent requests (GET, SET or DISCOVER).
  */
 class RDMRequest: public RDMCommand {
-  public:
+ public:
     RDMRequest(const UID &source,
                const UID &destination,
                uint8_t transaction_number,
@@ -303,9 +308,9 @@ class RDMRequest: public RDMCommand {
     // Convert a block of data to an RDMCommand object
     static RDMRequest* InflateFromData(const uint8_t *data,
                                        unsigned int length);
-    static RDMRequest* InflateFromData(const string &data);
+    static RDMRequest* InflateFromData(const std::string &data);
 
-  private:
+ private:
     RDMCommandClass m_command_class;
 };
 
@@ -314,7 +319,7 @@ class RDMRequest: public RDMCommand {
  * @brief The parent class for GET/SET requests.
  */
 class RDMGetSetRequest: public RDMRequest {
-  public:
+ public:
     RDMGetSetRequest(const UID &source,
                      const UID &destination,
                      uint8_t transaction_number,
@@ -341,7 +346,7 @@ class RDMGetSetRequest: public RDMRequest {
 
 template <RDMCommand::RDMCommandClass command_class>
 class BaseRDMRequest: public RDMGetSetRequest {
-  public:
+ public:
     BaseRDMRequest(const UID &source,
                    const UID &destination,
                    uint8_t transaction_number,
@@ -397,25 +402,20 @@ typedef BaseRDMRequest<RDMCommand::SET_COMMAND> RDMSetRequest;
  * DISCOVER).
  */
 class RDMResponse: public RDMCommand {
-  public:
+ public:
     RDMResponse(const UID &source,
                 const UID &destination,
                 uint8_t transaction_number,
                 uint8_t response_type,
                 uint8_t message_count,
                 uint16_t sub_device,
+                RDMCommand::RDMCommandClass command_class,
                 uint16_t param_id,
                 const uint8_t *data,
-                unsigned int length):
-      RDMCommand(source,
-                 destination,
-                 transaction_number,
-                 response_type,
-                 message_count,
-                 sub_device,
-                 param_id,
-                 data,
-                 length) {
+                unsigned int length)
+          : RDMCommand(source, destination, transaction_number, response_type,
+                       message_count, sub_device, param_id, data, length),
+            m_command_class(command_class) {
     }
 
     uint8_t ResponseType() const { return m_port_id; }
@@ -425,6 +425,8 @@ class RDMResponse: public RDMCommand {
                        bool unpack_param_data) const {
       printer->Print(this, summarize, unpack_param_data);
     }
+
+    RDMCommandClass CommandClass() const { return m_command_class; }
 
     // The maximum size of an ACK_OVERFLOW session that we'll buffer
     // 4k should be big enough for everyone ;)
@@ -440,10 +442,10 @@ class RDMResponse: public RDMCommand {
                                         rdm_response_code *response_code,
                                         const RDMRequest *request,
                                         uint8_t transaction_number);
-    static RDMResponse* InflateFromData(const string &data,
+    static RDMResponse* InflateFromData(const std::string &data,
                                         rdm_response_code *response_code,
                                         const RDMRequest *request = NULL);
-    static RDMResponse* InflateFromData(const string &data,
+    static RDMResponse* InflateFromData(const std::string &data,
                                         rdm_response_code *response_code,
                                         const RDMRequest *request,
                                         uint8_t transaction_number);
@@ -451,6 +453,9 @@ class RDMResponse: public RDMCommand {
     // Combine two responses into one.
     static RDMResponse* CombineResponses(const RDMResponse *response1,
                                          const RDMResponse *response2);
+
+ private:
+    RDMCommand::RDMCommandClass m_command_class;
 };
 
 
@@ -458,32 +463,27 @@ class RDMResponse: public RDMCommand {
  * @brief The base class for GET/SET responses.
  */
 class RDMGetSetResponse: public RDMResponse {
-  public:
+ public:
     RDMGetSetResponse(const UID &source,
                       const UID &destination,
                       uint8_t transaction_number,
                       uint8_t response_type,
                       uint8_t message_count,
                       uint16_t sub_device,
+                      RDMCommand::RDMCommandClass command_class,
                       uint16_t param_id,
                       const uint8_t *data,
-                      unsigned int length):
-      RDMResponse(source,
-                  destination,
-                  transaction_number,
-                  response_type,
-                  message_count,
-                  sub_device,
-                  param_id,
-                  data,
-                  length) {
+                      unsigned int length)
+        : RDMResponse(source, destination, transaction_number, response_type,
+                      message_count, sub_device, command_class, param_id, data,
+                      length) {
     }
 };
 
 
 template <RDMCommand::RDMCommandClass command_class>
 class BaseRDMResponse: public RDMGetSetResponse {
-  public:
+ public:
     BaseRDMResponse(const UID &source,
                     const UID &destination,
                     uint8_t transaction_number,
@@ -492,18 +492,11 @@ class BaseRDMResponse: public RDMGetSetResponse {
                     uint16_t sub_device,
                     uint16_t param_id,
                     const uint8_t *data,
-                    unsigned int length):
-      RDMGetSetResponse(source,
-                        destination,
-                        transaction_number,
-                        response_type,
-                        message_count,
-                        sub_device,
-                        param_id,
-                        data,
-                        length) {
+                    unsigned int length)
+        : RDMGetSetResponse(source, destination, transaction_number,
+                            response_type, message_count, sub_device,
+                            command_class, param_id, data, length) {
     }
-    RDMCommandClass CommandClass() const { return command_class; }
 };
 
 typedef BaseRDMResponse<RDMCommand::GET_COMMAND_RESPONSE> RDMGetResponse;
@@ -535,7 +528,7 @@ RDMResponse *GetResponseWithPid(const RDMRequest *request,
  * @brief An RDM request of type DISCOVER_COMMAND.
  */
 class RDMDiscoveryRequest: public RDMRequest {
-  public:
+ public:
     RDMDiscoveryRequest(const UID &source,
                         const UID &destination,
                         uint8_t transaction_number,
@@ -567,7 +560,7 @@ class RDMDiscoveryRequest: public RDMRequest {
 
     static RDMDiscoveryRequest* InflateFromData(const uint8_t *data,
                                                 unsigned int length);
-    static RDMDiscoveryRequest* InflateFromData(const string &data);
+    static RDMDiscoveryRequest* InflateFromData(const std::string &data);
 };
 
 
@@ -605,7 +598,7 @@ RDMDiscoveryRequest *NewUnMuteRequest(const UID &source,
  * @brief An RDM response of type DISCOVER_COMMAND
  */
 class RDMDiscoveryResponse: public RDMResponse {
-  public:
+ public:
     RDMDiscoveryResponse(const UID &source,
                          const UID &destination,
                          uint8_t transaction_number,
@@ -621,12 +614,11 @@ class RDMDiscoveryResponse: public RDMResponse {
                       port_id,
                       message_count,
                       sub_device,
+                      DISCOVER_COMMAND_RESPONSE,
                       param_id,
                       data,
                       length) {
     }
-
-    RDMCommandClass CommandClass() const { return DISCOVER_COMMAND_RESPONSE; }
 
     virtual void Print(CommandPrinter *printer,
                        bool summarize,
@@ -636,7 +628,7 @@ class RDMDiscoveryResponse: public RDMResponse {
 
     static RDMDiscoveryResponse* InflateFromData(const uint8_t *data,
                                                  unsigned int length);
-    static RDMDiscoveryResponse* InflateFromData(const string &data);
+    static RDMDiscoveryResponse* InflateFromData(const std::string &data);
 };
 /** @} */
 }  // namespace rdm

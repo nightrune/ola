@@ -31,12 +31,12 @@ namespace plugin {
 namespace pathport {
 
 class PathportDevice: public ola::Device {
-  public:
+ public:
     PathportDevice(class PathportPlugin *owner,
                    class Preferences *preferences,
                    class PluginAdaptor *plugin_adaptor);
 
-    string DeviceId() const { return "1"; }
+    std::string DeviceId() const { return "1"; }
     PathportNode *GetNode() const { return m_node; }
     bool SendArpReply();
 
@@ -46,12 +46,12 @@ class PathportDevice: public ola::Device {
     static const char K_NODE_IP_KEY[];
     static const char K_NODE_NAME_KEY[];
 
-  protected:
+ protected:
     bool StartHook();
     void PrePortStop();
     void PostPortStop();
 
-  private:
+ private:
     class Preferences *m_preferences;
     class PluginAdaptor *m_plugin_adaptor;
     PathportNode *m_node;

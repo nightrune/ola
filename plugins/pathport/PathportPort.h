@@ -31,15 +31,15 @@ namespace plugin {
 namespace pathport {
 
 class PathportPortHelper {
-  public:
+ public:
     PathportPortHelper() {}
-    string Description(const Universe *universe) const;
+    std::string Description(const Universe *universe) const;
     bool PreSetUniverse(Universe *new_universe);
 };
 
 
 class PathportInputPort: public BasicInputPort {
-  public:
+ public:
     PathportInputPort(PathportDevice *parent,
                      unsigned int id,
                      class PluginAdaptor *plugin_adaptor,
@@ -48,7 +48,9 @@ class PathportInputPort: public BasicInputPort {
       m_node(node) {}
     ~PathportInputPort() {}
 
-    string Description() const { return m_helper.Description(GetUniverse()); }
+    std::string Description() const {
+      return m_helper.Description(GetUniverse());
+    }
     const DmxBuffer &ReadDMX() const { return m_buffer; }
     bool PreSetUniverse(Universe *old_universe, Universe *new_universe) {
       return m_helper.PreSetUniverse(new_universe);
@@ -57,7 +59,7 @@ class PathportInputPort: public BasicInputPort {
 
     void PostSetUniverse(Universe *old_universe, Universe *new_universe);
 
-  private:
+ private:
     PathportPortHelper m_helper;
     PathportNode *m_node;
     DmxBuffer m_buffer;
@@ -65,7 +67,7 @@ class PathportInputPort: public BasicInputPort {
 
 
 class PathportOutputPort: public BasicOutputPort {
-  public:
+ public:
     PathportOutputPort(PathportDevice *parent,
                       unsigned int id,
                       PathportNode *node):
@@ -73,14 +75,16 @@ class PathportOutputPort: public BasicOutputPort {
       m_node(node) {}
     ~PathportOutputPort() {}
 
-    string Description() const { return m_helper.Description(GetUniverse()); }
+    std::string Description() const {
+      return m_helper.Description(GetUniverse());
+    }
     bool WriteDMX(const DmxBuffer &buffer, uint8_t priority);
     bool PreSetUniverse(Universe *old_universe, Universe *new_universe) {
       return m_helper.PreSetUniverse(new_universe);
       (void) old_universe;
     }
 
-  private:
+ private:
     PathportPortHelper m_helper;
     PathportNode *m_node;
 };

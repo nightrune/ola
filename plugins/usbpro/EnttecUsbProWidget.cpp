@@ -13,7 +13,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * EnttecUsbProWidget.h
+ * EnttecUsbProWidget.cpp
  * The Enttec USB Pro Widget
  * Copyright (C) 2010 Simon Newton
  */
@@ -49,6 +49,8 @@ using ola::rdm::RDMResponse;
 using ola::rdm::UID;
 using ola::rdm::UIDSet;
 using std::auto_ptr;
+using std::string;
+using std::vector;
 
 
 const uint16_t EnttecUsbProWidget::ENTTEC_ESTA_ID = 0x454E;
@@ -295,7 +297,7 @@ void EnttecPortImpl::RunIncrementalDiscovery(
 /**
  * Mute a responder
  * @param target the UID to mute
- * @param MuteDeviceCallback the callback to run once the mute request
+ * @param mute_complete the callback to run once the mute request
  * completes.
  */
 void EnttecPortImpl::MuteDevice(const ola::rdm::UID &target,
@@ -312,7 +314,7 @@ void EnttecPortImpl::MuteDevice(const ola::rdm::UID &target,
 
 /**
  * Unmute all responders
- * @param UnMuteDeviceCallback the callback to run once the unmute request
+ * @param unmute_complete the callback to run once the unmute request
  * completes.
  */
 void EnttecPortImpl::UnMuteAll(UnMuteDeviceCallback *unmute_complete) {
@@ -433,7 +435,7 @@ void EnttecPortImpl::HandleParameters(const uint8_t *data,
 
 
 /**
- * Handle an incomming frame.
+ * Handle an incoming frame.
  * @param data the incoming data buffer
  * @param length the length of the data buffer.
  *
@@ -441,8 +443,8 @@ void EnttecPortImpl::HandleParameters(const uint8_t *data,
  * The second byte is the start code
  * The remaining bytes are the actual data.
  */
-void EnttecPortImpl::HandleIncommingDataMessage(const uint8_t *data,
-                                                unsigned int length) {
+void EnttecPortImpl::HandleIncomingDataMessage(const uint8_t *data,
+                                               unsigned int length) {
   bool waiting_for_dub_response = (
       m_branch_callback != NULL || (
       (m_rdm_request_callback && IsDUBRequest(m_pending_request))));
@@ -459,7 +461,7 @@ void EnttecPortImpl::HandleIncommingDataMessage(const uint8_t *data,
   // Do we still get the timeout message or is this the only response?
   // I need to check with Nic.
   if (data[0]) {
-    OLA_WARN << "Incomming frame corrupted";
+    OLA_WARN << "Incoming frame corrupted";
     return;
   }
 
@@ -635,14 +637,12 @@ bool EnttecPortImpl::IsDUBRequest(const ola::rdm::RDMRequest *request) {
 /**
  * EnttecUsbProWidget Constructor
  */
-EnttecPort::EnttecPort(EnttecPortImpl *impl, unsigned int queue_size)
-      : m_impl(impl) {
-  m_controller = new ola::rdm::DiscoverableQueueingRDMController(m_impl,
-                                                                 queue_size);
-}
-
-EnttecPort::~EnttecPort() {
-  delete m_controller;
+EnttecPort::EnttecPort(EnttecPortImpl *impl, unsigned int queue_size,
+                       bool enable_rdm)
+    : m_impl(impl),
+      m_enable_rdm(enable_rdm),
+      m_controller(
+          new ola::rdm::DiscoverableQueueingRDMController(m_impl, queue_size)) {
 }
 
 bool EnttecPort::SendDMX(const DmxBuffer &buffer) {
@@ -670,6 +670,36 @@ bool EnttecPort::SetParameters(uint8_t break_time, uint8_t mab_time,
   return m_impl->SetParameters(break_time, mab_time, rate);
 }
 
+void EnttecPort::SendRDMRequest(const ola::rdm::RDMRequest *request,
+                                ola::rdm::RDMCallback *on_complete) {
+  if (m_enable_rdm) {
+    m_controller->SendRDMRequest(request, on_complete);
+  } else {
+    std::vector<std::string> packets;
+    on_complete->Run(ola::rdm::RDM_FAILED_TO_SEND, NULL, packets);
+    delete request;
+  }
+}
+
+void EnttecPort::RunFullDiscovery(ola::rdm::RDMDiscoveryCallback *callback) {
+  if (m_enable_rdm) {
+    m_controller->RunFullDiscovery(callback);
+  } else {
+    UIDSet uids;
+    callback->Run(uids);
+  }
+}
+
+void EnttecPort::RunIncrementalDiscovery(
+    ola::rdm::RDMDiscoveryCallback *callback) {
+  if (m_enable_rdm) {
+    m_controller->RunIncrementalDiscovery(callback);
+  } else {
+    UIDSet uids;
+    callback->Run(uids);
+  }
+}
+
 
 // EnttecUsbProWidgetImpl
 // ----------------------------------------------------------------------------
@@ -679,7 +709,7 @@ bool EnttecPort::SetParameters(uint8_t break_time, uint8_t mab_time,
  * implementation because we don't want to expose internal methods.
  */
 class EnttecUsbProWidgetImpl : public BaseUsbProWidget {
-  public:
+ public:
     EnttecUsbProWidgetImpl(
         ola::io::ConnectedDescriptor *descriptor,
         const EnttecUsbProWidget::EnttecUsbProWidgetOptions &options);
@@ -694,7 +724,7 @@ class EnttecUsbProWidgetImpl : public BaseUsbProWidget {
 
     bool SendCommand(uint8_t label, const uint8_t *data, unsigned int length);
 
-  private:
+ private:
     typedef vector<EnttecUsbProWidget::EnttecUsbProPortAssignmentCallback*>
       PortAssignmentCallbacks;
 
@@ -710,7 +740,8 @@ class EnttecUsbProWidgetImpl : public BaseUsbProWidget {
     void HandleLabel(EnttecPortImpl *port, const OperationLabels &ops,
                      uint8_t label, const uint8_t *data, unsigned int length);
     void HandlePortAssignment(const uint8_t *data, unsigned int length);
-    void AddPort(const OperationLabels &ops, unsigned int queue_size);
+    void AddPort(const OperationLabels &ops, unsigned int queue_size,
+                 bool enable_rdm);
     void EnableSecondPort();
 
     static const uint8_t PORT_ASSIGNMENT_LABEL = 141;
@@ -730,10 +761,12 @@ EnttecUsbProWidgetImpl::EnttecUsbProWidgetImpl(
       m_uid(options.esta_id ? options.esta_id :
                               EnttecUsbProWidget::ENTTEC_ESTA_ID,
             options.serial) {
-  AddPort(OperationLabels::Port1Operations(), options.queue_size);
+  AddPort(OperationLabels::Port1Operations(), options.queue_size,
+          options.enable_rdm);
 
   if (options.dual_ports) {
-    AddPort(OperationLabels::Port2Operations(), options.queue_size);
+    AddPort(OperationLabels::Port2Operations(), options.queue_size,
+            options.enable_rdm);
     EnableSecondPort();
   }
 }
@@ -824,7 +857,7 @@ void EnttecUsbProWidgetImpl::HandleLabel(EnttecPortImpl *port,
   } else if (ops.rdm_timeout == label) {
     port->HandleRDMTimeout(length);
   } else if (ops.recv_dmx == label) {
-    port->HandleIncommingDataMessage(data, length);
+    port->HandleIncomingDataMessage(data, length);
   } else if (ops.cos_dmx == label) {
     port->HandleDMXDiff(data, length);
   } else {
@@ -859,10 +892,11 @@ void EnttecUsbProWidgetImpl::HandlePortAssignment(const uint8_t *data,
  * Add a port to this widget with the given operations.
  */
 void EnttecUsbProWidgetImpl::AddPort(const OperationLabels &ops,
-                                     unsigned int queue_size) {
+                                     unsigned int queue_size,
+                                     bool enable_rdm) {
   EnttecPortImpl *impl = new EnttecPortImpl(ops, m_uid, m_send_cb.get());
   m_port_impls.push_back(impl);
-  EnttecPort *port = new EnttecPort(impl, queue_size);
+  EnttecPort *port = new EnttecPort(impl, queue_size, enable_rdm);
   m_ports.push_back(port);
 }
 

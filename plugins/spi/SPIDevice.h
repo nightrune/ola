@@ -21,41 +21,71 @@
 #ifndef PLUGINS_SPI_SPIDEVICE_H_
 #define PLUGINS_SPI_SPIDEVICE_H_
 
+#include <memory>
 #include <string>
+#include <vector>
+
 #include "olad/Device.h"
 #include "ola/io/SelectServer.h"
+#include "ola/rdm/UIDAllocator.h"
 #include "ola/rdm/UID.h"
+#include "plugins/spi/SPIBackend.h"
+#include "plugins/spi/SPIWriter.h"
 
 namespace ola {
 namespace plugin {
 namespace spi {
 
+
 class SPIDevice: public ola::Device {
-  public:
+ public:
     SPIDevice(class SPIPlugin *owner,
               class Preferences *preferences,
               class PluginAdaptor *plugin_adaptor,
-              const string &spi_device,
-              const ola::rdm::UID &uid);
+              const std::string &spi_device,
+              ola::rdm::UIDAllocator *uid_allocator);
 
-    string DeviceId() const;
+    std::string DeviceId() const;
 
-  protected:
+    bool AllowMultiPortPatching() const { return true; }
+
+ protected:
     bool StartHook();
     void PrePortStop();
 
-  private:
+ private:
+    typedef std::vector<class SPIOutputPort*> SPIPorts;
+
+    std::auto_ptr<SPIWriterInterface> m_writer;
+    std::auto_ptr<SPIBackendInterface> m_backend;
     class Preferences *m_preferences;
     class PluginAdaptor *m_plugin_adaptor;
-    class SPIOutputPort *m_port;
-    string m_spi_device_name;
+    SPIPorts m_spi_ports;
+    std::string m_spi_device_name;
 
-    string PersonalityKey() const;
-    string StartAddressKey() const;
-    string SPISpeedKey() const;
-    string PixelCountKey() const;
+    // Per device options
+    std::string SPIBackendKey() const;
+    std::string SPISpeedKey() const;
+    std::string SPICEKey() const;
+    std::string PortCountKey() const;
+    std::string SyncPortKey() const;
+    std::string GPIOPinKey() const;
+
+    // Per port options
+    std::string PersonalityKey(uint8_t port) const;
+    std::string PixelCountKey(uint8_t port) const;
+    std::string StartAddressKey(uint8_t port) const;
+    std::string GetPortKey(const std::string &suffix, uint8_t port) const;
+
+    void SetDefaults();
+    void PopulateHardwareBackendOptions(HardwareBackend::Options *options);
+    void PopulateSoftwareBackendOptions(SoftwareBackend::Options *options);
+    void PopulateWriterOptions(SPIWriter::Options *options);
 
     static const char SPI_DEVICE_NAME[];
+    static const char HARDWARE_BACKEND[];
+    static const char SOFTWARE_BACKEND[];
+    static const uint8_t MAX_GPIO_PIN = 25;
 };
 }  // namespace spi
 }  // namespace plugin

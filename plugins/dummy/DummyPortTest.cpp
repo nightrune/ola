@@ -14,12 +14,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * DummyPortTest.cpp
- * Test fixture for the E131PDU class
- * Copyright (C) 2005-2009 Simon Newton
+ * Test class for the dummy responders
+ * Copyright (C) 2005-2014 Simon Newton
  */
 
 #include <cppunit/extensions/HelperMacros.h>
 #include <string.h>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -48,12 +49,16 @@ using ola::rdm::RDMSetRequest;
 using ola::rdm::RDMSetResponse;
 using ola::rdm::UID;
 using ola::rdm::UIDSet;
+using ola::testing::ASSERT_DATA_EQUALS;
+using std::min;
+using std::string;
+using std::vector;
 
 class MockDummyPort: public DummyPort {
-  public:
-    MockDummyPort()
+ public:
+  MockDummyPort()
       : DummyPort(NULL, DummyPort::Options(), 0) {
-    }
+  }
 };
 
 
@@ -68,83 +73,82 @@ class DummyPortTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testIdentifyDevice);
   CPPUNIT_TEST(testParamDescription);
   CPPUNIT_TEST(testOlaManufacturerPidCodeVersion);
+  CPPUNIT_TEST(testSlotInfo);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
-    DummyPortTest():
-      TestFixture(),
-      m_expected_uid(0x7a70, 0xffffff00),
-      m_test_source(1, 2) {
-        ola::InitLogging(ola::OLA_LOG_INFO, ola::OLA_LOG_STDERR);
-    }
+ public:
+  DummyPortTest()
+      : TestFixture(),
+        m_expected_uid(0x7a70, 0xffffff00),
+        m_test_source(1, 2) {
+    ola::InitLogging(ola::OLA_LOG_INFO, ola::OLA_LOG_STDERR);
+  }
 
-    void setUp() {
-      m_expected_response = NULL;
-      m_got_uids = false;
-    }
-    void HandleRDMResponse(ola::rdm::rdm_response_code code,
-                           const RDMResponse *response,
-                           const vector<string> &packets);
-    void SetExpectedResponse(ola::rdm::rdm_response_code code,
-                             const RDMResponse *response);
-    void Verify() { OLA_ASSERT_FALSE(m_expected_response); }
+  void setUp() {
+    m_expected_response = NULL;
+    m_got_uids = false;
+  }
+  void HandleRDMResponse(ola::rdm::rdm_response_code code,
+                         const RDMResponse *response,
+                         const vector<string> &packets);
+  void SetExpectedResponse(ola::rdm::rdm_response_code code,
+                           const RDMResponse *response);
+  void Verify() { OLA_ASSERT_FALSE(m_expected_response); }
 
-    void testRDMDiscovery();
-    void testUnknownPid();
-    void testSupportedParams();
-    void testDeviceInfo();
-    void testSoftwareVersion();
-    void testDmxAddress();
-    void testIdentifyDevice();
-    void testParamDescription();
-    void testOlaManufacturerPidCodeVersion();
+  void testRDMDiscovery();
+  void testUnknownPid();
+  void testSupportedParams();
+  void testDeviceInfo();
+  void testSoftwareVersion();
+  void testDmxAddress();
+  void testIdentifyDevice();
+  void testParamDescription();
+  void testOlaManufacturerPidCodeVersion();
+  void testSlotInfo();
 
+ private:
+  UID m_expected_uid;
+  UID m_test_source;
+  MockDummyPort m_port;
+  ola::rdm::rdm_response_code m_expected_code;
+  const RDMResponse *m_expected_response;
+  bool m_got_uids;
 
-  private:
-    UID m_expected_uid;
-    UID m_test_source;
-    MockDummyPort m_port;
-    ola::rdm::rdm_response_code m_expected_code;
-    const RDMResponse *m_expected_response;
-    bool m_got_uids;
-
-    void VerifyUIDs(const UIDSet &uids);
-    void checkSubDeviceOutOfRange(uint16_t pid);
-    void checkSubDeviceOutOfRange(ola::rdm::rdm_pid pid) {
-        checkSubDeviceOutOfRange(static_cast<uint16_t>(pid));
-    };
-    void checkSubDeviceOutOfRange(ola::rdm::rdm_ola_manufacturer_pid pid) {
-        checkSubDeviceOutOfRange(static_cast<uint16_t>(pid));
-    };
-    void checkMalformedRequest(uint16_t pid,
-        ola::rdm::rdm_nack_reason expected_response =
-        ola::rdm::NR_FORMAT_ERROR);
-    void checkMalformedRequest(ola::rdm::rdm_pid pid,
-        ola::rdm::rdm_nack_reason expected_response =
-        ola::rdm::NR_FORMAT_ERROR) {
-            checkMalformedRequest(static_cast<uint16_t>(pid),
-                                  expected_response);
-        };
-    void checkMalformedRequest(ola::rdm::rdm_ola_manufacturer_pid pid,
-        ola::rdm::rdm_nack_reason expected_response =
-        ola::rdm::NR_FORMAT_ERROR) {
-            checkMalformedRequest(static_cast<uint16_t>(pid),
-                                  expected_response);
-        };
-    void checkSetRequest(uint16_t pid);
-    void checkSetRequest(ola::rdm::rdm_pid pid) {
-        checkSetRequest(static_cast<uint16_t>(pid));
-    };
-    void checkSetRequest(ola::rdm::rdm_ola_manufacturer_pid pid) {
-        checkSetRequest(static_cast<uint16_t>(pid));
-    };
-    void checkNoBroadcastResponse(uint16_t pid);
-    void checkNoBroadcastResponse(ola::rdm::rdm_pid pid) {
-        checkNoBroadcastResponse(static_cast<uint16_t>(pid));
-    };
-    void checkNoBroadcastResponse(ola::rdm::rdm_ola_manufacturer_pid pid) {
-        checkNoBroadcastResponse(static_cast<uint16_t>(pid));
-    };
+  void VerifyUIDs(const UIDSet &uids);
+  void checkSubDeviceOutOfRange(uint16_t pid);
+  void checkSubDeviceOutOfRange(ola::rdm::rdm_pid pid) {
+    checkSubDeviceOutOfRange(static_cast<uint16_t>(pid));
+  }
+  void checkSubDeviceOutOfRange(ola::rdm::rdm_ola_manufacturer_pid pid) {
+    checkSubDeviceOutOfRange(static_cast<uint16_t>(pid));
+  }
+  void checkMalformedRequest(uint16_t pid,
+                             ola::rdm::rdm_nack_reason expected_response =
+                             ola::rdm::NR_FORMAT_ERROR);
+  void checkMalformedRequest(ola::rdm::rdm_pid pid,
+                             ola::rdm::rdm_nack_reason expected_response =
+                             ola::rdm::NR_FORMAT_ERROR) {
+    checkMalformedRequest(static_cast<uint16_t>(pid), expected_response);
+  }
+  void checkMalformedRequest(ola::rdm::rdm_ola_manufacturer_pid pid,
+                             ola::rdm::rdm_nack_reason expected_response =
+                             ola::rdm::NR_FORMAT_ERROR) {
+    checkMalformedRequest(static_cast<uint16_t>(pid), expected_response);
+  }
+  void checkSetRequest(uint16_t pid);
+  void checkSetRequest(ola::rdm::rdm_pid pid) {
+    checkSetRequest(static_cast<uint16_t>(pid));
+  }
+  void checkSetRequest(ola::rdm::rdm_ola_manufacturer_pid pid) {
+    checkSetRequest(static_cast<uint16_t>(pid));
+  }
+  void checkNoBroadcastResponse(uint16_t pid);
+  void checkNoBroadcastResponse(ola::rdm::rdm_pid pid) {
+    checkNoBroadcastResponse(static_cast<uint16_t>(pid));
+  }
+  void checkNoBroadcastResponse(ola::rdm::rdm_ola_manufacturer_pid pid) {
+    checkNoBroadcastResponse(static_cast<uint16_t>(pid));
+  }
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(DummyPortTest);
@@ -154,10 +158,16 @@ void DummyPortTest::HandleRDMResponse(ola::rdm::rdm_response_code code,
                                       const ola::rdm::RDMResponse *response,
                                       const vector<string>&) {
   OLA_ASSERT_EQ(m_expected_code, code);
-  if (m_expected_response)
+  if (m_expected_response) {
+    ASSERT_DATA_EQUALS(__LINE__,
+                       m_expected_response->ParamData(),
+                       m_expected_response->ParamDataSize(),
+                       response->ParamData(),
+                       response->ParamDataSize());
     OLA_ASSERT(*m_expected_response == *response);
-  else
-    OLA_ASSERT_EQ(m_expected_response, response);
+  } else {
+    OLA_ASSERT_NULL(response);
+  }
   delete response;
   delete m_expected_response;
   m_expected_response = NULL;
@@ -202,14 +212,14 @@ void DummyPortTest::testUnknownPid() {
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 }
 
 
 /*
- * Check that the supported params command work
+ * Check that the supported params command works
  */
 void DummyPortTest::testSupportedParams() {
   RDMRequest *request = new RDMGetRequest(
@@ -231,23 +241,37 @@ void DummyPortTest::testSupportedParams() {
     ola::rdm::PID_FACTORY_DEFAULTS,
     ola::rdm::PID_DMX_PERSONALITY,
     ola::rdm::PID_DMX_PERSONALITY_DESCRIPTION,
+    ola::rdm::PID_SLOT_INFO,
+    ola::rdm::PID_SLOT_DESCRIPTION,
+    ola::rdm::PID_DEFAULT_SLOT_VALUE,
+    ola::rdm::PID_SENSOR_DEFINITION,
+    ola::rdm::PID_SENSOR_VALUE,
+    ola::rdm::PID_RECORD_SENSORS,
     ola::rdm::PID_LAMP_STRIKES,
     ola::rdm::PID_REAL_TIME_CLOCK,
-    ola::rdm::OLA_MANUFACTURER_PID_CODE_VERSION
+    ola::rdm::OLA_MANUFACTURER_PID_CODE_VERSION,
+    ola::rdm::PID_LIST_INTERFACES,
+    ola::rdm::PID_INTERFACE_LABEL,
+    ola::rdm::PID_INTERFACE_HARDWARE_ADDRESS_TYPE1,
+    ola::rdm::PID_IPV4_CURRENT_ADDRESS,
+    ola::rdm::PID_IPV4_DEFAULT_ROUTE,
+    ola::rdm::PID_DNS_NAME_SERVER,
+    ola::rdm::PID_DNS_HOSTNAME,
+    ola::rdm::PID_DNS_DOMAIN_NAME,
   };
 
   for (unsigned int i = 0; i < sizeof(supported_params) / 2; i++)
     supported_params[i] = HostToNetwork(supported_params[i]);
 
   RDMResponse *response = GetResponseFromData(
-    request,
-    reinterpret_cast<uint8_t*>(&supported_params),
-    sizeof(supported_params));
+      request,
+      reinterpret_cast<uint8_t*>(&supported_params),
+      sizeof(supported_params));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_SUPPORTED_PARAMETERS);
@@ -275,28 +299,29 @@ void DummyPortTest::testDeviceInfo() {
   ola::rdm::DeviceDescriptor device_descriptor;
   device_descriptor.protocol_version_high = 1;
   device_descriptor.protocol_version_low = 0;
-  device_descriptor.device_model = HostToNetwork(static_cast<uint16_t>(1));
+  device_descriptor.device_model = HostToNetwork(
+      static_cast<uint16_t>(ola::rdm::OLA_DUMMY_DEVICE_MODEL));
   device_descriptor.product_category = HostToNetwork(
       static_cast<uint16_t>(ola::rdm::PRODUCT_CATEGORY_OTHER));
-  device_descriptor.software_version = HostToNetwork(static_cast<uint32_t>(1));
+  device_descriptor.software_version = HostToNetwork(static_cast<uint32_t>(3));
   device_descriptor.dmx_footprint =
     HostToNetwork(static_cast<uint16_t>(5));
   device_descriptor.current_personality = 2;
-  device_descriptor.personaility_count = 4;
+  device_descriptor.personality_count = 4;
   device_descriptor.dmx_start_address =
     HostToNetwork(static_cast<uint16_t>(1));
   device_descriptor.sub_device_count = 0;
-  device_descriptor.sensor_count = 0;
+  device_descriptor.sensor_count = 3;
 
   RDMResponse *response = GetResponseFromData(
-    request,
-    reinterpret_cast<uint8_t*>(&device_descriptor),
-    sizeof(device_descriptor));
+      request,
+      reinterpret_cast<uint8_t*>(&device_descriptor),
+      sizeof(device_descriptor));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_DEVICE_INFO);
@@ -323,14 +348,14 @@ void DummyPortTest::testSoftwareVersion() {
 
   const string version = "Dummy Software Version";
   RDMResponse *response = GetResponseFromData(
-    request,
-    reinterpret_cast<const uint8_t*>(version.data()),
-    version.size());
+      request,
+      reinterpret_cast<const uint8_t*>(version.data()),
+      version.size());
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_SOFTWARE_VERSION_LABEL);
@@ -357,14 +382,14 @@ void DummyPortTest::testDmxAddress() {
 
   uint16_t dmx_address = HostToNetwork(static_cast<uint16_t>(1));
   RDMResponse *response = GetResponseFromData(
-    request,
-    reinterpret_cast<const uint8_t*>(&dmx_address),
-    sizeof(dmx_address));
+      request,
+      reinterpret_cast<const uint8_t*>(&dmx_address),
+      sizeof(dmx_address));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now attempt to set it
@@ -383,8 +408,8 @@ void DummyPortTest::testDmxAddress() {
   response = GetResponseFromData(request, NULL, 0);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now check it updated
@@ -401,14 +426,14 @@ void DummyPortTest::testDmxAddress() {
 
   dmx_address = HostToNetwork(static_cast<uint16_t>(99));
   response = GetResponseFromData(
-    request,
-    reinterpret_cast<const uint8_t*>(&dmx_address),
-    sizeof(dmx_address));
+      request,
+      reinterpret_cast<const uint8_t*>(&dmx_address),
+      sizeof(dmx_address));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // check that broadcasting changes the address
@@ -428,8 +453,8 @@ void DummyPortTest::testDmxAddress() {
   // no response expected
   SetExpectedResponse(ola::rdm::RDM_WAS_BROADCAST, NULL);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now check it updated
@@ -446,14 +471,14 @@ void DummyPortTest::testDmxAddress() {
 
   dmx_address = HostToNetwork(static_cast<uint16_t>(48));
   response = GetResponseFromData(
-    request,
-    reinterpret_cast<const uint8_t*>(&dmx_address),
-    sizeof(dmx_address));
+      request,
+      reinterpret_cast<const uint8_t*>(&dmx_address),
+      sizeof(dmx_address));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_DMX_START_ADDRESS);
@@ -479,14 +504,14 @@ void DummyPortTest::testIdentifyDevice() {
 
   uint8_t mode = 0;
   RDMResponse *response = GetResponseFromData(
-    request,
-    &mode,
-    sizeof(mode));
+      request,
+      &mode,
+      sizeof(mode));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now attempt to set it
@@ -505,8 +530,8 @@ void DummyPortTest::testIdentifyDevice() {
   response = GetResponseFromData(request, NULL, 0);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now check it updated
@@ -523,14 +548,14 @@ void DummyPortTest::testIdentifyDevice() {
 
   mode = 1;
   response = GetResponseFromData(
-    request,
-    &mode,
-    sizeof(mode));
+      request,
+      &mode,
+      sizeof(mode));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // check that broadcasting changes the identify
@@ -550,8 +575,8 @@ void DummyPortTest::testIdentifyDevice() {
   // no response expected
   SetExpectedResponse(ola::rdm::RDM_WAS_BROADCAST, NULL);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // now check it updated
@@ -568,14 +593,14 @@ void DummyPortTest::testIdentifyDevice() {
 
   mode = 0;
   response = GetResponseFromData(
-    request,
-    &mode,
-    sizeof(mode));
+      request,
+      &mode,
+      sizeof(mode));
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_IDENTIFY_DEVICE);
@@ -632,18 +657,24 @@ void DummyPortTest::testParamDescription() {
   param_description.min_value = 0;
   param_description.default_value = 0;
   param_description.max_value = 0;
-  strncpy(param_description.description,
-          "Code Version",
-          ola::rdm::MAX_RDM_STRING_LENGTH);
+
+  const string description("Code Version");
+  size_t str_len = std::min(sizeof(param_description.description),
+                            description.size());
+  strncpy(param_description.description, description.c_str(), str_len);
+
+  unsigned int param_data_length = (
+      sizeof(param_description) - sizeof(param_description.description) +
+      str_len);
+
   RDMResponse *response = GetResponseFromData(
       request,
-      reinterpret_cast<uint8_t*>(&param_description),
-      sizeof(param_description));
+      reinterpret_cast<uint8_t*>(&param_description), param_data_length);
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   // Alternative PID
@@ -663,8 +694,8 @@ void DummyPortTest::testParamDescription() {
   response = NackWithReason(request, ola::rdm::NR_DATA_OUT_OF_RANGE);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   checkSubDeviceOutOfRange(ola::rdm::PID_PARAMETER_DESCRIPTION);
@@ -693,9 +724,9 @@ void DummyPortTest::testOlaManufacturerPidCodeVersion() {
 
   const string code_version = VERSION;
   RDMResponse *response = GetResponseFromData(
-    request,
-    reinterpret_cast<const uint8_t*>(code_version.data()),
-    code_version.size());
+      request,
+      reinterpret_cast<const uint8_t*>(code_version.data()),
+      code_version.size());
 
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
@@ -710,9 +741,69 @@ void DummyPortTest::testOlaManufacturerPidCodeVersion() {
 }
 
 
+/*
+ * Check that the slot info command works
+ */
+void DummyPortTest::testSlotInfo() {
+  RDMRequest *request = new RDMGetRequest(
+      m_test_source,
+      m_expected_uid,
+      0,  // transaction #
+      1,  // port id
+      0,  // message count
+      0,  // sub device
+      ola::rdm::PID_SLOT_INFO,  // param id
+      NULL,  // data
+      0);  // data length
+
+  struct slot_infos_s {
+    struct {
+      uint16_t offset;
+      uint8_t type;
+      uint16_t label;
+    } __attribute__((packed)) slot_info_s[5];
+  } __attribute__((packed));
+
+  slot_infos_s slot_infos = {
+      {
+        {HostToNetwork(static_cast<uint16_t>(0)),
+         static_cast<uint8_t>(ola::rdm::ST_PRIMARY),
+         HostToNetwork(static_cast<uint16_t>(ola::rdm::SD_INTENSITY))},
+        {HostToNetwork(static_cast<uint16_t>(1)),
+         static_cast<uint8_t>(ola::rdm::ST_SEC_FINE),
+         HostToNetwork(static_cast<uint16_t>(0))},
+        {HostToNetwork(static_cast<uint16_t>(2)),
+         static_cast<uint8_t>(ola::rdm::ST_PRIMARY),
+         HostToNetwork(static_cast<uint16_t>(ola::rdm::SD_PAN))},
+        {HostToNetwork(static_cast<uint16_t>(3)),
+         static_cast<uint8_t>(ola::rdm::ST_PRIMARY),
+         HostToNetwork(static_cast<uint16_t>(ola::rdm::SD_TILT))},
+        {HostToNetwork(static_cast<uint16_t>(4)),
+         static_cast<uint8_t>(ola::rdm::ST_PRIMARY),
+         HostToNetwork(static_cast<uint16_t>(ola::rdm::SD_UNDEFINED))}
+      }};
+
+  RDMResponse *response = GetResponseFromData(
+      request,
+      reinterpret_cast<uint8_t*>(&slot_infos),
+      sizeof(slot_infos));
+
+  SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
+  m_port.SendRDMRequest(
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+  Verify();
+
+  checkSubDeviceOutOfRange(ola::rdm::PID_SLOT_INFO);
+  checkMalformedRequest(ola::rdm::PID_SLOT_INFO);
+  checkSetRequest(ola::rdm::PID_SLOT_INFO);
+  checkNoBroadcastResponse(ola::rdm::PID_SLOT_INFO);
+}
+
+
 void DummyPortTest::VerifyUIDs(const UIDSet &uids) {
   UIDSet expected_uids;
-  for (unsigned int i = 0; i < 4; i++) {
+  for (unsigned int i = 0; i < 6; i++) {
     UID uid(OPEN_LIGHTING_ESTA_CODE, 0xffffff00 + i);
     expected_uids.AddUID(uid);
   }
@@ -739,8 +830,8 @@ void DummyPortTest::checkSubDeviceOutOfRange(uint16_t pid) {
       ola::rdm::NR_SUB_DEVICE_OUT_OF_RANGE);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 }
 
@@ -765,8 +856,8 @@ void DummyPortTest::checkMalformedRequest(uint16_t pid,
       expected_response);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 }
 
@@ -789,8 +880,8 @@ void DummyPortTest::checkSetRequest(uint16_t pid) {
       ola::rdm::NR_UNSUPPORTED_COMMAND_CLASS);
   SetExpectedResponse(ola::rdm::RDM_COMPLETED_OK, response);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 }
 
@@ -812,8 +903,8 @@ void DummyPortTest::checkNoBroadcastResponse(uint16_t pid) {
   // we don't expect any response to this
   SetExpectedResponse(ola::rdm::RDM_WAS_BROADCAST, NULL);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 
   broadcast_uid = UID::VendorcastAddress(OPEN_LIGHTING_ESTA_CODE);
@@ -831,8 +922,8 @@ void DummyPortTest::checkNoBroadcastResponse(uint16_t pid) {
   // we don't expect any response to this
   SetExpectedResponse(ola::rdm::RDM_WAS_BROADCAST, NULL);
   m_port.SendRDMRequest(
-        request,
-        NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
+      request,
+      NewSingleCallback(this, &DummyPortTest::HandleRDMResponse));
   Verify();
 }
 }  // namespace dummy

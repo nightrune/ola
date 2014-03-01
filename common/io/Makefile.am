@@ -1,15 +1,29 @@
 include $(top_srcdir)/common.mk
 
+# LIBRARIES
+##################################################
 noinst_LTLIBRARIES = libolaio.la
 libolaio_la_SOURCES = Descriptor.cpp \
                       IOQueue.cpp \
                       IOStack.cpp \
+                      IOUtils.cpp \
+                      PollerInterface.cpp \
+                      PollerInterface.h \
+                      SelectPoller.cpp \
+                      SelectPoller.h \
                       SelectServer.cpp \
-                      StdinHandler.cpp
+                      Serial.cpp \
+                      StdinHandler.cpp \
+                      TimeoutManager.cpp \
+                      TimeoutManager.h
 
+# TESTS
+##################################################
 if BUILD_TESTS
 TESTS = DescriptorTester IOQueueTester \
-        IOStackTester SelectServerTester StreamTester
+        IOStackTester MemoryBlockTester \
+        SelectServerTester StreamTester \
+        TimeoutManagerTester
 endif
 check_PROGRAMS = $(TESTS)
 
@@ -28,10 +42,18 @@ DescriptorTester_SOURCES = DescriptorTest.cpp
 DescriptorTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
 DescriptorTester_LDADD = $(COMMON_TEST_LDADD)
 
+MemoryBlockTester_SOURCES = MemoryBlockTest.cpp
+MemoryBlockTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
+MemoryBlockTester_LDADD = $(COMMON_TEST_LDADD)
+
 SelectServerTester_SOURCES = SelectServerTest.cpp \
                              SelectServerThreadTest.cpp
 SelectServerTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
 SelectServerTester_LDADD = $(COMMON_TEST_LDADD)
+
+TimeoutManagerTester_SOURCES = TimeoutManagerTest.cpp
+TimeoutManagerTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
+TimeoutManagerTester_LDADD = $(COMMON_TEST_LDADD)
 
 StreamTester_SOURCES = InputStreamTest.cpp \
                        OutputStreamTest.cpp

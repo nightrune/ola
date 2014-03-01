@@ -36,6 +36,7 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
+using ola::acn::CID;
 using ola::network::IPV4Address;
 using ola::network::IPV4SocketAddress;
 
@@ -45,7 +46,7 @@ class RootSenderTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testRootSenderWithCustomCID);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     RootSenderTest(): TestFixture(), m_ss(NULL) {}
     void testRootSender();
     void testRootSenderWithCustomCID();
@@ -54,7 +55,7 @@ class RootSenderTest: public CppUnit::TestFixture {
     void Stop();
     void FatalStop() { OLA_ASSERT(false); }
 
-  private:
+ private:
     void testRootSenderWithCIDs(const CID &root_cid, const CID &send_cid);
     ola::io::SelectServer *m_ss;
     static const int ABORT_TIMEOUT_IN_MS = 1000;

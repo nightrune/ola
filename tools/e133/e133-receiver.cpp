@@ -48,7 +48,11 @@
 
 #ifdef USE_SPI
 #include "plugins/spi/SPIBackend.h"
-using ola::plugin::spi::SPIBackend;
+#include "plugins/spi/SPIOutput.h"
+#include "plugins/spi/SPIWriter.h"
+using ola::plugin::spi::SoftwareBackend;
+using ola::plugin::spi::SPIOutput;
+using ola::plugin::spi::SPIWriter;
 DEFINE_string(spi_device, "", "Path to the SPI device to use.");
 #endif
 
@@ -91,8 +95,8 @@ void HandleTriDMX(DmxBuffer *buffer, DmxTriWidget *widget) {
 
 
 #ifdef USE_SPI
-void HandleSpiDMX(DmxBuffer *buffer, SPIBackend *backend) {
-  backend->WriteDMX(*buffer, 0);
+void HandleSpiDMX(DmxBuffer *buffer, SPIOutput *output) {
+  output->WriteDMX(*buffer);
 }
 #endif
 
@@ -101,11 +105,7 @@ void HandleSpiDMX(DmxBuffer *buffer, SPIBackend *backend) {
  * Startup a node
  */
 int main(int argc, char *argv[]) {
-  ola::SetHelpString(
-      "[options]",
-      "Run a very simple E1.33 Responder.");
-  ola::ParseFlags(&argc, argv);
-  ola::InitLoggingFromFlags();
+  ola::AppInit(&argc, argv, "[options]", "Run a very simple E1.33 Responder.");
 
   auto_ptr<UID> uid(UID::FromString(FLAGS_uid));
   if (!uid.get()) {
@@ -202,7 +202,9 @@ int main(int argc, char *argv[]) {
   // uber hack for now.
   // TODO(simon): fix this
 #ifdef USE_SPI
-  auto_ptr<SPIBackend> spi_backend;
+  auto_ptr<SPIWriter> spi_writer;
+  auto_ptr<SoftwareBackend> spi_backend;
+  auto_ptr<SPIOutput> spi_output;
   DmxBuffer spi_buffer;
 
   if (!FLAGS_spi_device.str().empty()) {
@@ -212,21 +214,27 @@ int main(int argc, char *argv[]) {
       exit(ola::EXIT_USAGE);
     }
 
-    spi_backend.reset(
-        new SPIBackend(FLAGS_spi_device, *spi_uid, SPIBackend::Options()));
+    spi_writer.reset(
+        new SPIWriter(FLAGS_spi_device, SPIWriter::Options(), NULL));
+
+    SoftwareBackend::Options options;
+    spi_backend.reset(new SoftwareBackend(options, spi_writer.get(), NULL));
     if (!spi_backend->Init()) {
       OLA_WARN << "Failed to init SPI backend";
       exit(ola::EXIT_USAGE);
     }
+
+    spi_output.reset(
+        new SPIOutput(*spi_uid, spi_backend.get(), SPIOutput::Options(0)));
     E133Endpoint::EndpointProperties properties;
     properties.is_physical = true;
-    endpoints.push_back(new E133Endpoint(spi_backend.get(), properties));
+    endpoints.push_back(new E133Endpoint(spi_output.get(), properties));
 
     if (e131_node.get()) {
       // Danger!
       e131_node->SetHandler(
           1, &spi_buffer, &unused_priority,
-          NewCallback(&HandleSpiDMX, &spi_buffer, spi_backend.get()));
+          NewCallback(&HandleSpiDMX, &spi_buffer, spi_output.get()));
     }
   }
 #endif

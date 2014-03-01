@@ -30,6 +30,7 @@ import sys
 from google.protobuf import text_format
 from ola import PidStoreLocation
 from ola import Pids_pb2
+from ola.MACAddress import MACAddress
 from ola.UID import UID
 
 
@@ -377,7 +378,10 @@ class IntAtom(FixedSizeAtom):
 
 
   def _AccountForMultiplier(self, value):
-    return value * (10 ** self._multiplier)
+    new_value = value * (10 ** self._multiplier)
+    if self._multiplier < 0:
+      new_value = round(new_value, abs(self._multiplier))
+    return new_value
 
 
 class Int8(IntAtom):
@@ -416,14 +420,57 @@ class UInt32(IntAtom):
     super(UInt32, self).__init__(name, 'I', 0xffffffff, **kwargs)
 
 
+#TODO(Peter): pretty print this
 class IPV4(IntAtom):
   """A four-byte IPV4 address."""
   def __init__(self, name, **kwargs):
     super(IPV4, self).__init__(name, 'I', 0xffffffff, **kwargs)
 
 
+class MACAtom(FixedSizeAtom):
+  """A MAC address."""
+  def __init__(self, name, **kwargs):
+    super(MACAtom, self).__init__(name, 'BBBBBB')
+
+  def Unpack(self, data):
+    format_string = self._FormatString()
+    try:
+      values = struct.unpack(format_string, data)
+    except struct.error:
+      raise UnpackException(e)
+    return MACAddress(bytearray([values[0],
+                                 values[1],
+                                 values[2],
+                                 values[3],
+                                 values[4],
+                                 values[5]]))
+
+  def Pack(self, args):
+    mac = None
+    if isinstance(args[0], MACAddress):
+      mac = args[0]
+    else:
+      mac = MACAddress.FromString(args[0])
+
+    if mac is None:
+      raise ArgsValidationError("Invalid MAC Address: %s" % e)
+
+    format_string = self._FormatString()
+    try:
+      data = struct.pack(format_string,
+                         mac.mac_address[0],
+                         mac.mac_address[1],
+                         mac.mac_address[2],
+                         mac.mac_address[3],
+                         mac.mac_address[4],
+                         mac.mac_address[5])
+    except struct.error, e:
+      raise ArgsValidationError("Can't pack data: %s" % e)
+    return data, 1
+
+
 class UIDAtom(FixedSizeAtom):
-  """A four-byte IPV4 address."""
+  """A UID."""
   def __init__(self, name, **kwargs):
     super(UIDAtom, self).__init__(name, 'HI')
 
@@ -777,7 +824,7 @@ def SubDeviceValidator(args):
   return True
 
 
-def NonBroadcastSubDeviceValiator(args):
+def NonBroadcastSubDeviceValidator(args):
   """Ensure the sub device is in the range 0 - 512."""
   sub_device = args.get('sub_device')
   if (sub_device is None or sub_device > MAX_VALID_SUB_DEVICE):
@@ -1046,6 +1093,8 @@ class PidStore(object):
       return UInt32(field_name, **args);
     elif field.type == Pids_pb2.IPV4:
       return IPV4(field_name, **args);
+    elif field.type == Pids_pb2.MAC:
+      return MACAtom(field_name, **args);
     elif field.type == Pids_pb2.UID:
       return UIDAtom(field_name, **args);
     elif field.type == Pids_pb2.GROUP:
@@ -1065,7 +1114,7 @@ class PidStore(object):
     elif range == Pids_pb2.ROOT_OR_ALL_SUBDEVICE:
       return SubDeviceValidator
     elif range == Pids_pb2.ROOT_OR_SUBDEVICE:
-      return NonBroadcastSubDeviceValiator
+      return NonBroadcastSubDeviceValidator
     elif range == Pids_pb2.ONLY_SUBDEVICES:
       return SpecificSubDeviceValidator
 
@@ -1079,6 +1128,7 @@ def GetStore(location = None, only_files = ()):
   Args:
     location: The location to load the store from. If not specified it uses the
     location defined in PidStoreLocation.py
+    only_files: Load a subset of the files in the location.
 
   Returns:
     An instance of PidStore.

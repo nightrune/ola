@@ -25,14 +25,16 @@
 #include <set>
 #include <string>
 #include <vector>
+
 #include "ola/Clock.h"
+#include "ola/base/Macro.h"
 
 namespace ola {
 
 class Universe;
 
 class UniverseStore {
-  public:
+ public:
     UniverseStore(class Preferences *preferences, class ExportMap *export_map);
     ~UniverseStore();
 
@@ -46,7 +48,7 @@ class UniverseStore {
     void AddUniverseGarbageCollection(Universe *universe);
     void GarbageCollectUniverses();
 
-  private:
+ private:
     typedef std::map<unsigned int, Universe*> universe_map;
 
     Preferences *m_preferences;
@@ -57,12 +59,12 @@ class UniverseStore {
                                                // able to delete
     Clock m_clock;
 
-    explicit UniverseStore(const ola::UniverseStore&);
-    UniverseStore& operator=(const UniverseStore&);
     bool RestoreUniverseSettings(Universe *universe) const;
     bool SaveUniverseSettings(Universe *universe) const;
 
     static const unsigned int MINIMUM_RDM_DISCOVERY_INTERVAL;
+
+    DISALLOW_COPY_AND_ASSIGN(UniverseStore);
 };
 }  // namespace ola
 #endif  // OLAD_UNIVERSESTORE_H_

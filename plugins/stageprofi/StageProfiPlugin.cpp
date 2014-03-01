@@ -33,7 +33,9 @@ namespace ola {
 namespace plugin {
 namespace stageprofi {
 
+using ola::io::ConnectedDescriptor;
 using std::string;
+using std::vector;
 
 const char StageProfiPlugin::STAGEPROFI_DEVICE_PATH[] = "/dev/ttyUSB0";
 const char StageProfiPlugin::STAGEPROFI_DEVICE_NAME[] = "StageProfi Device";
@@ -67,7 +69,7 @@ bool StageProfiPlugin::StartHook() {
 
     m_plugin_adaptor->AddReadDescriptor(device->GetSocket());
     m_plugin_adaptor->RegisterDevice(device);
-    m_devices.insert(m_devices.end(), device);
+    m_devices.push_back(device);
   }
   return true;
 }

@@ -36,10 +36,12 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
+using ola::acn::CID;
 using ola::io::IOQueue;
 using ola::io::IOStack;
 using ola::network::IPV4SocketAddress;
 using std::auto_ptr;
+using std::string;
 
 class TCPTransportTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(TCPTransportTest);
@@ -51,7 +53,7 @@ class TCPTransportTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testSinglePDUBlock);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     TCPTransportTest(): TestFixture(), m_ss(NULL) {}
     void testSinglePDU();
     void testShortPreamble();
@@ -68,7 +70,7 @@ class TCPTransportTest: public CppUnit::TestFixture {
     void PDUReceived() { m_pdus_received++; }
     void Receive();
 
-  private:
+ private:
     unsigned int m_pdus_received;
     bool m_stream_ok;
     ola::network::IPV4SocketAddress m_localhost;
@@ -77,7 +79,7 @@ class TCPTransportTest: public CppUnit::TestFixture {
     CID m_cid;
     auto_ptr<Callback0<void> > m_rx_callback;
     auto_ptr<MockInflator> m_inflator;
-    auto_ptr<IncommingStreamTransport> m_transport;
+    auto_ptr<IncomingStreamTransport> m_transport;
 
     void SendEmptyPDUBLock(unsigned int line);
     void SendPDU(unsigned int line);
@@ -103,7 +105,7 @@ void TCPTransportTest::setUp() {
 
   // transport to test
   m_transport.reset(
-      new IncommingStreamTransport(m_inflator.get(), &m_loopback, m_localhost));
+      new IncomingStreamTransport(m_inflator.get(), &m_loopback, m_localhost));
 
   // SelectServer
   m_ss.reset(new ola::io::SelectServer());

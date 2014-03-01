@@ -31,12 +31,14 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
+using ola::acn::CID;
+
 class RootInflatorTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(RootInflatorTest);
   CPPUNIT_TEST(testInflatePDU);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testInflatePDU();
 };
 

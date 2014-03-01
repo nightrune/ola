@@ -5,6 +5,9 @@
  * @namespace ola::acn
  * @brief ACN related code.
  *
+ * @namespace ola::client
+ * @brief OLA C++ API
+ *
  * @namespace ola::dmx
  * @brief DMX512 related code.
  *
@@ -45,5 +48,5 @@
  * @brief Timecode
  *
  * @namespace ola::web
- * @brief Classes to build JSON.
+ * @brief Classes to deal with web services.
  */

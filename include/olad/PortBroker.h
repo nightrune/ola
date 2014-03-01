@@ -24,6 +24,7 @@
 #ifndef INCLUDE_OLAD_PORTBROKER_H_
 #define INCLUDE_OLAD_PORTBROKER_H_
 
+#include <ola/base/Macro.h>
 #include <ola/rdm/RDMCommand.h>
 #include <ola/rdm/RDMControllerInterface.h>
 #include <ola/Callback.h>
@@ -37,7 +38,7 @@
 namespace ola {
 
 class PortBrokerInterface {
-  public:
+ public:
     PortBrokerInterface() {}
     virtual ~PortBrokerInterface() {}
 
@@ -50,7 +51,7 @@ class PortBrokerInterface {
 
 
 class PortBroker: public PortBrokerInterface {
-  public:
+ public:
     PortBroker() {}
     ~PortBroker() {}
 
@@ -62,11 +63,8 @@ class PortBroker: public PortBrokerInterface {
                         const ola::rdm::RDMRequest *request,
                         ola::rdm::RDMCallback *callback);
 
-  private:
-    PortBroker(const PortBroker&);
-    PortBroker& operator=(const PortBroker&);
-
-    typedef std::pair<string, const Port*> port_key;
+ private:
+    typedef std::pair<std::string, const Port*> port_key;
 
     void RequestComplete(port_key key,
                          ola::rdm::RDMCallback *callback,
@@ -75,6 +73,8 @@ class PortBroker: public PortBrokerInterface {
                          const std::vector<std::string> &packets);
 
     std::set<port_key> m_ports;
+
+    DISALLOW_COPY_AND_ASSIGN(PortBroker);
 };
 }  // namespace ola
 #endif  // INCLUDE_OLAD_PORTBROKER_H_

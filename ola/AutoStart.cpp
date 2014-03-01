@@ -31,6 +31,7 @@
 namespace ola {
 namespace client {
 
+using ola::network::TCPSocket;
 
 /*
  * Open a connection to the server.
@@ -57,9 +58,9 @@ TCPSocket *ConnectToServer(unsigned short port) {
       _exit(0);
     }
 
-    // Try to start the server, we pass -f (fork into background) and -s (log
-    // to syslog).
-    execlp("olad", "olad", "-f", "-s", NULL);
+    // Try to start the server, we pass --daemon (fork into background) and
+    // --syslog (log to syslog).
+    execlp("olad", "olad", "--daemon", "--syslog", NULL);
     OLA_WARN << "Failed to exec: " << strerror(errno);
     _exit(1);
   }

@@ -27,6 +27,7 @@
 #include <ola/Callback.h>
 #include <ola/Logging.h>
 #include <ola/base/Flags.h>
+#include <ola/base/Init.h>
 #include <ola/base/SysExits.h>
 #include <ola/acn/ACNPort.h>
 #include <ola/acn/ACNVectors.h>
@@ -62,7 +63,7 @@
 DEFINE_s_uint16(endpoint, e, 0, "The endpoint to use");
 DEFINE_s_string(target, t, "", "List of IPs to connect to, overrides SLP");
 DEFINE_string(listen_ip, "", "The IP address to listen on");
-DEFINE_s_string(pid_location, p, PID_DATA_DIR,
+DEFINE_s_string(pid_location, p, "",
                 "The directory to read PID definitiions from");
 DEFINE_s_bool(set, s, false, "Perform a SET (default is GET)");
 DEFINE_bool(list_pids, false, "Display a list of pids");
@@ -107,7 +108,7 @@ void DisplayPIDsAndExit(uint16_t manufacturer_id,
  * A very simple E1.33 Controller
  */
 class SimpleE133Controller {
-  public:
+ public:
     struct Options {
       IPV4Address controller_ip;
       bool use_slp;
@@ -139,7 +140,7 @@ class SimpleE133Controller {
                         const uint8_t *data,
                         unsigned int data_length);
 
-  private:
+ private:
     const IPV4Address m_controller_ip;
     ola::io::SelectServer m_ss;
 
@@ -474,9 +475,7 @@ void SimpleE133Controller::HandleStatusMessage(
  * Startup a node
  */
 int main(int argc, char *argv[]) {
-  ola::SetHelpString("[options]", "E1.33 Controller.");
-  ola::ParseFlags(&argc, argv);
-  ola::InitLoggingFromFlags();
+  ola::AppInit(&argc, argv, "[options]", "E1.33 Controller.");
 
   PidStoreHelper pid_helper(FLAGS_pid_location.str());
 

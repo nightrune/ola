@@ -13,9 +13,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * InterfacePicker.cpp
+ * PosixInterfacePicker.cpp
  * Chooses an interface to listen on
- * Copyright (C) 2005-2010 Simon Newton
+ * Copyright (C) 2005-2014 Simon Newton
  */
 
 #if HAVE_CONFIG_H
@@ -49,6 +49,7 @@
 #include "common/network/PosixInterfacePicker.h"
 #include "ola/Logging.h"
 #include "ola/network/IPV4Address.h"
+#include "ola/network/MACAddress.h"
 #include "ola/network/NetworkUtils.h"
 #include "ola/network/SocketCloser.h"
 
@@ -152,9 +153,12 @@ vector<Interface> PosixInterfacePicker::GetInterfaces(
       }
     }
 
-    if (interface.name == last_dl_iface_name && hwaddr) {
-      memcpy(interface.hw_address, hwaddr,
-             std::min(hwlen, (uint8_t) MAC_LENGTH));
+    if ((interface.name == last_dl_iface_name) && hwaddr) {
+      if (hwlen != MACAddress::LENGTH) {
+        OLA_WARN << "hwlen was not expected length; got " <<
+        static_cast<int>(hwlen) << ", expecting " << MACAddress::LENGTH;
+      }
+      interface.hw_address = MACAddress(reinterpret_cast<uint8_t*>(hwaddr));
     }
     struct sockaddr_in *sin = (struct sockaddr_in *) &iface->ifr_addr;
     interface.ip_address = IPV4Address(sin->sin_addr);
@@ -185,20 +189,34 @@ vector<Interface> PosixInterfacePicker::GetInterfaces(
 #ifdef SIOCGIFHWADDR
     if (ifrcopy.ifr_flags & SIOCGIFHWADDR) {
       if (ioctl(sd, SIOCGIFHWADDR, &ifrcopy) < 0) {
-        OLA_WARN << "ioctl error" << strerror(errno);
+        OLA_WARN << "ioctl error " << strerror(errno);
       } else {
-        memcpy(interface.hw_address, ifrcopy.ifr_hwaddr.sa_data, MAC_LENGTH);
+        interface.type = ifrcopy.ifr_hwaddr.sa_family;
+        // TODO(Peter): We probably shouldn't do this if it's not ARPHRD_ETHER
+        interface.hw_address = MACAddress(
+            reinterpret_cast<uint8_t*>(ifrcopy.ifr_hwaddr.sa_data));
       }
     }
 #endif
 
-    /* ok, if that all failed we should prob try and use sysctl to work out the bcast
-     * and hware addresses
-     * i'll leave that for another day
+    // fetch index
+#ifdef SIOCGIFINDEX
+    if (ifrcopy.ifr_flags & SIOCGIFINDEX) {
+      if (ioctl(sd, SIOCGIFINDEX, &ifrcopy) < 0) {
+        OLA_WARN << "ioctl error " << strerror(errno);
+      } else {
+        interface.index = ifrcopy.ifr_ifindex;
+      }
+    }
+#endif
+
+    /* ok, if that all failed we should prob try and use sysctl to work out the
+     * broadcast and hardware addresses
+     * I'll leave that for another day
      */
     OLA_DEBUG << "Found: " << interface.name << ", " <<
       interface.ip_address << ", " <<
-      HardwareAddressToString(interface.hw_address);
+      interface.hw_address;
     interfaces.push_back(interface);
   }
   delete[] buffer;
@@ -213,27 +231,7 @@ vector<Interface> PosixInterfacePicker::GetInterfaces(
  */
 unsigned int PosixInterfacePicker::GetIfReqSize(const char *data) const {
   const struct ifreq *iface = (struct ifreq*) data;
-
-#ifdef HAVE_SOCKADDR_SA_LEN
-  unsigned int socket_len = iface->ifr_addr.sa_len;
-#else
-  unsigned int socket_len = sizeof(struct sockaddr);
-  switch (iface->ifr_addr.sa_family) {
-    case AF_INET:
-      socket_len = sizeof(struct sockaddr_in);
-      break;
-#ifdef IPV6
-    case AF_INET6:
-      socket_len = sizeof(struct sockaddr_in6);
-      break;
-#endif
-#ifdef HAVE_SOCKADDR_DL_STRUCT
-    case AF_LINK:
-      socket_len = sizeof(struct sockaddr_dl);
-      break;
-#endif
-  }
-#endif
+  unsigned int socket_len = SockAddrLen(iface->ifr_addr);
 
   // We can't assume sizeof(ifreq) = IFNAMSIZ + sizeof(sockaddr), this isn't
   // the case on some 64bit linux systems.

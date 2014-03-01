@@ -18,18 +18,19 @@
  * Copyright (C) 2005-2009 Simon Newton
  */
 
-#include <google/protobuf/stubs/common.h>
 #include <map>
 #include <utility>
 #include "common/protocol/Ola.pb.h"
+#include "common/protocol/OlaService.pb.h"
+#include "ola/Callback.h"
 #include "ola/Logging.h"
 #include "ola/stl/STLUtils.h"
 #include "olad/Client.h"
 
 namespace ola {
 
-using google::protobuf::NewCallback;
-using ola::rpc::SimpleRpcController;
+using ola::rpc::RpcController;
+using std::map;
 
 Client::~Client() {
   m_data_map.clear();
@@ -42,16 +43,18 @@ Client::~Client() {
  * @param buffer the DmxBuffer with the data
  * @return true if the update was sent, false otherwise
  */
-bool Client::SendDMX(unsigned int universe, const DmxBuffer &buffer) {
+bool Client::SendDMX(unsigned int universe, uint8_t priority,
+                     const DmxBuffer &buffer) {
   if (!m_client_stub) {
     OLA_FATAL << "client_stub is null";
     return false;
   }
 
-  SimpleRpcController *controller = new SimpleRpcController();
+  RpcController *controller = new RpcController();
   ola::proto::DmxData dmx_data;
   ola::proto::Ack *ack = new ola::proto::Ack();
 
+  dmx_data.set_priority(priority);
   dmx_data.set_universe(universe);
   dmx_data.set_data(buffer.Get());
 
@@ -59,7 +62,8 @@ bool Client::SendDMX(unsigned int universe, const DmxBuffer &buffer) {
       controller,
       &dmx_data,
       ack,
-      NewCallback(this, &ola::Client::SendDMXCallback, controller, ack));
+      ola::NewSingleCallback(this, &ola::Client::SendDMXCallback,
+                             controller, ack));
   return true;
 }
 
@@ -67,7 +71,7 @@ bool Client::SendDMX(unsigned int universe, const DmxBuffer &buffer) {
 /*
  * Called when UpdateDmxData completes
  */
-void Client::SendDMXCallback(SimpleRpcController *controller,
+void Client::SendDMXCallback(RpcController *controller,
                              ola::proto::Ack *reply) {
   delete controller;
   delete reply;
@@ -79,7 +83,7 @@ void Client::SendDMXCallback(SimpleRpcController *controller,
  * @param universe the id of the universe for the new data
  * @param buffer the new data
  */
-void Client::DMXRecieved(unsigned int universe, const DmxSource &source) {
+void Client::DMXReceived(unsigned int universe, const DmxSource &source) {
   STLReplace(&m_data_map, universe, source);
 }
 

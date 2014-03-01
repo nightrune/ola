@@ -14,7 +14,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * OpenDmxThread.h
- * Thread for the open dmx device
+ * Thread for the Open DMX device
  * Copyright (C) 2005-2009 Simon Newton
  */
 
@@ -30,17 +30,17 @@ namespace plugin {
 namespace opendmx {
 
 class OpenDmxThread: public ola::thread::Thread {
-  public:
-    explicit OpenDmxThread(const string &path);
+ public:
+    explicit OpenDmxThread(const std::string &path);
     ~OpenDmxThread() {}
 
     bool Stop();
     bool WriteDmx(const DmxBuffer &buffer);
     void *Run();
 
-  private:
+ private:
     int m_fd;
-    string m_path;
+    std::string m_path;
     DmxBuffer m_buffer;
     bool m_term;
     ola::thread::Mutex m_mutex;

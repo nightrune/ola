@@ -49,6 +49,9 @@ namespace plugin {
 namespace usbdmx {
 
 using ola::io::DeviceDescriptor;
+using std::pair;
+using std::string;
+using std::vector;
 
 const char UsbDmxPlugin::PLUGIN_NAME[] = "USB";
 const char UsbDmxPlugin::PLUGIN_PREFIX[] = "usbdmx";
@@ -263,8 +266,8 @@ bool UsbDmxPlugin::SetDefaultPreferences() {
 
   bool save = m_preferences->SetDefaultValue(
       LIBUSB_DEBUG_LEVEL_KEY,
-      IntValidator(LIBUSB_DEFAULT_DEBUG_LEVEL, LIBUSB_MAX_DEBUG_LEVEL),
-      IntToString(LIBUSB_DEFAULT_DEBUG_LEVEL));
+      UIntValidator(LIBUSB_DEFAULT_DEBUG_LEVEL, LIBUSB_MAX_DEBUG_LEVEL),
+      LIBUSB_DEFAULT_DEBUG_LEVEL);
 
   if (save)
     m_preferences->Save();

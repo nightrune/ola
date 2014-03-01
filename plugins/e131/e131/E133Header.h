@@ -28,15 +28,13 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using std::string;
-
 /*
  * Header for the E133 layer
  */
 class E133Header {
-  public:
+ public:
     E133Header() {}
-    E133Header(const string &source,
+    E133Header(const std::string &source,
                uint32_t sequence,
                uint16_t endpoint)
         : m_source(source),
@@ -45,7 +43,7 @@ class E133Header {
     }
     ~E133Header() {}
 
-    const string Source() const { return m_source; }
+    const std::string Source() const { return m_source; }
     uint32_t Sequence() const { return m_sequence; }
     uint16_t Endpoint() const { return m_endpoint; }
 
@@ -65,8 +63,8 @@ class E133Header {
     } __attribute__((packed));
     typedef struct e133_pdu_header_s e133_pdu_header;
 
-  private:
-    string m_source;
+ private:
+    std::string m_source;
     uint32_t m_sequence;
     uint16_t m_endpoint;
 };

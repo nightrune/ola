@@ -32,12 +32,14 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
+using ola::Callback0;
+using ola::acn::CID;
+using ola::io::OutputStream;
 using std::map;
 using std::pair;
 using std::vector;
-using ola::Callback0;
 
-const TimeInterval DMPE131Inflator::EXPIRY_INTERVAL(2500);
+const TimeInterval DMPE131Inflator::EXPIRY_INTERVAL(2500000);
 
 
 DMPE131Inflator::~DMPE131Inflator() {
@@ -94,7 +96,7 @@ bool DMPE131Inflator::HandlePDUData(uint32_t vector,
       DecodeAddress(dmp_header.Size(),
                     dmp_header.Type(),
                     data,
-                    available_length));
+                    &available_length));
 
   if (!address.get()) {
     OLA_INFO << "DMP address parsing failed, the length is probably too small";

@@ -42,7 +42,6 @@ using ola::network::GenericSocketAddress;
 using ola::network::IPV4Address;
 using ola::network::IPV4SocketAddress;
 using ola::io::SelectServer;
-using ola::network::StringToAddress;
 using ola::network::TCPConnector;
 using ola::network::TCPAcceptingSocket;
 using ola::network::TCPSocket;
@@ -64,7 +63,7 @@ class TCPConnectorTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testEarlyDestruction);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     TCPConnectorTest()
         : CppUnit::TestFixture(),
           m_localhost(IPV4Address::Loopback()) {
@@ -89,7 +88,7 @@ class TCPConnectorTest: public CppUnit::TestFixture {
       m_ss->Terminate();
     }
 
-  private:
+ private:
     SelectServer *m_ss;
     IPV4Address m_localhost;
     ola::SingleUseCallback0<void> *m_timeout_closure;

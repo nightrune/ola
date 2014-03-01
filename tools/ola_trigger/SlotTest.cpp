@@ -28,6 +28,7 @@
 #include "tools/ola_trigger/Action.h"
 #include "tools/ola_trigger/MockAction.h"
 
+using std::string;
 
 class SlotTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(SlotTest);
@@ -37,7 +38,7 @@ class SlotTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testDefaultAction);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testIntersectingIntervalAddition();
     void testIntervalAddition();
     void testActionMatching();

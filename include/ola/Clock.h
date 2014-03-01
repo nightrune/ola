@@ -33,6 +33,7 @@
 #  include <config.h>
 #endif
 
+#include <ola/base/Macro.h>
 #include <stdint.h>
 #include <sys/time.h>
 
@@ -41,9 +42,8 @@
 #include <sstream>
 #include <string>
 
-namespace ola {
 
-using std::ostream;
+namespace ola {
 
 static const int USEC_IN_SECONDS = 1000000;
 static const int ONE_THOUSAND = 1000;
@@ -53,7 +53,7 @@ static const int ONE_THOUSAND = 1000;
  * and TimeStamp.
  */
 class BaseTimeVal {
-  public:
+ public:
     // Constructors
     BaseTimeVal() { timerclear(&m_tv); }
 
@@ -171,7 +171,7 @@ class BaseTimeVal {
       return str.str();
     }
 
-  private:
+ private:
     struct timeval m_tv;
 
     /**
@@ -208,7 +208,7 @@ class BaseTimeVal {
  * A time interval, with usecond accuracy.
  */
 class TimeInterval {
-  public:
+ public:
     // Constructors
     TimeInterval() {}
     TimeInterval(int32_t sec, int32_t usec) : m_interval(sec, usec) {}
@@ -262,6 +262,8 @@ class TimeInterval {
     }
 
     // Various other methods.
+    bool IsZero() const { return !m_interval.IsSet(); }
+
     void AsTimeval(struct timeval *tv) const { m_interval.AsTimeval(tv); }
 
     time_t Seconds() const { return m_interval.Seconds(); }
@@ -272,11 +274,12 @@ class TimeInterval {
 
     std::string ToString() const { return m_interval.ToString(); }
 
-    friend ostream& operator<< (ostream &out, const TimeInterval &interval) {
+    friend std::ostream& operator<< (std::ostream &out,
+                                     const TimeInterval &interval) {
       return out << interval.m_interval.ToString();
     }
 
-  private:
+ private:
     explicit TimeInterval(const BaseTimeVal &time_val) : m_interval(time_val) {}
 
     BaseTimeVal m_interval;
@@ -288,7 +291,7 @@ class TimeInterval {
  * Represents a point in time with usecond accuracy.
  */
 class TimeStamp {
-  public:
+ public:
     // Constructors
     TimeStamp() {}
     explicit TimeStamp(const struct timeval &timestamp) : m_tv(timestamp) {}
@@ -347,11 +350,12 @@ class TimeStamp {
 
     std::string ToString() const { return m_tv.ToString(); }
 
-    friend ostream& operator<< (ostream &out, const TimeStamp &timestamp) {
+    friend std::ostream& operator<< (std::ostream &out,
+                                     const TimeStamp &timestamp) {
       return out << timestamp.m_tv.ToString();
     }
 
-  private:
+ private:
     BaseTimeVal m_tv;
 
     explicit TimeStamp(const BaseTimeVal &time_val) : m_tv(time_val) {}
@@ -362,7 +366,7 @@ class TimeStamp {
  * Used to get the current time.
  */
 class Clock {
-  public:
+ public:
     Clock() {}
     virtual ~Clock() {}
     virtual void CurrentTime(TimeStamp *timestamp) const {
@@ -371,9 +375,8 @@ class Clock {
       *timestamp = tv;
     }
 
-  private:
-    Clock(const Clock &other);
-    Clock& operator=(const Clock &other);
+ private:
+    DISALLOW_COPY_AND_ASSIGN(Clock);
 };
 
 
@@ -381,7 +384,7 @@ class Clock {
  * A Mock Clock used for testing.
  */
 class MockClock: public Clock {
-  public:
+ public:
     MockClock() : Clock() {}
 
     // Advance the time
@@ -400,7 +403,7 @@ class MockClock: public Clock {
       *timestamp = tv;
       *timestamp += m_offset;
     }
-  private:
+ private:
     TimeInterval m_offset;
 };
 }  // namespace ola

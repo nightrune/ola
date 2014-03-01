@@ -42,7 +42,7 @@ namespace rdm {
  */
 class DescriptorConsistencyChecker
     : public ola::messaging::FieldDescriptorVisitor {
-  public:
+ public:
     DescriptorConsistencyChecker()
         : m_variable_sized_field_count(0) {
     }
@@ -52,6 +52,7 @@ class DescriptorConsistencyChecker
 
     void Visit(const ola::messaging::BoolFieldDescriptor*);
     void Visit(const ola::messaging::IPV4FieldDescriptor*);
+    void Visit(const ola::messaging::MACFieldDescriptor*);
     void Visit(const ola::messaging::UIDFieldDescriptor*);
     void Visit(const ola::messaging::StringFieldDescriptor*);
     void Visit(const ola::messaging::UInt8FieldDescriptor*);
@@ -63,7 +64,7 @@ class DescriptorConsistencyChecker
     void Visit(const ola::messaging::FieldDescriptorGroup*);
     void PostVisit(const ola::messaging::FieldDescriptorGroup*);
 
-  private:
+ private:
     unsigned int m_variable_sized_field_count;
 };
 }  // namespace rdm

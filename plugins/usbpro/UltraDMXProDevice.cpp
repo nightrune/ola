@@ -20,12 +20,11 @@
  * This device creates 3 ports, 1 input and 2 output.
  */
 
-#include <google/protobuf/stubs/common.h>
-#include <google/protobuf/service.h>
 #include <iomanip>
 #include <iostream>
 #include <string>
 
+#include "common/rpc/RpcController.h"
 #include "ola/BaseTypes.h"
 #include "ola/Callback.h"
 #include "ola/Logging.h"
@@ -36,9 +35,10 @@ namespace ola {
 namespace plugin {
 namespace usbpro {
 
-using google::protobuf::RpcController;
 using ola::plugin::usbpro::Request;
 using ola::plugin::usbpro::Reply;
+using ola::rpc::RpcController;
+using std::string;
 
 /*
  * Create a new device
@@ -53,6 +53,7 @@ UltraDMXProDevice::UltraDMXProDevice(ola::PluginAdaptor *plugin_adaptor,
                                      uint16_t esta_id,
                                      uint16_t device_id,
                                      uint32_t serial,
+                                     uint16_t firmware_version,
                                      unsigned int fps_limit):
     UsbSerialDevice(owner, name, widget),
     m_ultra_widget(widget),
@@ -66,6 +67,10 @@ UltraDMXProDevice::UltraDMXProDevice(ola::PluginAdaptor *plugin_adaptor,
     str <<  std::setw(2)  << digit;
   }
   m_serial = str.str();
+  str.str("");
+  str << "Serial #: " << m_serial << ", firmware "
+      << (firmware_version >> 8) << "." << (firmware_version & 0xff);
+
 
   m_ultra_widget->GetParameters(NewSingleCallback(
     this,
@@ -76,7 +81,7 @@ UltraDMXProDevice::UltraDMXProDevice(ola::PluginAdaptor *plugin_adaptor,
       m_ultra_widget,
       0,
       plugin_adaptor,
-      m_serial);
+      str.str());
 
   m_ultra_widget->SetDMXCallback(
       NewCallback(
@@ -89,7 +94,7 @@ UltraDMXProDevice::UltraDMXProDevice(ola::PluginAdaptor *plugin_adaptor,
       this,
       m_ultra_widget,
       0,
-      m_serial,
+      str.str(),
       plugin_adaptor->WakeUpTime(),
       5,  // allow up to 5 burst frames
       fps_limit,
@@ -101,7 +106,7 @@ UltraDMXProDevice::UltraDMXProDevice(ola::PluginAdaptor *plugin_adaptor,
       this,
       m_ultra_widget,
       1,
-      m_serial,
+      str.str(),
       plugin_adaptor->WakeUpTime(),
       5,  // allow up to 5 burst frames
       fps_limit,
@@ -130,9 +135,9 @@ void UltraDMXProDevice::PrePortStop() {
  * @param done the closure to call once the request is complete
  */
 void UltraDMXProDevice::Configure(RpcController *controller,
-                             const string &request,
-                             string *response,
-                             google::protobuf::Closure *done) {
+                                  const string &request,
+                                  string *response,
+                                  ConfigureCallback *done) {
   Request request_pb;
   if (!request_pb.ParseFromString(request)) {
     controller->SetFailed("Invalid Request");
@@ -175,11 +180,10 @@ void UltraDMXProDevice::UpdateParams(bool status,
  * then another GetParam() request in order to return the latest values to the
  * client.
  */
-void UltraDMXProDevice::HandleParametersRequest(
-    RpcController *controller,
-    const Request *request,
-    string *response,
-    google::protobuf::Closure *done) {
+void UltraDMXProDevice::HandleParametersRequest(RpcController *controller,
+                                                const Request *request,
+                                                string *response,
+                                                ConfigureCallback *done) {
   if (request->has_parameters() &&
       (request->parameters().has_break_time() ||
        request->parameters().has_mab_time() ||
@@ -220,7 +224,7 @@ void UltraDMXProDevice::HandleParametersRequest(
 void UltraDMXProDevice::HandleParametersResponse(
     RpcController *controller,
     string *response,
-    google::protobuf::Closure *done,
+    ConfigureCallback *done,
     bool status,
     const usb_pro_parameters &params) {
   if (!status) {
@@ -250,7 +254,7 @@ void UltraDMXProDevice::HandleSerialRequest(
     RpcController *controller,
     const Request *request,
     string *response,
-    google::protobuf::Closure *done) {
+    ConfigureCallback *done) {
   Reply reply;
   reply.set_type(ola::plugin::usbpro::Reply::USBPRO_SERIAL_REPLY);
   ola::plugin::usbpro::SerialNumberReply *serial_reply =

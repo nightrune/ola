@@ -40,7 +40,7 @@ namespace rdm {
  */
 class StaticGroupTokenCalculator
     : public ola::messaging::FieldDescriptorVisitor {
-  public:
+ public:
     StaticGroupTokenCalculator() {}
     ~StaticGroupTokenCalculator() {}
 
@@ -51,6 +51,7 @@ class StaticGroupTokenCalculator
 
     void Visit(const ola::messaging::BoolFieldDescriptor*);
     void Visit(const ola::messaging::IPV4FieldDescriptor*);
+    void Visit(const ola::messaging::MACFieldDescriptor*);
     void Visit(const ola::messaging::UIDFieldDescriptor*);
     void Visit(const ola::messaging::StringFieldDescriptor*);
     void Visit(const ola::messaging::UInt8FieldDescriptor*);
@@ -62,7 +63,7 @@ class StaticGroupTokenCalculator
     void Visit(const ola::messaging::FieldDescriptorGroup*);
     void PostVisit(const ola::messaging::FieldDescriptorGroup*);
 
-  private:
+ private:
     std::stack<unsigned int> m_token_count;
     bool m_variable_sized_group_encountered;
 };
@@ -73,7 +74,7 @@ class StaticGroupTokenCalculator
  * of tokens.
  */
 class GroupSizeCalculator: public ola::messaging::FieldDescriptorVisitor {
-  public:
+ public:
     typedef enum {
       INSUFFICIENT_TOKENS,
       EXTRA_TOKENS,
@@ -90,11 +91,12 @@ class GroupSizeCalculator: public ola::messaging::FieldDescriptorVisitor {
     bool Descend() const { return false; }
     calculator_state CalculateGroupSize(
         unsigned int token_count,
-        const class ola::messaging::Descriptor*,
+        const class ola::messaging::Descriptor *descriptor,
         unsigned int *group_repeat_count);
 
     void Visit(const ola::messaging::BoolFieldDescriptor*);
     void Visit(const ola::messaging::IPV4FieldDescriptor*);
+    void Visit(const ola::messaging::MACFieldDescriptor*);
     void Visit(const ola::messaging::UIDFieldDescriptor*);
     void Visit(const ola::messaging::StringFieldDescriptor*);
     void Visit(const ola::messaging::UInt8FieldDescriptor*);
@@ -106,7 +108,7 @@ class GroupSizeCalculator: public ola::messaging::FieldDescriptorVisitor {
     void Visit(const ola::messaging::FieldDescriptorGroup*);
     void PostVisit(const ola::messaging::FieldDescriptorGroup*);
 
-  private:
+ private:
     std::vector<const ola::messaging::FieldDescriptorGroup*> m_groups;
     std::vector<const ola::messaging::FieldDescriptorInterface*> m_non_groups;
     StaticGroupTokenCalculator m_simple_calculator;

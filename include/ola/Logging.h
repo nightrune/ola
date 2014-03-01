@@ -94,8 +94,6 @@
 
 namespace ola {
 
-using std::string;
-
 /**
  * @brief The OLA log levels.
  * This controls the verbosity of logging. Each level also includes those below
@@ -130,7 +128,7 @@ typedef enum {
  * @brief The base class for log destinations.
  */
 class LogDestination {
-  public:
+ public:
     /**
      * @brief Destructor
      */
@@ -141,25 +139,25 @@ class LogDestination {
      * @note You must over load this if you want to create a new log
      * destination
      */
-    virtual void Write(log_level level, const string &log_line) = 0;
+    virtual void Write(log_level level, const std::string &log_line) = 0;
 };
 
 /**
  * @brief A LogDestination that writes to stderr
  */
 class StdErrorLogDestination: public LogDestination {
-  public:
+ public:
     /**
      * @brief Writes a messages out to stderr.
      */
-    void Write(log_level level, const string &log_line);
+    void Write(log_level level, const std::string &log_line);
 };
 
 /**
  * @brief A LogDestination that writes to syslog
  */
 class SyslogDestination: public LogDestination {
-  public:
+ public:
     /**
      * @brief Initialize the SyslogDestination
      */
@@ -169,8 +167,8 @@ class SyslogDestination: public LogDestination {
      * @brief Write a line to the system logger.
      * @note This is syslog on *nix or the event log on windows.
      */
-    void Write(log_level level, const string &log_line);
-  private:
+    void Write(log_level level, const std::string &log_line);
+ private:
 #ifdef WIN32
     HANDLE m_eventlog;
 #endif
@@ -184,13 +182,13 @@ class SyslogDestination: public LogDestination {
  * @brief A LogLine, this represents a single log message.
  */
 class LogLine {
-  public:
+ public:
     LogLine(const char *file, int line, log_level level);
     ~LogLine();
     void Write();
 
     std::ostream &stream() { return m_stream; }
-  private:
+ private:
     log_level m_level;
     std::ostringstream m_stream;
     unsigned int m_prefix_length;

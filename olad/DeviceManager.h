@@ -34,15 +34,12 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "ola/base/Macro.h"
 #include "ola/timecode/TimeCode.h"
 #include "olad/Device.h"
 #include "olad/Preferences.h"
 
 namespace ola {
-
-using std::map;
-using std::string;
-
 
 // pair a device with it's alias
 typedef struct {
@@ -53,18 +50,18 @@ typedef struct {
 bool operator <(const device_alias_pair& left, const device_alias_pair &right);
 
 class DeviceManager {
-  public:
+ public:
     DeviceManager(PreferencesFactory *prefs_factory,
                   class PortManager *port_manager);
     ~DeviceManager();
 
     bool RegisterDevice(AbstractDevice *device);
-    bool UnregisterDevice(const string &device_id);
+    bool UnregisterDevice(const std::string &device_id);
     bool UnregisterDevice(const AbstractDevice *device);
     unsigned int DeviceCount() const;
-    vector<device_alias_pair> Devices() const;
+    std::vector<device_alias_pair> Devices() const;
     AbstractDevice *GetDevice(unsigned int alias) const;
-    device_alias_pair GetDevice(const string &unique_id) const;
+    device_alias_pair GetDevice(const std::string &unique_id) const;
     void UnregisterAllDevices();
 
     void SendTimeCode(const ola::timecode::TimeCode &timecode);
@@ -73,30 +70,32 @@ class DeviceManager {
     static const char PRIORITY_VALUE_SUFFIX[];
     static const char PRIORITY_MODE_SUFFIX[];
 
-  private:
+ private:
     Preferences *m_port_preferences;
     class PortManager *m_port_manager;
-    map<string, device_alias_pair> m_devices;  // map device_ids to devices
-    map<unsigned int, AbstractDevice*> m_alias_map;  // map alias to devices
+    // map device_ids to devices
+    std::map<std::string, device_alias_pair> m_devices;
+    // map alias to devices
+    std::map<unsigned int, AbstractDevice*> m_alias_map;
     unsigned int m_next_device_alias;
     std::set<class OutputPort*> m_timecode_ports;
 
-    DeviceManager(const DeviceManager&);
-    DeviceManager& operator=(const DeviceManager&);
     void ReleaseDevice(const AbstractDevice *device);
     void RestoreDevicePortSettings(AbstractDevice *device);
 
     template <class PortClass>
-    void SavePortPatchings(const vector<PortClass*> &ports) const;
+    void SavePortPatchings(const std::vector<PortClass*> &ports) const;
 
     void SavePortPriority(const Port &port) const;
     void RestorePortPriority(Port *port) const;
 
     template <class PortClass>
-    void RestorePortSettings(const vector<PortClass*> &ports) const;
+    void RestorePortSettings(const std::vector<PortClass*> &ports) const;
 
     static const char PORT_PREFERENCES[];
     static const unsigned int FIRST_DEVICE_ALIAS = 1;
+
+    DISALLOW_COPY_AND_ASSIGN(DeviceManager);
 };
 }  // namespace ola
 #endif  // OLAD_DEVICEMANAGER_H_

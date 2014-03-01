@@ -32,13 +32,11 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using ola::acn::CID;
-
 /*
  * This isn't a PDU at all, it just packs a uint32 for testing.
  */
 class FakePDU: public PDU {
-  public:
+ public:
     explicit FakePDU(unsigned int value): PDU(0), m_value(value) {}
     unsigned int Size() const { return sizeof(m_value); }
     unsigned int HeaderSize() const { return 0; }
@@ -65,13 +63,13 @@ class FakePDU: public PDU {
     }
 
     void Write(ola::io::OutputStream *stream) const {
-      *stream << HostToNetwork(m_value);
+      *stream << ola::network::HostToNetwork(m_value);
     }
 
     void PackHeader(ola::io::OutputStream*) const {}
     void PackData(ola::io::OutputStream*) const {}
 
-  private:
+ private:
     unsigned int m_value;
 };
 
@@ -82,7 +80,7 @@ class FakePDU: public PDU {
  * will check is 2x the header value.
  */
 class MockPDU: public PDU {
-  public:
+ public:
     MockPDU(unsigned int header, unsigned int value):
       PDU(TEST_DATA_VECTOR),
       m_header(header),
@@ -127,11 +125,13 @@ class MockPDU: public PDU {
                    sizeof(data));
       stack->Write(reinterpret_cast<const uint8_t*>(&header),
                    sizeof(header));
-      unsigned int vector = HostToNetwork(TEST_DATA_VECTOR);
+      unsigned int vector = ola::network::HostToNetwork(TEST_DATA_VECTOR);
       stack->Write(reinterpret_cast<uint8_t*>(&vector), sizeof(vector));
-      PrependFlagsAndLength(stack,
-                            sizeof(data) + sizeof(header) + sizeof(vector),
-                            VFLAG_MASK | HFLAG_MASK | DFLAG_MASK);
+      PrependFlagsAndLength(
+          stack,
+          static_cast<unsigned int>(
+              sizeof(data) + sizeof(header) + sizeof(vector)),
+          VFLAG_MASK | HFLAG_MASK | DFLAG_MASK);
     }
 
     // This is used to id 'Mock' PDUs in the higher level protocol
@@ -139,7 +139,7 @@ class MockPDU: public PDU {
     // This is is the vector used by MockPDUs
     static const unsigned int TEST_DATA_VECTOR = 43;
 
-  private:
+ private:
     unsigned int m_header;
     unsigned int m_value;
 };
@@ -149,21 +149,21 @@ class MockPDU: public PDU {
  * The inflator the works with MockPDUs. We check that the data = 2 * header
  */
 class MockInflator: public BaseInflator {
-  public:
-    MockInflator(const CID &cid, Callback0<void> *on_recv = NULL):
+ public:
+    MockInflator(const ola::acn::CID &cid, Callback0<void> *on_recv = NULL):
       BaseInflator(),
       m_cid(cid),
       m_on_recv(on_recv) {}
     uint32_t Id() const { return MockPDU::TEST_VECTOR; }
 
-  protected:
+ protected:
     void ResetHeaderField() {}
-    bool DecodeHeader(HeaderSet *,
+    bool DecodeHeader(HeaderSet*,
                       const uint8_t *data,
                       unsigned int,
-                      unsigned int &bytes_used) {
+                      unsigned int *bytes_used) {
       if (data) {
-        bytes_used = 4;
+        *bytes_used = 4;
         memcpy(&m_last_header, data, sizeof(m_last_header));
       }
       return true;
@@ -187,8 +187,8 @@ class MockInflator: public BaseInflator {
       return true;
     }
 
-  private:
-    CID m_cid;
+ private:
+    ola::acn::CID m_cid;
     Callback0<void> *m_on_recv;
     unsigned int m_last_header;
 };

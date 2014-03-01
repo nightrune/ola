@@ -29,26 +29,25 @@ namespace ola {
 namespace plugin {
 namespace shownet {
 
-using ola::Plugin;
 
 class ShowNetDevice: public ola::Device {
-  public:
+ public:
     ShowNetDevice(Plugin *owner,
                   class Preferences *preferences,
                   class PluginAdaptor *plugin_adaptor);
     ~ShowNetDevice() {}
 
     bool AllowMultiPortPatching() const { return true; }
-    string DeviceId() const { return "1"; }
+    std::string DeviceId() const { return "1"; }
 
     static const char IP_KEY[];
 
-  protected:
+ protected:
     bool StartHook();
     void PrePortStop();
     void PostPortStop();
 
-  private:
+ private:
     class Preferences *m_preferences;
     class PluginAdaptor *m_plugin_adaptor;
     class ShowNetNode *m_node;

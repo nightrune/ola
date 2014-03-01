@@ -34,12 +34,9 @@ namespace ola {
 namespace plugin {
 namespace pathport {
 
-using ola::network::IPV4Address;
-using ola::network::UDPSocket;
-
 class PathportNode {
-  public:
-    explicit PathportNode(const string &preferred_ip, uint32_t device_id,
+ public:
+    explicit PathportNode(const std::string &preferred_ip, uint32_t device_id,
                           uint8_t dscp);
     ~PathportNode();
 
@@ -48,8 +45,8 @@ class PathportNode {
     const ola::network::Interface &GetInterface() const {
       return m_interface;
     }
-    UDPSocket *GetSocket() { return &m_socket; }
-    void SocketReady(UDPSocket *socket);
+    ola::network::UDPSocket *GetSocket() { return &m_socket; }
+    void SocketReady(ola::network::UDPSocket *socket);
 
     bool SetHandler(uint8_t universe,
                     DmxBuffer *buffer,
@@ -62,7 +59,7 @@ class PathportNode {
     // apparently pathport supports up to 128 universes, the spec only says 64
     static const uint8_t MAX_UNIVERSES = 127;
 
-  private:
+ private:
     typedef struct {
       DmxBuffer *buffer;
       Callback0<void> *closure;
@@ -111,20 +108,20 @@ class PathportNode {
     bool SendArpRequest(uint32_t destination = PATHPORT_ID_BROADCAST);
     bool SendPacket(const pathport_packet_s &packet,
                     unsigned int size,
-                    IPV4Address dest);
+                    ola::network::IPV4Address dest);
 
     bool m_running;
     uint8_t m_dscp;
-    string m_preferred_ip;
+    std::string m_preferred_ip;
     uint32_t m_device_id;  // the pathport device id
     uint16_t m_sequence_number;
 
     universe_handlers m_handlers;
     ola::network::Interface m_interface;
-    UDPSocket m_socket;
-    IPV4Address m_config_addr;
-    IPV4Address m_status_addr;
-    IPV4Address m_data_addr;
+    ola::network::UDPSocket m_socket;
+    ola::network::IPV4Address m_config_addr;
+    ola::network::IPV4Address m_status_addr;
+    ola::network::IPV4Address m_data_addr;
 
     static const uint16_t PATHPORT_PORT = 0xed0;
     static const uint16_t PATHPORT_PROTOCOL = 0xed01;

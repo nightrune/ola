@@ -22,6 +22,7 @@
 #define INCLUDE_OLAD_PORT_H_
 
 #include <ola/DmxBuffer.h>
+#include <ola/base/Macro.h>
 #include <ola/rdm/RDMCommand.h>
 #include <ola/rdm/RDMControllerInterface.h>
 #include <ola/timecode/TimeCode.h>
@@ -31,7 +32,6 @@
 #include <olad/Universe.h>
 
 #include <string>
-#include <vector>
 
 namespace ola {
 
@@ -41,7 +41,7 @@ class AbstractDevice;
  * The base port class, all ports inherit from this.
  */
 class Port {
-  public:
+ public:
     virtual ~Port() {}
 
     // return the id of the port within this deivce
@@ -51,7 +51,7 @@ class Port {
     virtual AbstractDevice *GetDevice() const = 0;
 
     // return a short description of this port
-    virtual string Description() const = 0;
+    virtual std::string Description() const = 0;
 
     // bind this port to a universe
     virtual bool SetUniverse(Universe *universe) = 0;
@@ -61,7 +61,7 @@ class Port {
 
     // Return a globally unique id of this port. This is used to preserve port
     // universe bindings. An empty string means we don't preserve settings.
-    virtual string UniqueId() const = 0;
+    virtual std::string UniqueId() const = 0;
 
     // this tells us what sort of priority capabilities this port has
     virtual port_priority_capability PriorityCapability() const = 0;
@@ -82,7 +82,7 @@ class Port {
  * system.
  */
 class InputPort: public Port {
-  public:
+ public:
     virtual ~InputPort() {}
 
     // signal the port that the DMX data has changed
@@ -101,14 +101,14 @@ class InputPort: public Port {
  * The Output Port interface, for ports that send data from the OLA system.
  */
 class OutputPort: public Port, ola::rdm::DiscoverableRDMControllerInterface {
-  public:
+ public:
     virtual ~OutputPort() {}
 
     // Write dmx data to this port
     virtual bool WriteDMX(const DmxBuffer &buffer, uint8_t priority) = 0;
 
     // Called if the universe name changes
-    virtual void UniverseNameChanged(const string &new_name) = 0;
+    virtual void UniverseNameChanged(const std::string &new_name) = 0;
 
     // Methods from DiscoverableRDMControllerInterface
     // Ownership of the request object is transferred
@@ -130,7 +130,7 @@ class OutputPort: public Port, ola::rdm::DiscoverableRDMControllerInterface {
  * the plugin implementations from having to do it.
  */
 class BasicInputPort: public InputPort {
-  public:
+ public:
     BasicInputPort(AbstractDevice *parent,
                    unsigned int port_id,
                    const PluginAdaptor *plugin_adaptor,
@@ -140,7 +140,7 @@ class BasicInputPort: public InputPort {
     AbstractDevice *GetDevice() const { return m_device; }
     bool SetUniverse(Universe *universe);
     Universe *GetUniverse() const { return m_universe; }
-    virtual string UniqueId() const;
+    virtual std::string UniqueId() const;
     bool SetPriority(uint8_t priority);
     uint8_t GetPriority() const { return m_priority; }
     void SetPriorityMode(port_priority_mode mode) { m_priority_mode = mode; }
@@ -164,7 +164,7 @@ class BasicInputPort: public InputPort {
 
     // Get the inherited priority
     virtual uint8_t InheritedPriority() const {
-      return DmxSource::PRIORITY_MIN;
+      return ola::dmx::SOURCE_PRIORITY_MIN;
     }
 
     // override this to cancel the SetUniverse operation.
@@ -174,23 +174,22 @@ class BasicInputPort: public InputPort {
 
     virtual bool SupportsRDM() const { return m_supports_rdm; }
 
-  protected:
+ protected:
     // indicates whether this port supports priorities, default to no
     virtual bool SupportsPriorities() const { return false; }
 
-  private:
+ private:
     const unsigned int m_port_id;
     uint8_t m_priority;
     port_priority_mode m_priority_mode;
-    mutable string m_port_string;
+    mutable std::string m_port_string;
     Universe *m_universe;  // the universe this port belongs to
     AbstractDevice *m_device;
     DmxSource m_dmx_source;
     const PluginAdaptor *m_plugin_adaptor;
     bool m_supports_rdm;
 
-    BasicInputPort(const BasicInputPort&);
-    BasicInputPort& operator=(const BasicInputPort&);
+    DISALLOW_COPY_AND_ASSIGN(BasicInputPort);
 };
 
 
@@ -198,7 +197,7 @@ class BasicInputPort: public InputPort {
  * An implementation of an OutputPort.
  */
 class BasicOutputPort: public OutputPort {
-  public:
+ public:
     BasicOutputPort(AbstractDevice *parent,
                     unsigned int port_id,
                     bool start_rdm_discovery_on_patch = false,
@@ -208,13 +207,13 @@ class BasicOutputPort: public OutputPort {
     AbstractDevice *GetDevice() const { return m_device; }
     bool SetUniverse(Universe *universe);
     Universe *GetUniverse() const { return m_universe; }
-    string UniqueId() const;
+    std::string UniqueId() const;
     bool SetPriority(uint8_t priority);
     uint8_t GetPriority() const { return m_priority; }
     void SetPriorityMode(port_priority_mode mode) { m_priority_mode = mode; }
     port_priority_mode GetPriorityMode() const { return m_priority_mode; }
 
-    virtual void UniverseNameChanged(const string &new_name) {
+    virtual void UniverseNameChanged(const std::string &new_name) {
       (void) new_name;
     }
 
@@ -245,23 +244,22 @@ class BasicOutputPort: public OutputPort {
 
     virtual bool SupportsRDM() const { return m_supports_rdm; }
 
-  protected:
+ protected:
     // indicates whether this port supports priorities, default to no
     virtual bool SupportsPriorities() const { return false; }
     void UpdateUIDs(const ola::rdm::UIDSet &uids);
 
-  private:
+ private:
     const unsigned int m_port_id;
     const bool m_discover_on_patch;
     uint8_t m_priority;
     port_priority_mode m_priority_mode;
-    mutable string m_port_string;
+    mutable std::string m_port_string;
     Universe *m_universe;  // the universe this port belongs to
     AbstractDevice *m_device;
     bool m_supports_rdm;
 
-    BasicOutputPort(const BasicOutputPort&);
-    BasicOutputPort& operator=(const BasicOutputPort&);
+    DISALLOW_COPY_AND_ASSIGN(BasicOutputPort);
 };
 
 

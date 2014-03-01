@@ -17,18 +17,26 @@
  * Copyright (C) 2005-2008 Simon Newton
  */
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <iostream>
 #include <string>
 #include <vector>
+#include "ola/base/Array.h"
 #include "ola/BaseTypes.h"
 #include "ola/Clock.h"
 #include "ola/Logging.h"
-#include "ola/base/Array.h"
 #include "ola/network/NetworkUtils.h"
 #include "ola/rdm/DummyResponder.h"
+#include "common/rdm/NetworkManager.h"
 #include "ola/rdm/OpenLightingEnums.h"
 #include "ola/rdm/RDMEnums.h"
 #include "ola/rdm/ResponderHelper.h"
+#include "ola/rdm/ResponderLoadSensor.h"
+#include "ola/rdm/ResponderSensor.h"
+#include "ola/stl/STLUtils.h"
 
 namespace ola {
 namespace rdm {
@@ -43,11 +51,20 @@ DummyResponder::RDMOps *DummyResponder::RDMOps::instance = NULL;
 const DummyResponder::Personalities *
     DummyResponder::Personalities::Instance() {
   if (!instance) {
+    SlotDataCollection::SlotDataList p2_slot_data;
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_INTENSITY, 0));
+    p2_slot_data.push_back(SlotData::SecondarySlot(ST_SEC_FINE, 0, 0));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_PAN, 127));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_TILT, 127));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_UNDEFINED, 0, "Foo"));
+
     PersonalityList personalities;
-    personalities.push_back(new Personality(0, "Personality 1"));
-    personalities.push_back(new Personality(5, "Personality 2"));
-    personalities.push_back(new Personality(10, "Personality 3"));
-    personalities.push_back(new Personality(20, "Personality 4"));
+    personalities.push_back(Personality(0, "Personality 1"));
+    personalities.push_back(Personality(5,
+                                        "Personality 2",
+                                        SlotDataCollection(p2_slot_data)));
+    personalities.push_back(Personality(10, "Personality 3"));
+    personalities.push_back(Personality(20, "Personality 4"));
     instance = new Personalities(personalities);
   }
   return instance;
@@ -87,6 +104,15 @@ const ResponderOps<DummyResponder>::ParamHandler
   { PID_DMX_PERSONALITY_DESCRIPTION,
     &DummyResponder::GetPersonalityDescription,
     NULL},
+  { PID_SLOT_INFO,
+    &DummyResponder::GetSlotInfo,
+    NULL},
+  { PID_SLOT_DESCRIPTION,
+    &DummyResponder::GetSlotDescription,
+    NULL},
+  { PID_DEFAULT_SLOT_VALUE,
+    &DummyResponder::GetSlotDefaultValues,
+    NULL},
   { PID_DMX_START_ADDRESS,
     &DummyResponder::GetDmxStartAddress,
     &DummyResponder::SetDmxStartAddress},
@@ -98,6 +124,41 @@ const ResponderOps<DummyResponder>::ParamHandler
     &DummyResponder::SetIdentify},
   { PID_REAL_TIME_CLOCK,
     &DummyResponder::GetRealTimeClock,
+    NULL},
+#ifdef HAVE_GETLOADAVG
+  { PID_SENSOR_DEFINITION,
+    &DummyResponder::GetSensorDefinition,
+    NULL},
+  { PID_SENSOR_VALUE,
+    &DummyResponder::GetSensorValue,
+    &DummyResponder::SetSensorValue},
+  { PID_RECORD_SENSORS,
+    NULL,
+    &DummyResponder::RecordSensor},
+#endif
+  { PID_LIST_INTERFACES,
+    &DummyResponder::GetListInterfaces,
+    NULL},
+  { PID_INTERFACE_LABEL,
+    &DummyResponder::GetInterfaceLabel,
+    NULL},
+  { PID_INTERFACE_HARDWARE_ADDRESS_TYPE1,
+    &DummyResponder::GetInterfaceHardwareAddressType1,
+    NULL},
+  { PID_IPV4_CURRENT_ADDRESS,
+    &DummyResponder::GetIPV4CurrentAddress,
+    NULL},
+  { PID_IPV4_DEFAULT_ROUTE,
+    &DummyResponder::GetIPV4DefaultRoute,
+    NULL},
+  { PID_DNS_HOSTNAME,
+    &DummyResponder::GetDNSHostname,
+    NULL},
+  { PID_DNS_DOMAIN_NAME,
+    &DummyResponder::GetDNSDomainName,
+    NULL},
+  { PID_DNS_NAME_SERVER,
+    &DummyResponder::GetDNSNameServer,
     NULL},
   { OLA_MANUFACTURER_PID_CODE_VERSION,
     &DummyResponder::GetOlaCodeVersion,
@@ -113,6 +174,21 @@ DummyResponder::DummyResponder(const UID &uid)
       m_personality_manager(Personalities::Instance()) {
   // default to a personality with a non-0 footprint.
   m_personality_manager.SetActivePersonality(DEFAULT_PERSONALITY);
+
+#ifdef HAVE_GETLOADAVG
+  m_sensors.push_back(new LoadSensor(ola::system::LOAD_AVERAGE_1_MIN,
+                                     "Load Average 1 minute"));
+  m_sensors.push_back(new LoadSensor(ola::system::LOAD_AVERAGE_5_MINS,
+                                     "Load Average 5 minutes"));
+  m_sensors.push_back(new LoadSensor(ola::system::LOAD_AVERAGE_15_MINS,
+                                     "Load Average 15 minutes"));
+#endif
+
+  m_network_manager.reset(new NetworkManager());
+}
+
+DummyResponder::~DummyResponder() {
+  STLDeleteElements(&m_sensors);
 }
 
 /*
@@ -149,10 +225,10 @@ const RDMResponse *DummyResponder::GetParamDescription(
 const RDMResponse *DummyResponder::GetDeviceInfo(const RDMRequest *request) {
   return ResponderHelper::GetDeviceInfo(
       request, OLA_DUMMY_DEVICE_MODEL,
-      PRODUCT_CATEGORY_OTHER, 1,
+      PRODUCT_CATEGORY_OTHER, 3,
       &m_personality_manager,
       m_start_address,
-      0, 0);
+      0, m_sensors.size());
 }
 
 /**
@@ -181,16 +257,7 @@ const RDMResponse *DummyResponder::SetFactoryDefaults(
   m_personality_manager.SetActivePersonality(DEFAULT_PERSONALITY);
   m_identify_mode = 0;
 
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *DummyResponder::GetProductDetailList(
@@ -216,6 +283,20 @@ const RDMResponse *DummyResponder::GetPersonalityDescription(
     const RDMRequest *request) {
   return ResponderHelper::GetPersonalityDescription(
       request, &m_personality_manager);
+}
+
+const RDMResponse *DummyResponder::GetSlotInfo(const RDMRequest *request) {
+  return ResponderHelper::GetSlotInfo(request, &m_personality_manager);
+}
+
+const RDMResponse *DummyResponder::GetSlotDescription(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSlotDescription(request, &m_personality_manager);
+}
+
+const RDMResponse *DummyResponder::GetSlotDefaultValues(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSlotDefaultValues(request, &m_personality_manager);
 }
 
 const RDMResponse *DummyResponder::GetDmxStartAddress(
@@ -274,6 +355,84 @@ const RDMResponse *DummyResponder::GetDeviceModelDescription(
 const RDMResponse *DummyResponder::GetSoftwareVersionLabel(
     const RDMRequest *request) {
   return ResponderHelper::GetString(request, "Dummy Software Version");
+}
+
+/**
+ * PID_SENSOR_DEFINITION
+ */
+const RDMResponse *DummyResponder::GetSensorDefinition(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSensorDefinition(request, m_sensors);
+}
+
+/**
+ * PID_SENSOR_VALUE
+ */
+const RDMResponse *DummyResponder::GetSensorValue(const RDMRequest *request) {
+  return ResponderHelper::GetSensorValue(request, m_sensors);
+}
+
+const RDMResponse *DummyResponder::SetSensorValue(const RDMRequest *request) {
+  return ResponderHelper::SetSensorValue(request, m_sensors);
+}
+
+/**
+ * PID_RECORD_SENSORS
+ */
+const RDMResponse *DummyResponder::RecordSensor(const RDMRequest *request) {
+  return ResponderHelper::RecordSensor(request, m_sensors);
+}
+
+/**
+ * E1.37-2 PIDs
+ */
+const RDMResponse *DummyResponder::GetListInterfaces(
+    const RDMRequest *request) {
+  return ResponderHelper::GetListInterfaces(request,
+                                            m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetInterfaceLabel(
+    const RDMRequest *request) {
+  return ResponderHelper::GetInterfaceLabel(request,
+                                            m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetInterfaceHardwareAddressType1(
+    const RDMRequest *request) {
+  return ResponderHelper::GetInterfaceHardwareAddressType1(
+      request,
+      m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetIPV4CurrentAddress(
+    const RDMRequest *request) {
+  return ResponderHelper::GetIPV4CurrentAddress(request,
+                                                m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetIPV4DefaultRoute(
+    const RDMRequest *request) {
+  return ResponderHelper::GetIPV4DefaultRoute(request,
+                                              m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetDNSHostname(
+    const RDMRequest *request) {
+  return ResponderHelper::GetDNSHostname(request,
+                                         m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetDNSDomainName(
+    const RDMRequest *request) {
+  return ResponderHelper::GetDNSDomainName(request,
+                                           m_network_manager.get());
+}
+
+const RDMResponse *DummyResponder::GetDNSNameServer(
+    const RDMRequest *request) {
+  return ResponderHelper::GetDNSNameServer(request,
+                                           m_network_manager.get());
 }
 
 const RDMResponse *DummyResponder::GetOlaCodeVersion(

@@ -26,22 +26,19 @@
 
 #include "tools/ola_trigger/Action.h"
 
-using ola::DmxBuffer;
-
-
 /*
  * The class which manages the triggering.
  */
 class DMXTrigger {
-  public:
+ public:
     typedef std::vector<Slot*> SlotVector;
 
     DMXTrigger(Context *context, const SlotVector &actions);
     ~DMXTrigger() {}
 
-    void NewDMX(const DmxBuffer &data);
+    void NewDMX(const ola::DmxBuffer &data);
 
-  private:
+ private:
     Context *m_context;
     SlotVector m_slots;  // kept sorted
 };

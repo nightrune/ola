@@ -33,6 +33,8 @@ namespace ola {
 namespace plugin {
 namespace pathport {
 
+using std::string;
+
 const char PathportPlugin::PLUGIN_NAME[] = "Pathport";
 const char PathportPlugin::PLUGIN_PREFIX[] = "pathport";
 const char PathportPlugin::DEFAULT_DSCP_VALUE[] = "0";
@@ -116,7 +118,7 @@ bool PathportPlugin::SetDefaultPreferences() {
     return false;
 
   save |= m_preferences->SetDefaultValue(PathportDevice::K_DSCP_KEY,
-                                         IntValidator(0, 63),
+                                         UIntValidator(0, 63),
                                          DEFAULT_DSCP_VALUE);
   save |= m_preferences->SetDefaultValue(PathportDevice::K_NODE_IP_KEY,
                                          StringValidator(true), "");
@@ -129,8 +131,8 @@ bool PathportPlugin::SetDefaultPreferences() {
                          ola::math::Random(0, (1 << 24) - 1));
 
   save |= m_preferences->SetDefaultValue(PathportDevice::K_NODE_ID_KEY,
-                                         IntValidator(0, UINT_MAX),
-                                         IntToString(product_id));
+                                         UIntValidator(0, UINT_MAX),
+                                         product_id);
 
   if (save)
     m_preferences->Save();

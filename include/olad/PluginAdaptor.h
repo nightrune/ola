@@ -21,19 +21,18 @@
 #ifndef INCLUDE_OLAD_PLUGINADAPTOR_H_
 #define INCLUDE_OLAD_PLUGINADAPTOR_H_
 
-#include <ola/Clock.h>
 #include <ola/Callback.h>
+#include <ola/Clock.h>
 #include <ola/ExportMap.h>
+#include <ola/base/Macro.h>
 #include <ola/io/SelectServerInterface.h>
 
 #include <string>
 
 namespace ola {
 
-using ola::thread::timeout_id;
-
 class PluginAdaptor: public ola::io::SelectServerInterface {
-  public:
+ public:
     PluginAdaptor(class DeviceManager *device_manager,
                   ola::io::SelectServerInterface *select_server,
                   ExportMap *export_map,
@@ -49,15 +48,18 @@ class PluginAdaptor: public ola::io::SelectServerInterface {
     bool AddWriteDescriptor(ola::io::WriteFileDescriptor *descriptor);
     bool RemoveWriteDescriptor(ola::io::WriteFileDescriptor *descriptor);
 
-    timeout_id RegisterRepeatingTimeout(unsigned int ms,
-                                        Callback0<bool> *closure);
-    timeout_id RegisterRepeatingTimeout(const TimeInterval &interval,
-                                        Callback0<bool> *closure);
-    timeout_id RegisterSingleTimeout(unsigned int ms,
-                                     SingleUseCallback0<void> *closure);
-    timeout_id RegisterSingleTimeout(const TimeInterval &interval,
-                                     SingleUseCallback0<void> *closure);
-    void RemoveTimeout(timeout_id id);
+    ola::thread::timeout_id RegisterRepeatingTimeout(unsigned int ms,
+                                                     Callback0<bool> *closure);
+    ola::thread::timeout_id RegisterRepeatingTimeout(
+        const TimeInterval &interval,
+        Callback0<bool> *closure);
+    ola::thread::timeout_id RegisterSingleTimeout(
+        unsigned int ms,
+        SingleUseCallback0<void> *closure);
+    ola::thread::timeout_id RegisterSingleTimeout(
+        const TimeInterval &interval,
+        SingleUseCallback0<void> *closure);
+    void RemoveTimeout(ola::thread::timeout_id id);
 
     void Execute(ola::BaseCallback0<void> *closure);
 
@@ -75,15 +77,14 @@ class PluginAdaptor: public ola::io::SelectServerInterface {
       return m_port_broker;
     }
 
-  private:
-    PluginAdaptor(const PluginAdaptor&);
-    PluginAdaptor& operator=(const PluginAdaptor&);
-
+ private:
     DeviceManager *m_device_manager;
     ola::io::SelectServerInterface *m_ss;
     ExportMap *m_export_map;
     class PreferencesFactory *m_preferences_factory;
     class PortBrokerInterface *m_port_broker;
+
+    DISALLOW_COPY_AND_ASSIGN(PluginAdaptor);
 };
 }  // namespace ola
 #endif  // INCLUDE_OLAD_PLUGINADAPTOR_H_

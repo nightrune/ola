@@ -32,7 +32,10 @@
 #include "ola/rdm/MovingLightResponder.h"
 #include "ola/rdm/OpenLightingEnums.h"
 #include "ola/rdm/RDMEnums.h"
+#include "ola/rdm/RDMHelper.h"
 #include "ola/rdm/ResponderHelper.h"
+#include "ola/rdm/ResponderSlotData.h"
+#include "ola/StringUtils.h"
 
 namespace ola {
 namespace rdm {
@@ -47,11 +50,66 @@ MovingLightResponder::RDMOps *MovingLightResponder::RDMOps::instance = NULL;
 const MovingLightResponder::Personalities *
     MovingLightResponder::Personalities::Instance() {
   if (!instance) {
+    SlotDataCollection::SlotDataList p1_slot_data;
+    p1_slot_data.push_back(
+        SlotData::PrimarySlot(SD_INTENSITY, 0, "Intensity Coarse"));  // 0
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_FINE, 0, 0, "Intensity Fine"));  // 1
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_CONTROL, 0, 0, "Shutter"));  // 2
+    p1_slot_data.push_back(SlotData::PrimarySlot(SD_PAN, 127));  // 3
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_SPEED, 3, 0, "Pan Speed"));  // 4
+    p1_slot_data.push_back(SlotData::PrimarySlot(SD_TILT, 127));  // 5
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_TIMING, 5, 0, "Tilt Timing"));  // 6
+    p1_slot_data.push_back(SlotData::PrimarySlot(SD_ROTO_GOBO_WHEEL, 0));  // 7
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_INDEX, 7, 0));  // 8
+    p1_slot_data.push_back(SlotData::PrimarySlot(SD_PRISM_WHEEL, 0));  // 9
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_ROTATION, 8, 0));  // 10
+    p1_slot_data.push_back(SlotData::PrimarySlot(SD_EFFECTS_WHEEL, 0));  // 11
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_INDEX_ROTATE, 8, 0));  // 12
+    p1_slot_data.push_back(
+        SlotData::PrimarySlot(SD_FIXTURE_SPEED, 0, "Speed"));  // 13
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_SPEED, 13, 0, "Speed ^ 2"));  // 14
+    p1_slot_data.push_back(
+        SlotData::PrimarySlot(SD_UNDEFINED,
+                              0,
+                              "Open Sourceiness Foo"));  // 15
+    p1_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_UNDEFINED,
+                                15,
+                                0,
+                                "Open Sourceiness Bar"));  // 16
+
+    SlotDataCollection::SlotDataList p2_slot_data;
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_INTENSITY, 0));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_PAN, 127));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_TILT, 127));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_COLOR_WHEEL, 0));
+    p2_slot_data.push_back(SlotData::PrimarySlot(SD_STATIC_GOBO_WHEEL, 0));
+
+    SlotDataCollection::SlotDataList p4_slot_data;
+    p4_slot_data.push_back(
+        SlotData::PrimarySlot(SD_INTENSITY, 0, ""));
+    p4_slot_data.push_back(
+        SlotData::SecondarySlot(ST_SEC_FINE, 0, 0, ""));
+
     PersonalityList personalities;
-    personalities.push_back(new Personality(0, "Personality 1"));
-    personalities.push_back(new Personality(5, "Personality 2"));
-    personalities.push_back(new Personality(10, "Personality 3"));
-    personalities.push_back(new Personality(20, "Personality 4"));
+    personalities.push_back(Personality(17,
+                                        "Full",
+                                        SlotDataCollection(p1_slot_data)));
+    personalities.push_back(Personality(5,
+                                        "Basic",
+                                        SlotDataCollection(p2_slot_data)));
+    personalities.push_back(Personality(0, "No Channels"));
+    personalities.push_back(Personality(3,  // One more slot than highest
+                                        "Quirks Mode",
+                                        SlotDataCollection(p4_slot_data)));
     instance = new Personalities(personalities);
   }
   return instance;
@@ -98,6 +156,15 @@ const ResponderOps<MovingLightResponder>::ParamHandler
   { PID_DMX_PERSONALITY_DESCRIPTION,
     &MovingLightResponder::GetPersonalityDescription,
     NULL},
+  { PID_SLOT_INFO,
+    &MovingLightResponder::GetSlotInfo,
+    NULL},
+  { PID_SLOT_DESCRIPTION,
+    &MovingLightResponder::GetSlotDescription,
+    NULL},
+  { PID_DEFAULT_SLOT_VALUE,
+    &MovingLightResponder::GetSlotDefaultValues,
+    NULL},
   { PID_DMX_START_ADDRESS,
     &MovingLightResponder::GetDmxStartAddress,
     &MovingLightResponder::SetDmxStartAddress},
@@ -140,6 +207,9 @@ const ResponderOps<MovingLightResponder>::ParamHandler
   { PID_REAL_TIME_CLOCK,
     &MovingLightResponder::GetRealTimeClock,
     NULL},
+  { PID_RESET_DEVICE,
+    NULL,
+    &MovingLightResponder::SetResetDevice},
   { PID_POWER_STATE,
     &MovingLightResponder::GetPowerState,
     &MovingLightResponder::SetPowerState},
@@ -196,43 +266,11 @@ const RDMResponse *MovingLightResponder::GetParamDescription(
       << ", got " << parameter_id;
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
   } else {
-    struct parameter_description_s {
-      uint16_t pid;
-      uint8_t pdl_size;
-      uint8_t data_type;
-      uint8_t command_class;
-      uint8_t type;
-      uint8_t unit;
-      uint8_t prefix;
-      uint32_t min_value;
-      uint32_t default_value;
-      uint32_t max_value;
-      char description[MAX_RDM_STRING_LENGTH];
-    } __attribute__((packed));
-
-    struct parameter_description_s param_description;
-    param_description.pid = HostToNetwork(
-        static_cast<uint16_t>(OLA_MANUFACTURER_PID_CODE_VERSION));
-    param_description.pdl_size = HostToNetwork(
-        static_cast<uint8_t>(MAX_RDM_STRING_LENGTH));
-    param_description.data_type = HostToNetwork(
-        static_cast<uint8_t>(DS_ASCII));
-    param_description.command_class = HostToNetwork(
-        static_cast<uint8_t>(CC_GET));
-    param_description.type = 0;
-    param_description.unit = HostToNetwork(
-        static_cast<uint8_t>(UNITS_NONE));
-    param_description.prefix = HostToNetwork(
-        static_cast<uint8_t>(PREFIX_NONE));
-    param_description.min_value = 0;
-    param_description.default_value = 0;
-    param_description.max_value = 0;
-    strncpy(param_description.description, "Code Version",
-            MAX_RDM_STRING_LENGTH);
-    return GetResponseFromData(
+    return ResponderHelper::GetASCIIParamDescription(
         request,
-        reinterpret_cast<uint8_t*>(&param_description),
-        sizeof(param_description));
+        OLA_MANUFACTURER_PID_CODE_VERSION,
+        CC_GET,
+        "Code Version");
   }
 }
 
@@ -240,7 +278,7 @@ const RDMResponse *MovingLightResponder::GetDeviceInfo(
     const RDMRequest *request) {
   return ResponderHelper::GetDeviceInfo(
       request, OLA_DUMMY_MOVING_LIGHT_MODEL,
-      PRODUCT_CATEGORY_FIXTURE_MOVING_YOKE, 1,
+      PRODUCT_CATEGORY_FIXTURE_MOVING_YOKE, 2,
       &m_personality_manager,
       m_start_address,
       0, 0);
@@ -276,16 +314,7 @@ const RDMResponse *MovingLightResponder::SetFactoryDefaults(
   m_personality_manager.SetActivePersonality(1);
   m_identify_mode = 0;
 
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetLanguageCapabilities(
@@ -342,16 +371,7 @@ const RDMResponse *MovingLightResponder::SetLanguage(
   }
   m_language = new_lang;
 
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetProductDetailList(
@@ -376,6 +396,21 @@ const RDMResponse *MovingLightResponder::GetPersonalityDescription(
     const RDMRequest *request) {
   return ResponderHelper::GetPersonalityDescription(
       request, &m_personality_manager);
+}
+
+const RDMResponse *MovingLightResponder::GetSlotInfo(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSlotInfo(request, &m_personality_manager);
+}
+
+const RDMResponse *MovingLightResponder::GetSlotDescription(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSlotDescription(request, &m_personality_manager);
+}
+
+const RDMResponse *MovingLightResponder::GetSlotDefaultValues(
+    const RDMRequest *request) {
+  return ResponderHelper::GetSlotDefaultValues(request, &m_personality_manager);
 }
 
 const RDMResponse *MovingLightResponder::GetDmxStartAddress(
@@ -438,16 +473,7 @@ const RDMResponse *MovingLightResponder::SetLampState(
   }
 
   m_lamp_state = static_cast<rdm_lamp_state>(new_value);
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetLampOnMode(
@@ -463,21 +489,12 @@ const RDMResponse *MovingLightResponder::SetLampOnMode(
     return NackWithReason(request, NR_FORMAT_ERROR);
   }
 
-  if (new_value > static_cast<uint8_t>(LAMP_ON_MODE_AFTER_CAL)) {
+  if (new_value > static_cast<uint8_t>(LAMP_ON_MODE_ON_AFTER_CAL)) {
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
   }
 
   m_lamp_on_mode = static_cast<rdm_lamp_mode>(new_value);
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetDevicePowerCycles(
@@ -525,16 +542,7 @@ const RDMResponse *MovingLightResponder::SetDisplayInvert(
   }
 
   m_display_invert = static_cast<rdm_display_invert>(new_value);
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetDisplayLevel(
@@ -595,22 +603,31 @@ const RDMResponse *MovingLightResponder::SetPowerState(
     return NackWithReason(request, NR_FORMAT_ERROR);
   }
 
-  if (new_value > static_cast<uint8_t>(POWER_STATE_STANDBY) &&
-      new_value != static_cast<uint8_t>(POWER_STATE_NORMAL)) {
+  if (!UIntToPowerState(new_value, &m_power_state)) {
+    return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
+  }
+  return ResponderHelper::EmptySetResponse(request);
+}
+
+const RDMResponse *MovingLightResponder::SetResetDevice(
+    const RDMRequest *request) {
+  uint8_t value;
+  rdm_reset_device_mode reset_device_enum;
+  if (!ResponderHelper::ExtractUInt8(request, &value)) {
+    return NackWithReason(request, NR_FORMAT_ERROR);
+  }
+
+  if (!UIntToResetDevice(value, &reset_device_enum)) {
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
   }
 
-  m_power_state = static_cast<rdm_power_state>(new_value);
-  return new RDMSetResponse(
-    request->DestinationUID(),
-    request->SourceUID(),
-    request->TransactionNumber(),
-    RDM_ACK,
-    0,
-    request->SubDevice(),
-    request->ParamId(),
-    NULL,
-    0);
+  string reset_type = ResetDeviceToString(reset_device_enum);
+  ToLower(&reset_type);
+
+  OLA_INFO << "Dummy Moving Light " << m_uid << " " << reset_type <<
+      " reset device";
+
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 const RDMResponse *MovingLightResponder::GetDeviceModelDescription(

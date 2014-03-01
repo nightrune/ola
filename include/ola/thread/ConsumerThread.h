@@ -22,49 +22,50 @@
 #define INCLUDE_OLA_THREAD_CONSUMERTHREAD_H_
 
 #include <ola/Callback.h>
+#include <ola/base/Macro.h>
 #include <ola/thread/Thread.h>
 #include <queue>
 
 namespace ola {
 namespace thread {
 
-using std::queue;
-
 /**
  * A thread which waits on a queue, and when actions (callbacks) become
  * available, it pulls them from the queue and executes them.
  */
 class ConsumerThread: public ola::thread::Thread {
-  public :
-    typedef BaseCallback0<void>* Action;
-    /**
-     * @param callback_queue the queue to pull actions from
-     * @param shutdown a bool which is set to true if this thread is to finish.
-     * @param mutex the Mutex object which protects the queue and shutdown
-     *   variable.
-     * @param condition_var the ConditionVariable to wait on. This signals when
-     *   the queue is non-empty, or shutdown changes to true.
-     */
-    ConsumerThread(queue<Action> *callback_queue,
-                   const bool *shutdown,
-                   Mutex *mutex,
-                   ConditionVariable *condition_var)
-        : Thread(),
-          m_callback_queue(callback_queue),
-          m_shutdown(shutdown),
-          m_mutex(mutex),
-          m_condition_var(condition_var) {
-    }
-    ~ConsumerThread() {}
-    void *Run();
+ public :
+  typedef BaseCallback0<void>* Action;
+  /**
+   * @param callback_queue the queue to pull actions from
+   * @param shutdown a bool which is set to true if this thread is to finish.
+   * @param mutex the Mutex object which protects the queue and shutdown
+   *   variable.
+   * @param condition_var the ConditionVariable to wait on. This signals when
+   *   the queue is non-empty, or shutdown changes to true.
+   */
+  ConsumerThread(std::queue<Action> *callback_queue,
+                 const bool *shutdown,
+                 Mutex *mutex,
+                 ConditionVariable *condition_var)
+      : Thread(),
+        m_callback_queue(callback_queue),
+        m_shutdown(shutdown),
+        m_mutex(mutex),
+        m_condition_var(condition_var) {
+  }
+  ~ConsumerThread() {}
+  void *Run();
 
-  private:
-    queue<Action> *m_callback_queue;
-    const bool *m_shutdown;
-    Mutex *m_mutex;
-    ConditionVariable *m_condition_var;
+ private:
+  std::queue<Action> *m_callback_queue;
+  const bool *m_shutdown;
+  Mutex *m_mutex;
+  ConditionVariable *m_condition_var;
 
-    void EmptyQueue();
+  void EmptyQueue();
+
+  DISALLOW_COPY_AND_ASSIGN(ConsumerThread);
 };
 }  // namespace thread
 }  // namespace ola

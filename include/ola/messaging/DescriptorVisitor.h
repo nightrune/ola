@@ -30,6 +30,7 @@ namespace messaging {
 class BoolFieldDescriptor;
 class FieldDescriptorGroup;
 class IPV4FieldDescriptor;
+class MACFieldDescriptor;
 class StringFieldDescriptor;
 class UIDFieldDescriptor;
 
@@ -40,7 +41,7 @@ class IntegerFieldDescriptor;
  * The interface for the FieldDescriptor Visitor
  */
 class FieldDescriptorVisitor {
-  public:
+ public:
     virtual ~FieldDescriptorVisitor() {}
 
     // return true if you want groups to be recursively expanded
@@ -48,6 +49,7 @@ class FieldDescriptorVisitor {
 
     virtual void Visit(const BoolFieldDescriptor*) = 0;
     virtual void Visit(const IPV4FieldDescriptor*) = 0;
+    virtual void Visit(const MACFieldDescriptor*) = 0;
     virtual void Visit(const UIDFieldDescriptor*) = 0;
     virtual void Visit(const StringFieldDescriptor*) = 0;
     virtual void Visit(const IntegerFieldDescriptor<uint8_t>*) = 0;

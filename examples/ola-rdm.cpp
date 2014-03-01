@@ -69,7 +69,7 @@ typedef struct {
 void ParseOptions(int argc, char *argv[], options *opts) {
   opts->cmd = argv[0];
   opts->set_mode = false;
-  opts->pid_location = PID_DATA_DIR;
+  opts->pid_location = "";
   opts->list_pids = false;
   opts->help = false;
   opts->universe = 1;
@@ -203,7 +203,7 @@ void DisplayPIDsAndExit(uint16_t manufacturer_id,
 
 
 class RDMController {
-  public:
+ public:
     explicit RDMController(string pid_location);
 
     bool InitPidHelper();
@@ -220,7 +220,7 @@ class RDMController {
     void HandleResponse(const ola::rdm::ResponseStatus &response_status,
                         const string &rdm_data);
 
-  private:
+ private:
     typedef struct {
       unsigned int universe;
       const UID *uid;
@@ -302,7 +302,7 @@ void RDMController::HandleResponse(
       }
       // this is just an empty status message, the device probably doesn't
       // support queued messages.
-      cout << "Empty STATUS_MESSAGE returned." << endl;
+      cout << "Empty STATUS_MESSAGES returned." << endl;
     }
   } else if (response_status.response_type == ola::rdm::RDM_NACK_REASON) {
     cout << "Request NACKed: " <<

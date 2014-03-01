@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "ola/Logging.h"
+#include "ola/io/IOUtils.h"
 #include "olad/PluginAdaptor.h"
 #include "olad/Preferences.h"
 #include "plugins/karate/KarateDevice.h"
@@ -38,6 +39,7 @@ namespace plugin {
 namespace karate {
 
 using ola::PluginAdaptor;
+using std::string;
 using std::vector;
 
 const char KaratePlugin::KARATE_DEVICE_PATH[] = "/dev/kldmx0";
@@ -58,8 +60,8 @@ bool KaratePlugin::StartHook() {
 
   for (; iter != devices.end(); ++iter) {
     // first check if it's there
-    int fd = open(iter->c_str(), O_WRONLY);
-    if (fd >= 0) {
+    int fd;
+    if (ola::io::Open(*iter, O_WRONLY, &fd)) {
       close(fd);
       KarateDevice *device = new KarateDevice(
           this,

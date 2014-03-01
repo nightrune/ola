@@ -18,15 +18,16 @@
  * Copyright (C) 2005-2008 Simon Newton
  */
 #include <stdlib.h>
+
 #include <stdio.h>
 #include <string.h>
-#include <google/protobuf/stubs/common.h>
-#include <google/protobuf/service.h>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "common/rpc/RpcController.h"
+#include "common/rpc/RpcService.h"
 #include "ola/Logging.h"
 #include "ola/stl/STLUtils.h"
 #include "olad/Device.h"
@@ -36,9 +37,10 @@
 
 namespace ola {
 
-using google::protobuf::RpcController;
-using google::protobuf::Closure;
+using std::map;
 using std::pair;
+using std::string;
+using std::vector;
 
 /*
  * Create a new device
@@ -177,10 +179,10 @@ string Device::UniqueId() const {
 /*
  * Device Config request
  */
-void Device::Configure(RpcController *controller,
+void Device::Configure(ola::rpc::RpcController *controller,
                        const string &request,
                        string *response,
-                       Closure *done) {
+                       ConfigureCallback *done) {
   controller->SetFailed("Not Implemented");
   done->Run();
   (void) request;

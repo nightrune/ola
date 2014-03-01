@@ -4,14 +4,22 @@ AUX_DIST                = $(auxdir)/install-sh $(auxdir)/missing \
 
 include aminclude.am
 
-SUBDIRS = include data common ola plugins slp olad python tools \
+SUBDIRS = include data protoc common ola plugins slp olad python tools \
           examples debian java man doxygen
 
+# We want to build the python code when running distcheck.
+AM_DISTCHECK_CONFIGURE_FLAGS = --enable-python-libs
+
+# pkg-config files.
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libola.pc libolaserver.pc
 
+# As suggested by libtoolize
 ACLOCAL         = aclocal -I $(auxdir)
 ACLOCAL_AMFLAGS = -I config
+
+# dvi is run from make distcheck. Do nothing.
+dvi:
 
 EXTRA_DIST = \
   config/ac_prog_java_cc.m4 \

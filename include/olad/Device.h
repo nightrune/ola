@@ -21,15 +21,15 @@
 #ifndef INCLUDE_OLAD_DEVICE_H_
 #define INCLUDE_OLAD_DEVICE_H_
 
-#include <stdint.h>
+#include <ola/base/Macro.h>
 #include <olad/Port.h>
+#include <stdint.h>
 #include <map>
 #include <string>
 #include <vector>
 
-namespace google {
-namespace protobuf {
-  class Closure;
+namespace ola {
+namespace rpc {
   class RpcController;
 }
 }
@@ -38,27 +38,24 @@ namespace ola {
 
 class AbstractPlugin;
 
-using std::map;
-using std::pair;
-using std::string;
-using std::vector;
-
 /*
  * The interface for a Device
  */
 class AbstractDevice {
-  public:
+ public:
+    typedef BaseCallback0<void> ConfigureCallback;
+
     AbstractDevice() {}
     virtual ~AbstractDevice() {}
 
     // return the name of this device
-    virtual const string Name() const = 0;
+    virtual const std::string Name() const = 0;
     // return the plugin that owns this device
     virtual AbstractPlugin *Owner() const = 0;
 
     // return the a unique id of this device, this is guaranteed to be unique
     // and persist across restarts.
-    virtual string UniqueId() const = 0;
+    virtual std::string UniqueId() const = 0;
 
     // stop the device
     virtual bool Stop() = 0;
@@ -71,18 +68,18 @@ class AbstractDevice {
     virtual bool AllowMultiPortPatching() const = 0;
 
     // Fetch a list of all ports in this device
-    virtual void InputPorts(vector<InputPort*> *ports) const = 0;
-    virtual void OutputPorts(vector<OutputPort*> *ports) const = 0;
+    virtual void InputPorts(std::vector<InputPort*> *ports) const = 0;
+    virtual void OutputPorts(std::vector<OutputPort*> *ports) const = 0;
 
     // Lookup a particular port in this device
     virtual InputPort *GetInputPort(unsigned int port_id) const = 0;
     virtual OutputPort *GetOutputPort(unsigned int port_id) const = 0;
 
     // configure this device
-    virtual void Configure(google::protobuf::RpcController *controller,
-                           const string &request,
-                           string *response,
-                           google::protobuf::Closure *done) = 0;
+    virtual void Configure(ola::rpc::RpcController *controller,
+                           const std::string &request,
+                           std::string *response,
+                           ConfigureCallback *done) = 0;
 };
 
 
@@ -90,18 +87,18 @@ class AbstractDevice {
  * A partial implementation of a Device.
  */
 class Device: public AbstractDevice {
-  public:
-    Device(AbstractPlugin *owner, const string &name);
+ public:
+    Device(AbstractPlugin *owner, const std::string &name);
     virtual ~Device();
 
-    const string Name() const { return m_name; }
-    void SetName(const string &name) { m_name = name; }
+    const std::string Name() const { return m_name; }
+    void SetName(const std::string &name) { m_name = name; }
 
     AbstractPlugin *Owner() const { return m_owner; }
-    string UniqueId() const;
+    std::string UniqueId() const;
 
     // Returns an id which is unique within the plugin
-    virtual string DeviceId() const = 0;
+    virtual std::string DeviceId() const = 0;
 
     bool IsEnabled() const { return m_enabled; }
 
@@ -114,8 +111,8 @@ class Device: public AbstractDevice {
 
     bool AddPort(InputPort *port);
     bool AddPort(OutputPort *port);
-    void InputPorts(vector<InputPort*> *ports) const;
-    void OutputPorts(vector<OutputPort*> *ports) const;
+    void InputPorts(std::vector<InputPort*> *ports) const;
+    void OutputPorts(std::vector<OutputPort*> *ports) const;
 
     InputPort *GetInputPort(unsigned int port_id) const;
     OutputPort *GetOutputPort(unsigned int port_id) const;
@@ -124,36 +121,35 @@ class Device: public AbstractDevice {
     void DeleteAllPorts();
 
     // Handle a Configure request
-    virtual void Configure(class google::protobuf::RpcController *controller,
-                           const string &request,
-                           string *response,
-                           google::protobuf::Closure *done);
+    virtual void Configure(ola::rpc::RpcController *controller,
+                           const std::string &request,
+                           std::string *response,
+                           ConfigureCallback *done);
 
-  protected:
+ protected:
     virtual bool StartHook() { return true; }
     virtual void PrePortStop() {}
     virtual void PostPortStop() {}
 
-  private:
-    typedef map<unsigned int, InputPort*> input_port_map;
-    typedef map<unsigned int, OutputPort*> output_port_map;
+ private:
+    typedef std::map<unsigned int, InputPort*> input_port_map;
+    typedef std::map<unsigned int, OutputPort*> output_port_map;
 
     bool m_enabled;
     AbstractPlugin *m_owner;  // which plugin owns this device
-    string m_name;  // device name
-    mutable string m_unique_id;  // device id
+    std::string m_name;  // device name
+    mutable std::string m_unique_id;  // device id
     input_port_map m_input_ports;
     output_port_map m_output_ports;
 
-    Device(const Device&);
-    Device& operator=(const Device&);
-
     template<class PortClass>
     bool GenericAddPort(PortClass *port,
-                        map<unsigned int, PortClass*> *ports);
+                        std::map<unsigned int, PortClass*> *ports);
 
     template <class PortClass>
     void GenericDeletePort(PortClass *p);
+
+    DISALLOW_COPY_AND_ASSIGN(Device);
 };
 }  // namespace ola
 #endif  // INCLUDE_OLAD_DEVICE_H_

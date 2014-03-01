@@ -31,6 +31,9 @@
 namespace ola {
 namespace slp {
 
+using ola::io::ConnectedDescriptor;
+using ola::rpc::RpcChannel;
+using ola::rpc::RpcController;
 using ola::slp::proto::SLPService_Stub;
 using std::string;
 using std::vector;
@@ -57,7 +60,7 @@ bool SLPClientCore::Setup() {
   if (m_connected)
     return false;
 
-  m_channel = new StreamRpcChannel(NULL, m_descriptor);
+  m_channel = new RpcChannel(NULL, m_descriptor);
 
   if (!m_channel)
     return false;
@@ -134,7 +137,7 @@ bool SLPClientCore::DeRegisterService(
     return false;
   }
 
-  SimpleRpcController *controller = new SimpleRpcController();
+  RpcController *controller = new RpcController();
   ola::slp::proto::ServiceDeRegistration request;
   ola::slp::proto::ServiceAck *reply = new ola::slp::proto::ServiceAck();
 
@@ -143,7 +146,7 @@ bool SLPClientCore::DeRegisterService(
        iter != scopes.end(); ++iter)
     request.add_scope(*iter);
 
-  google::protobuf::Closure *cb = google::protobuf::NewCallback(
+  ola::rpc::RpcService::CompletionCallback *cb = NewSingleCallback(
       this,
       &SLPClientCore::HandleRegistration,
       NewArgs<register_arg>(controller, reply, callback));
@@ -165,7 +168,7 @@ bool SLPClientCore::FindService(
     return false;
   }
 
-  SimpleRpcController *controller = new SimpleRpcController();
+  RpcController *controller = new RpcController();
   ola::slp::proto::ServiceRequest request;
   ola::slp::proto::ServiceReply *reply = new ola::slp::proto::ServiceReply();
 
@@ -174,7 +177,7 @@ bool SLPClientCore::FindService(
        iter != scopes.end(); ++iter)
     request.add_scope(*iter);
 
-  google::protobuf::Closure *cb = google::protobuf::NewCallback(
+  ola::rpc::RpcService::CompletionCallback *cb = NewSingleCallback(
       this,
       &SLPClientCore::HandleFindRequest,
       NewArgs<find_arg>(controller, reply, callback));
@@ -194,12 +197,12 @@ bool SLPClientCore::GetServerInfo(
     return false;
   }
 
-  SimpleRpcController *controller = new SimpleRpcController();
+  RpcController *controller = new RpcController();
   ola::slp::proto::ServerInfoRequest request;
   ola::slp::proto::ServerInfoReply *reply =
       new ola::slp::proto::ServerInfoReply();
 
-  google::protobuf::Closure *cb = google::protobuf::NewCallback(
+  ola::rpc::RpcService::CompletionCallback *cb = NewSingleCallback(
       this,
       &SLPClientCore::HandleServerInfo,
       NewArgs<server_info_arg>(controller, reply, callback));
@@ -304,7 +307,7 @@ bool SLPClientCore::GenericRegisterService(
     return false;
   }
 
-  SimpleRpcController *controller = new SimpleRpcController();
+  RpcController *controller = new RpcController();
   ola::slp::proto::ServiceRegistration request;
   ola::slp::proto::ServiceAck *reply = new ola::slp::proto::ServiceAck();
 
@@ -315,7 +318,7 @@ bool SLPClientCore::GenericRegisterService(
   request.set_lifetime(lifetime);
   request.set_persistent(persistent);
 
-  google::protobuf::Closure *cb = google::protobuf::NewCallback(
+  ola::rpc::RpcService::CompletionCallback *cb = NewSingleCallback(
       this,
       &SLPClientCore::HandleRegistration,
       NewArgs<register_arg>(controller, reply, callback));

@@ -21,13 +21,15 @@
 #include <cppunit/extensions/HelperMacros.h>
 #include <string>
 
+#include "common/protocol/Ola.pb.h"
+#include "common/protocol/OlaService.pb.h"
+#include "common/rpc/RpcController.h"
+#include "common/rpc/RpcService.h"
 #include "ola/Clock.h"
 #include "ola/DmxBuffer.h"
-#include "olad/DmxSource.h"
-#include "olad/Client.h"
-#include "common/protocol/Ola.pb.h"
 #include "ola/testing/TestUtils.h"
-
+#include "olad/Client.h"
+#include "olad/DmxSource.h"
 
 
 static unsigned int TEST_UNIVERSE = 1;
@@ -46,11 +48,11 @@ class ClientTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testGetSetDMX);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testSendDMX();
     void testGetSetDMX();
 
-  private:
+ private:
     ola::Clock m_clock;
 };
 
@@ -62,22 +64,22 @@ CPPUNIT_TEST_SUITE_REGISTRATION(ClientTest);
  * Mock out the ClientStub for testing
  */
 class MockClientStub: public ola::proto::OlaClientService_Stub {
-  public:
-      MockClientStub(): ola::proto::OlaClientService_Stub(NULL) {}
-      void UpdateDmxData(::google::protobuf::RpcController* controller,
-                         const ::ola::proto::DmxData* request,
-                         ::ola::proto::Ack* response,
-                         ::google::protobuf::Closure* done);
+ public:
+    MockClientStub(): ola::proto::OlaClientService_Stub(NULL) {}
+
+    void UpdateDmxData(ola::rpc::RpcController *controller,
+                       const ola::proto::DmxData *request,
+                       ola::proto::Ack *response,
+                       ola::rpc::RpcService::CompletionCallback *done);
 };
 
 
 
 void MockClientStub::UpdateDmxData(
-    ::google::protobuf::RpcController* controller,
-    const ::ola::proto::DmxData* request,
-    ::ola::proto::Ack* response,
-    ::google::protobuf::Closure* done) {
-
+    ola::rpc::RpcController* controller,
+    const ola::proto::DmxData *request,
+    ola::proto::Ack *response,
+    ola::rpc::RpcService::CompletionCallback *done) {
   OLA_ASSERT(controller);
   OLA_ASSERT_FALSE(controller->Failed());
   OLA_ASSERT_EQ(TEST_UNIVERSE, (unsigned int) request->universe());
@@ -93,15 +95,16 @@ void MockClientStub::UpdateDmxData(
 void ClientTest::testSendDMX() {
   // check we survive a null pointer
   const DmxBuffer buffer(TEST_DATA);
+  uint8_t priority = 100;
   Client client(NULL);
   OLA_ASSERT(NULL == client.Stub());
-  client.SendDMX(TEST_UNIVERSE, buffer);
+  client.SendDMX(TEST_UNIVERSE, priority, buffer);
 
   // check the stub is called correctly
   MockClientStub client_stub;
   Client client2(&client_stub);
   OLA_ASSERT(&client_stub == client2.Stub());
-  client2.SendDMX(TEST_UNIVERSE, buffer);
+  client2.SendDMX(TEST_UNIVERSE, priority, buffer);
 }
 
 
@@ -118,7 +121,7 @@ void ClientTest::testGetSetDMX() {
   ola::DmxSource source(buffer, timestamp, 100);
 
   // check get/set works
-  client.DMXRecieved(TEST_UNIVERSE, source);
+  client.DMXReceived(TEST_UNIVERSE, source);
   const ola::DmxSource &source2 = client.SourceData(TEST_UNIVERSE);
   OLA_ASSERT(source2.IsSet());
   OLA_ASSERT(source2.Data() == buffer);
@@ -133,7 +136,7 @@ void ClientTest::testGetSetDMX() {
   OLA_ASSERT_EQ((uint8_t) 100, source2.Priority());
 
   source.UpdateData(buffer, timestamp, 120);
-  client.DMXRecieved(TEST_UNIVERSE, source);
+  client.DMXReceived(TEST_UNIVERSE, source);
   const ola::DmxSource source3 = client.SourceData(TEST_UNIVERSE);
   OLA_ASSERT(source3.IsSet());
   OLA_ASSERT(buffer == source3.Data());

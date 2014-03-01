@@ -24,6 +24,7 @@
 #include <ola/messaging/Descriptor.h>
 #include <ola/messaging/Message.h>
 #include <ola/network/IPV4Address.h>
+#include <ola/network/MACAddress.h>
 #include <ola/rdm/StringMessageBuilder.h>
 #include <ola/rdm/UID.h>
 #include <memory>
@@ -38,6 +39,8 @@ namespace rdm {
 using ola::messaging::MessageFieldInterface;
 using ola::rdm::UID;
 using std::auto_ptr;
+using std::string;
+using std::vector;
 
 
 StringMessageBuilder::StringMessageBuilder()
@@ -168,6 +171,26 @@ void StringMessageBuilder::Visit(
 
   m_groups.top().push_back(
       new ola::messaging::IPV4MessageField(descriptor, ip_address));
+}
+
+
+/**
+ * MAC Addresses
+ */
+void StringMessageBuilder::Visit(
+    const ola::messaging::MACFieldDescriptor *descriptor) {
+  if (StopParsing())
+    return;
+
+  string token = m_inputs[m_offset++];
+  ola::network::MACAddress mac_address;
+  if (!ola::network::MACAddress::FromString(token, &mac_address)) {
+    SetError(descriptor->Name());
+    return;
+  }
+
+  m_groups.top().push_back(
+      new ola::messaging::MACMessageField(descriptor, mac_address));
 }
 
 

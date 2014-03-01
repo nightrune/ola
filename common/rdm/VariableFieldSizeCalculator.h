@@ -33,11 +33,6 @@ namespace messaging {
 
 namespace rdm {
 
-using std::vector;
-using ola::messaging::FieldDescriptorInterface;
-using ola::messaging::StringFieldDescriptor;
-using ola::messaging::FieldDescriptorGroup;
-
 
 /**
  * Calculate the size of a variable field when unpacking a Message from a raw
@@ -45,7 +40,7 @@ using ola::messaging::FieldDescriptorGroup;
  */
 class VariableFieldSizeCalculator
     : public ola::messaging::FieldDescriptorVisitor {
-  public:
+ public:
     typedef enum {
       TOO_SMALL,
       TOO_LARGE,
@@ -68,6 +63,7 @@ class VariableFieldSizeCalculator
 
     void Visit(const ola::messaging::BoolFieldDescriptor*);
     void Visit(const ola::messaging::IPV4FieldDescriptor*);
+    void Visit(const ola::messaging::MACFieldDescriptor*);
     void Visit(const ola::messaging::UIDFieldDescriptor*);
     void Visit(const ola::messaging::StringFieldDescriptor*);
     void Visit(const ola::messaging::UInt8FieldDescriptor*);
@@ -79,10 +75,12 @@ class VariableFieldSizeCalculator
     void Visit(const ola::messaging::FieldDescriptorGroup*);
     void PostVisit(const ola::messaging::FieldDescriptorGroup*) {}
 
-  private:
+ private:
     unsigned int m_fixed_size_sum;
-    vector<const StringFieldDescriptor*> m_variable_string_fields;
-    vector<const FieldDescriptorGroup*> m_variable_group_fields;
+    std::vector<const ola::messaging::StringFieldDescriptor*>
+        m_variable_string_fields;
+    std::vector<const ola::messaging::FieldDescriptorGroup*>
+        m_variable_group_fields;
 
     unsigned int DetermineGroupSize(const
         ola::messaging::FieldDescriptorGroup*);

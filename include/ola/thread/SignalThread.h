@@ -23,6 +23,7 @@
 
 #include <signal.h>
 #include <ola/Callback.h>
+#include <ola/base/Macro.h>
 #include <ola/thread/Thread.h>
 #include <map>
 
@@ -45,25 +46,28 @@ namespace thread {
  *  - spawn a thread which uses sigwait() to capture signals
  */
 class SignalThread : public ola::thread::Thread {
-  public:
+ public:
     typedef ola::Callback0<void> SignalHandler;
 
+    SignalThread() {}
     ~SignalThread();
 
     // This has to be called before Start(). You can't add signal handlers once
     // the thread is running.
     bool InstallSignalHandler(int signal, SignalHandler *handler);
 
-  protected:
+ protected:
     void* Run();
 
-  private:
+ private:
     typedef std::map<int, SignalHandler*> SignalMap;
 
     SignalMap m_signal_handlers;
 
     bool AddSignals(sigset_t *signals);
     bool BlockSignal(int signal);
+
+    DISALLOW_COPY_AND_ASSIGN(SignalThread);
 };
 }  // namespace thread
 }  // namespace ola

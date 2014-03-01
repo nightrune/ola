@@ -22,6 +22,7 @@
 #define INCLUDE_OLA_E133_DEVICEMANAGER_H_
 
 #include <ola/Callback.h>
+#include <ola/base/Macro.h>
 #include <ola/e133/MessageBuilder.h>
 #include <ola/io/SelectServerInterface.h>
 #include <ola/network/IPV4Address.h>
@@ -46,7 +47,7 @@ using std::vector;
  * pull in all the headers.
  */
 class DeviceManager {
-  public:
+ public:
     /*
      * The callback used to receive RDMNet layer messages from the devices.
      * @returns true if the data should be acknowledged, false otherwise.
@@ -74,8 +75,10 @@ class DeviceManager {
     void RemoveDeviceIfNotConnected(const IPV4Address &ip_address);
     void ListManagedDevices(vector<IPV4Address> *devices) const;
 
-  private:
+ private:
     class DeviceManagerImpl *m_impl;
+
+    DISALLOW_COPY_AND_ASSIGN(DeviceManager);
 };
 }  // namespace e133
 }  // namespace ola

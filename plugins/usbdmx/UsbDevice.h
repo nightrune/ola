@@ -34,9 +34,9 @@ namespace usbdmx {
  * Start() method as well to do the USB setup.
  */
 class UsbDevice: public ola::Device {
-  public:
+ public:
     UsbDevice(ola::AbstractPlugin *owner,
-              const string &name,
+              const std::string &name,
               libusb_device *device):
         Device(owner, name),
         m_usb_device(device) {
@@ -46,7 +46,7 @@ class UsbDevice: public ola::Device {
       libusb_unref_device(m_usb_device);
     }
 
-  protected:
+ protected:
     libusb_device *m_usb_device;
 };
 }  // namespace usbdmx

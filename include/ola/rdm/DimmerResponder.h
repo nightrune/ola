@@ -30,33 +30,32 @@
 #ifndef INCLUDE_OLA_RDM_DIMMERRESPONDER_H_
 #define INCLUDE_OLA_RDM_DIMMERRESPONDER_H_
 
+#include <ola/rdm/DimmerRootDevice.h>
+#include <ola/rdm/RDMControllerInterface.h>
+#include <ola/rdm/SubDeviceDispatcher.h>
+#include <ola/rdm/UID.h>
+
 #include <map>
 #include <memory>
-#include "ola/rdm/DimmerRootDevice.h"
-#include "ola/rdm/RDMControllerInterface.h"
-#include "ola/rdm/SubDeviceDispatcher.h"
-#include "ola/rdm/UID.h"
 
 namespace ola {
 namespace rdm {
-
-using std::auto_ptr;
 
 /**
  * A RDM responder that simulates a dimmer rack. This has a configurable number
  * of sub-devices.
  */
 class DimmerResponder: public RDMControllerInterface {
-  public:
-    DimmerResponder(const UID &uid, uint16_t number_of_subdevices);
-    virtual ~DimmerResponder();
+ public:
+  DimmerResponder(const UID &uid, uint16_t number_of_subdevices);
+  virtual ~DimmerResponder();
 
-    void SendRDMRequest(const RDMRequest *request, RDMCallback *callback);
+  void SendRDMRequest(const RDMRequest *request, RDMCallback *callback);
 
-  private:
-    SubDeviceDispatcher m_dispatcher;
-    auto_ptr<DimmerRootDevice> m_root_device;
-    std::map<uint16_t, class DimmerSubDevice*> m_sub_devices;
+ private:
+  SubDeviceDispatcher m_dispatcher;
+  std::auto_ptr<DimmerRootDevice> m_root_device;
+  std::map<uint16_t, class DimmerSubDevice*> m_sub_devices;
 };
 }  // namespace rdm
 }  // namespace ola

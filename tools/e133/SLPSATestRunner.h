@@ -50,14 +50,10 @@ using ola::network::UDPSocket;
 using ola::slp::XIDAllocator;
 using ola::slp::slp_function_id_t;
 using ola::slp::xid_t;
-using std::map;
-using std::set;
-using std::string;
-using std::vector;
 
 
 class TestCase {
-  public:
+ public:
     typedef enum {
       DESTINATION_UNDEFINED,
       UNICAST,
@@ -99,8 +95,8 @@ class TestCase {
 
     TestState VerifyReceivedData(const uint8_t *data, unsigned int length);
 
-    void SetName(const string &name) { m_name = name; }
-    string Name() const { return m_name; }
+    void SetName(const std::string &name) { m_name = name; }
+    std::string Name() const { return m_name; }
 
     ExpectedResult expected_result() const { return m_expected_result; }
 
@@ -123,7 +119,7 @@ class TestCase {
       return m_xid;
     }
 
-    virtual bool CheckLangInResponse(const string &lang) const {
+    virtual bool CheckLangInResponse(const std::string &lang) const {
       if (lang != ola::slp::EN_LANGUAGE_TAG) {
         OLA_INFO << "Language mismatch, expected '" << ola::slp::EN_LANGUAGE_TAG
                  << "', got " << lang;
@@ -132,9 +128,9 @@ class TestCase {
       return true;
     }
 
-  protected:
+ protected:
     // tests can use this.
-    set<IPV4Address> pr_list;
+    std::set<IPV4Address> pr_list;
 
     void SetDestination(Destination target) { m_target = target; }
 
@@ -160,8 +156,8 @@ class TestCase {
       m_function_id = function_id;
     }
 
-  private:
-    string m_name;
+ private:
+    std::string m_name;
     Destination m_target;
     IPV4Address m_destination_ip;
     ExpectedResult m_expected_result;
@@ -171,7 +167,7 @@ class TestCase {
     slp_function_id_t m_function_id;
     uint16_t m_error_code;
 
-    void SetExpectedResult(ExpectedResult result, const string& method) {
+    void SetExpectedResult(ExpectedResult result, const std::string& method) {
       if (m_expected_result != RESULT_UNDEFINED) {
         OLA_WARN << Name() << " " << method << " overriding previous value";
       }
@@ -211,27 +207,27 @@ class TestCase {
  */
 
 typedef TestCase* (*TestCaseCreator)();
-typedef map<string, TestCaseCreator> TestCaseCreatorMap;
+typedef std::map<std::string, TestCaseCreator> TestCaseCreatorMap;
 
 // Returns a reference to the map that holds the test creation functions.
 TestCaseCreatorMap &GetTestCreatorMap();
 
 
 // Instatiate all known tests.
-void CreateTests(vector<TestCase*> *test_cases);
+void CreateTests(std::vector<TestCase*> *test_cases);
 // Instatiate tests which match the test names given in test_names.
-void CreateTestsMatchingnames(const vector<string> &test_names,
-                              vector<TestCase*> *test_cases);
+void CreateTestsMatchingnames(const std::vector<std::string> &test_names,
+                              std::vector<TestCase*> *test_cases);
 // Return a list of all registered tests.
-void GetTestnames(vector<string> *test_names);
+void GetTestnames(std::vector<std::string> *test_names);
 
 
 /**
  * An object which registers a test creator on construction.
  */
 class TestRegisterer {
-  public:
-    TestRegisterer(const string &test_name, TestCaseCreator creator) {
+ public:
+    TestRegisterer(const std::string &test_name, TestCaseCreator creator) {
       GetTestCreatorMap()[test_name] = creator;
     }
 };
@@ -249,27 +245,27 @@ class TestRegisterer {
  * The TestRunner is the class which executes all the tests.
  */
 class TestRunner {
-  public:
+ public:
     TestRunner(unsigned int timeout,
-               const vector<string> &test_names,
+               const std::vector<std::string> &test_names,
                const IPV4SocketAddress &target);
     ~TestRunner();
 
     void Run();
 
-  private:
+ private:
     SelectServer m_ss;
     UDPSocket m_socket;
     const unsigned int m_timeout_in_ms;
     const IPV4SocketAddress m_target, m_multicast_endpoint;
-    ola::io::timeout_id m_timeout_id;
+    ola::thread::timeout_id m_timeout_id;
     IOQueue m_output_queue;
     BigEndianOutputStream m_output_stream;
-    vector<TestCase*> m_tests;
+    std::vector<TestCase*> m_tests;
     // points to the next test to run
-    vector<TestCase*>::iterator m_test_to_run;
+    std::vector<TestCase*>::iterator m_test_to_run;
     // points to the running test
-    vector<TestCase*>::iterator m_running_test;
+    std::vector<TestCase*>::iterator m_running_test;
 
     void CompleteTest();
     void RunNextTest();

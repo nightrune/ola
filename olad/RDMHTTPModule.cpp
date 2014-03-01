@@ -47,6 +47,11 @@
 namespace ola {
 
 using ola::OladHTTPServer;
+using ola::client::OlaUniverse;
+using ola::client::Result;
+using ola::http::HTTPRequest;
+using ola::http::HTTPResponse;
+using ola::http::HTTPServer;
 using ola::rdm::UID;
 using ola::thread::MutexLocker;
 using ola::web::BoolItem;
@@ -59,6 +64,7 @@ using ola::web::SelectItem;
 using ola::web::StringItem;
 using ola::web::UIntItem;
 using std::endl;
+using std::map;
 using std::pair;
 using std::set;
 using std::string;
@@ -112,6 +118,7 @@ const char RDMHTTPModule::POWER_CYCLES_SECTION[] = "power_cycles";
 const char RDMHTTPModule::POWER_STATE_SECTION[] = "power_state";
 const char RDMHTTPModule::PRODUCT_DETAIL_SECTION[] = "product_detail";
 const char RDMHTTPModule::PROXIED_DEVICES_SECTION[] = "proxied_devices";
+const char RDMHTTPModule::RESET_DEVICE_SECTION[] = "reset_device";
 const char RDMHTTPModule::SENSOR_SECTION[] = "sensor";
 const char RDMHTTPModule::TILT_INVERT_SECTION[] = "tilt_invert";
 
@@ -142,13 +149,15 @@ const char RDMHTTPModule::POWER_CYCLES_SECTION_NAME[] = "Device Power Cycles";
 const char RDMHTTPModule::POWER_STATE_SECTION_NAME[] = "Power State";
 const char RDMHTTPModule::PRODUCT_DETAIL_SECTION_NAME[] = "Product Details";
 const char RDMHTTPModule::PROXIED_DEVICES_SECTION_NAME[] = "Proxied Devices";
+const char RDMHTTPModule::RESET_DEVICE_SECTION_NAME[] = "Reset Device";
 const char RDMHTTPModule::TILT_INVERT_SECTION_NAME[] = "Tilt Invert";
 
 RDMHTTPModule::RDMHTTPModule(HTTPServer *http_server,
-                             OlaCallbackClient *client)
+                             client::OlaClient *client)
     : m_server(http_server),
       m_client(client),
-      m_rdm_api(m_client) {
+      m_shim(client),
+      m_rdm_api(&m_shim) {
 
   m_server->RegisterHandler(
       "/rdm/run_discovery",
@@ -219,16 +228,12 @@ int RDMHTTPModule::RunRDMDiscovery(const HTTPRequest *request,
   string incremental_str = request->GetParameter("incremental");
   bool incremental = incremental_str == "true";
 
-  bool ok = m_client->RunDiscovery(
+  m_client->RunDiscovery(
       universe_id,
-      !incremental,
-      NewSingleCallback(this,
-                        &RDMHTTPModule::HandleUIDList,
-                        response,
-                        universe_id));
+      incremental ? client::DISCOVERY_INCREMENTAL : client::DISCOVERY_FULL,
+      NewSingleCallback(this, &RDMHTTPModule::HandleUIDList,
+                        response, universe_id));
 
-  if (!ok)
-    return m_server->ServeError(response, BACKEND_DISCONNECTED_ERROR);
   return MHD_YES;
 }
 
@@ -247,15 +252,13 @@ int RDMHTTPModule::JsonUIDs(const HTTPRequest *request,
   if (!CheckForInvalidId(request, &universe_id))
     return OladHTTPServer::ServeHelpRedirect(response);
 
-  bool ok = m_client->FetchUIDList(
+  m_client->RunDiscovery(
       universe_id,
+      client::DISCOVERY_CACHED,
       NewSingleCallback(this,
                         &RDMHTTPModule::HandleUIDList,
                         response,
                         universe_id));
-
-  if (!ok)
-    return m_server->ServeError(response, BACKEND_DISCONNECTED_ERROR);
   return MHD_YES;
 }
 
@@ -506,6 +509,9 @@ int RDMHTTPModule::JsonSectionInfo(const HTTPRequest *request,
     error = GetIdentifyMode(response, universe_id, *uid);
   } else if (section_id == POWER_STATE_SECTION) {
     error = GetPowerState(response, universe_id, *uid);
+  } else if (section_id == RESET_DEVICE_SECTION) {
+    // No get command available, so just generate the JSON
+    error = GetResetDevice(response);
   } else {
     OLA_INFO << "Missing or unknown section id: " << section_id;
     delete uid;
@@ -582,6 +588,8 @@ int RDMHTTPModule::JsonSaveSectionInfo(const HTTPRequest *request,
     error = SetIdentifyMode(request, response, universe_id, *uid);
   } else if (section_id == POWER_STATE_SECTION) {
     error = SetPowerState(request, response, universe_id, *uid);
+  } else if (section_id == RESET_DEVICE_SECTION) {
+    error = SetResetDevice(request, response, universe_id, *uid);
   } else {
     OLA_INFO << "Missing or unknown section id: " << section_id;
     delete uid;
@@ -635,10 +643,10 @@ void RDMHTTPModule::PruneUniverseList(const vector<OlaUniverse> &universes) {
  */
 void RDMHTTPModule::HandleUIDList(HTTPResponse *response,
                                   unsigned int universe_id,
-                                  const ola::rdm::UIDSet &uids,
-                                  const string &error) {
-  if (!error.empty()) {
-    m_server->ServeError(response, error);
+                                  const Result &result,
+                                  const ola::rdm::UIDSet &uids) {
+  if (!result.Success()) {
+    m_server->ServeError(response, result.Error());
     return;
   }
   ola::rdm::UIDSet::Iterator iter = uids.Begin();
@@ -678,6 +686,7 @@ void RDMHTTPModule::HandleUIDList(HTTPResponse *response,
     json_uid->Add("device_id", iter->DeviceId());
     json_uid->Add("device", device);
     json_uid->Add("manufacturer", manufacturer);
+    json_uid->Add("uid", iter->ToString());
   }
 
   response->SetNoCache();
@@ -847,7 +856,7 @@ void RDMHTTPModule::UIDInfoHandler(HTTPResponse *response,
   json.Add("address", device.dmx_start_address);
   json.Add("footprint", device.dmx_footprint);
   json.Add("personality", static_cast<int>(device.current_personality));
-  json.Add("personality_count", static_cast<int>(device.personaility_count));
+  json.Add("personality_count", static_cast<int>(device.personality_count));
 
   response->SetNoCache();
   response->SetContentType(HTTPServer::CONTENT_TYPE_PLAIN);
@@ -1065,6 +1074,9 @@ void RDMHTTPModule::SupportedSectionsDeviceInfoHandler(
         break;
       case ola::rdm::PID_POWER_STATE:
         AddSection(&sections, POWER_STATE_SECTION, POWER_STATE_SECTION_NAME);
+        break;
+      case ola::rdm::PID_RESET_DEVICE:
+        AddSection(&sections, RESET_DEVICE_SECTION, RESET_DEVICE_SECTION_NAME);
         break;
     }
   }
@@ -1365,7 +1377,7 @@ void RDMHTTPModule::GetDeviceInfoHandler(
 
   stream.str("");
   stream << static_cast<int>(device.current_personality) << " of " <<
-    static_cast<int>(device.personaility_count);
+    static_cast<int>(device.personality_count);
   section.AddItem(new StringItem("Personality", stream.str()));
 
   section.AddItem(new UIntItem("Sub Devices", device.sub_device_count));
@@ -2377,7 +2389,7 @@ void RDMHTTPModule::LampStateHandler(HTTPResponse *response,
     {"Strike", ola::rdm::LAMP_STRIKE},
     {"Standby", ola::rdm::LAMP_STANDBY}};
 
-  for (unsigned int i = 0; i != sizeof(possible_values) / sizeof(values_s);
+  for (unsigned int i = 0; i < sizeof(possible_values) / sizeof(values_s);
        ++i) {
     item->AddItem(possible_values[i].label, possible_values[i].state);
     if (state == possible_values[i].state)
@@ -2458,9 +2470,9 @@ void RDMHTTPModule::LampModeHandler(HTTPResponse *response,
     {"Off", ola::rdm::LAMP_ON_MODE_OFF},
     {"DMX", ola::rdm::LAMP_ON_MODE_DMX},
     {"On", ola::rdm::LAMP_ON_MODE_ON},
-    {"On After Calibration", ola::rdm::LAMP_ON_MODE_AFTER_CAL}};
+    {"On After Calibration", ola::rdm::LAMP_ON_MODE_ON_AFTER_CAL}};
 
-  for (unsigned int i = 0; i != sizeof(possible_values) / sizeof(values_s);
+  for (unsigned int i = 0; i < sizeof(possible_values) / sizeof(values_s);
        ++i) {
     item->AddItem(possible_values[i].label, possible_values[i].mode);
     if (mode == possible_values[i].mode)
@@ -2969,7 +2981,7 @@ void RDMHTTPModule::PowerStateHandler(HTTPResponse *response,
     {"Standby", ola::rdm::POWER_STATE_STANDBY},
     {"Normal", ola::rdm::POWER_STATE_NORMAL}};
 
-  for (unsigned int i = 0; i != sizeof(possible_values) / sizeof(values_s);
+  for (unsigned int i = 0; i < sizeof(possible_values) / sizeof(values_s);
        ++i) {
     item->AddItem(possible_values[i].label, possible_values[i].state);
     if (value == possible_values[i].state)
@@ -3002,6 +3014,64 @@ string RDMHTTPModule::SetPowerState(const HTTPRequest *request,
       uid,
       ola::rdm::ROOT_RDM_DEVICE,
       power_state_enum,
+      NewSingleCallback(this,
+                        &RDMHTTPModule::SetHandler,
+                        response),
+      &error);
+  return error;
+}
+
+
+/**
+ * Handle the request for the device reset section.
+ */
+string RDMHTTPModule::GetResetDevice(HTTPResponse *response) {
+  JsonSection section = JsonSection(false);
+  SelectItem *item = new SelectItem("Reset Device", GENERIC_UINT_FIELD);
+
+  typedef struct {
+    string label;
+    ola::rdm::rdm_reset_device_mode state;
+  } values_s;
+
+  values_s possible_values[] = {
+    {"Warm Reset", ola::rdm::RESET_WARM},
+    {"Cold Reset", ola::rdm::RESET_COLD}};
+
+  for (unsigned int i = 0; i < sizeof(possible_values) / sizeof(values_s);
+       ++i) {
+    item->AddItem(possible_values[i].label, possible_values[i].state);
+  }
+
+  section.AddItem(item);
+  section.SetSaveButton("Reset Device");
+  RespondWithSection(response, section);
+
+  return "";
+}
+
+
+/*
+ * Set the reset device.
+ */
+string RDMHTTPModule::SetResetDevice(const HTTPRequest *request,
+                                    HTTPResponse *response,
+                                    unsigned int universe_id,
+                                    const UID &uid) {
+  string reset_device_str = request->GetParameter(GENERIC_UINT_FIELD);
+  uint8_t reset_device;
+  ola::rdm::rdm_reset_device_mode reset_device_enum;
+  if (!StringToInt(reset_device_str, &reset_device) ||
+      !ola::rdm::UIntToResetDevice(reset_device, &reset_device_enum)) {
+    return "Invalid reset device";
+  }
+
+  string error;
+  m_rdm_api.SetResetDevice(
+      universe_id,
+      uid,
+      ola::rdm::ROOT_RDM_DEVICE,
+      reset_device_enum,
       NewSingleCallback(this,
                         &RDMHTTPModule::SetHandler,
                         response),

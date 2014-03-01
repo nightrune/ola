@@ -38,15 +38,12 @@
 namespace ola {
 namespace rdm {
 
-using std::pair;
-using std::vector;
-
 /*
  * A RDM controller that only sends a single request at a time. This also
  * handles timing out messages that we don't get a response for.
  */
 class QueueingRDMController: public RDMControllerInterface {
-  public:
+ public:
     QueueingRDMController(RDMControllerInterface *controller,
                           unsigned int max_queue_size);
     ~QueueingRDMController();
@@ -57,7 +54,7 @@ class QueueingRDMController: public RDMControllerInterface {
     // This can be called multiple times and the requests will be queued.
     void SendRDMRequest(const RDMRequest *request, RDMCallback *on_complete);
 
-  protected:
+ protected:
     typedef struct {
       const RDMRequest *request;
       RDMCallback *on_complete;
@@ -70,7 +67,7 @@ class QueueingRDMController: public RDMControllerInterface {
     bool m_active;  // true if the controller is active
     RDMCallback *m_callback;
     const ola::rdm::RDMResponse *m_response;
-    vector<std::string> m_packets;
+    std::vector<std::string> m_packets;
 
     virtual void TakeNextAction();
     virtual bool CheckForBlockingCondition();
@@ -79,7 +76,7 @@ class QueueingRDMController: public RDMControllerInterface {
 
     void HandleRDMResponse(rdm_response_code status,
                            const ola::rdm::RDMResponse *response,
-                           const vector<std::string> &packets);
+                           const std::vector<std::string> &packets);
 };
 
 
@@ -90,7 +87,7 @@ class QueueingRDMController: public RDMControllerInterface {
  * In this model discovery has a higher precedence that RDM messages.
  */
 class DiscoverableQueueingRDMController: public QueueingRDMController {
-  public:
+ public:
     DiscoverableQueueingRDMController(
         DiscoverableRDMControllerInterface *controller,
         unsigned int max_queue_size);
@@ -101,9 +98,9 @@ class DiscoverableQueueingRDMController: public QueueingRDMController {
     void RunFullDiscovery(RDMDiscoveryCallback *callback);
     void RunIncrementalDiscovery(RDMDiscoveryCallback *callback);
 
-  private:
-    typedef vector<RDMDiscoveryCallback*> DiscoveryCallbacks;
-    typedef vector<pair<bool, RDMDiscoveryCallback*> >
+ private:
+    typedef std::vector<RDMDiscoveryCallback*> DiscoveryCallbacks;
+    typedef std::vector<std::pair<bool, RDMDiscoveryCallback*> >
         PendingDiscoveryCallbacks;
 
     DiscoverableRDMControllerInterface *m_discoverable_controller;

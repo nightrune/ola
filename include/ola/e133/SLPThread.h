@@ -36,14 +36,15 @@
 #define INCLUDE_OLA_E133_SLPTHREAD_H_
 
 #include <ola/Callback.h>
-#include <ola/thread/Thread.h>
+#include <ola/base/Macro.h>
 #include <ola/io/SelectServer.h>
-#include <ola/network/Socket.h>
 #include <ola/network/IPV4Address.h>
+#include <ola/network/Socket.h>
 #include <ola/rdm/UID.h>
-#include <ola/thread/ExecutorInterface.h>
 #include <ola/slp/SLPClient.h>
 #include <ola/slp/URLEntry.h>
+#include <ola/thread/ExecutorInterface.h>
+#include <ola/thread/Thread.h>
 
 #include <map>
 #include <string>
@@ -58,7 +59,7 @@ using ola::network::IPV4Address;
 using ola::slp::URLEntries;
 
 class SLPThreadServerInfo : public ola::slp::ServerInfo {
-  public:
+ public:
     string backend_type;
 
     SLPThreadServerInfo() : ServerInfo() {}
@@ -77,7 +78,7 @@ class SLPThreadServerInfo : public ola::slp::ServerInfo {
  * The base class for a thread which handles all the SLP stuff.
  */
 class BaseSLPThread: public ola::thread::Thread {
-  public:
+ public:
     typedef ola::BaseCallback1<void, bool> RegistrationCallback;
     typedef ola::Callback2<void, bool, const ola::slp::URLEntries&>
         DiscoveryCallback;
@@ -122,7 +123,7 @@ class BaseSLPThread: public ola::thread::Thread {
 
     static const unsigned int DEFAULT_DISCOVERY_INTERVAL_SECONDS;
 
-  protected:
+ protected:
     typedef ola::SingleUseCallback2<void, bool, const ola::slp::URLEntries&>
         InternalDiscoveryCallback;
 
@@ -154,7 +155,7 @@ class BaseSLPThread: public ola::thread::Thread {
 
     static const char RDNMET_SCOPE[];
 
-  private:
+ private:
     typedef struct {
       uint16_t lifetime;
       ola::thread::timeout_id timeout;
@@ -210,6 +211,8 @@ class BaseSLPThread: public ola::thread::Thread {
     static const uint16_t SA_REREGISTRATION_TIME;
     static const char E133_DEVICE_SLP_SERVICE_NAME[];
     static const char E133_CONTROLLER_SLP_SERVICE_NAME[];
+
+    DISALLOW_COPY_AND_ASSIGN(BaseSLPThread);
 };
 
 
@@ -217,15 +220,14 @@ class BaseSLPThread: public ola::thread::Thread {
  * Creates new SLPThreads based on a command line flag.
  */
 class SLPThreadFactory {
-  public:
+ public:
     static BaseSLPThread* NewSLPThread(
       ola::thread::ExecutorInterface *ss,
       unsigned int discovery_interval =
           BaseSLPThread::DEFAULT_DISCOVERY_INTERVAL_SECONDS);
 
-  private:
-    SLPThreadFactory(const SLPThreadFactory&);
-    SLPThreadFactory& operator=(const SLPThreadFactory&);
+ private:
+    DISALLOW_COPY_AND_ASSIGN(SLPThreadFactory);
 };
 }  // namespace e133
 }  // namespace ola

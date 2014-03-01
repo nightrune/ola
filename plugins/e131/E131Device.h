@@ -32,16 +32,12 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using google::protobuf::RpcController;
-using ola::Plugin;
-using ola::plugin::e131::Request;
-using std::vector;
 
 class E131InputPort;
 class E131OutputPort;
 
 class E131Device: public ola::Device {
-  public:
+ public:
     struct E131DeviceOptions {
       unsigned int input_ports;
       unsigned int output_ports;
@@ -60,25 +56,25 @@ class E131Device: public ola::Device {
       }
     };
 
-    E131Device(Plugin *owner,
+    E131Device(ola::Plugin *owner,
                const ola::acn::CID &cid,
                std::string ip_addr,
                class PluginAdaptor *plugin_adaptor,
                const E131DeviceOptions &options);
 
-    string DeviceId() const { return "1"; }
+    std::string DeviceId() const { return "1"; }
 
-    void Configure(RpcController *controller,
-                   const string &request,
-                   string *response,
-                   google::protobuf::Closure *done);
+    void Configure(ola::rpc::RpcController *controller,
+                   const std::string &request,
+                   std::string *response,
+                   ConfigureCallback *done);
 
-  protected:
+ protected:
     bool StartHook();
     void PrePortStop();
     void PostPortStop();
 
-  private:
+ private:
     class PluginAdaptor *m_plugin_adaptor;
     class E131Node *m_node;
     bool m_use_rev2;
@@ -86,13 +82,15 @@ class E131Device: public ola::Device {
     bool m_ignore_preview;
     uint8_t m_dscp;
     const unsigned int m_input_port_count, m_output_port_count;
-    vector<E131InputPort*> m_input_ports;
-    vector<E131OutputPort*> m_output_ports;
+    std::vector<E131InputPort*> m_input_ports;
+    std::vector<E131OutputPort*> m_output_ports;
     std::string m_ip_addr;
     ola::acn::CID m_cid;
 
-    void HandlePreviewMode(Request *request, string *response);
-    void HandlePortStatusRequest(string *response);
+    void HandlePreviewMode(ola::plugin::e131::Request *request,
+                           std::string *response);
+
+    void HandlePortStatusRequest(std::string *response);
     E131InputPort *GetE131InputPort(unsigned int port_id);
     E131OutputPort *GetE131OutputPort(unsigned int port_id);
 

@@ -256,7 +256,7 @@ class RDMTestThread(Thread):
       dmx_sender = DMXSender(self._wrapper, universe, dmx_frame_rate, slot_count)
 
     try:
-      tests, unused_device = runner.RunTests(test_filter, False, self._UpdateStats)
+      tests, device = runner.RunTests(test_filter, False, self._UpdateStats)
     except Exception as e:
       self._test_state_lock.acquire()
       self._test_state['state'] = self.ERROR
@@ -278,8 +278,9 @@ class RDMTestThread(Thread):
     log_saver = TestLogger.TestLogger(self._logs_directory)
     logs_saved = True
     try:
-      log_saver.SaveLog(uid, timestamp, tests, test_parameters)
-    except TestLoggerException:
+      log_saver.SaveLog(uid, timestamp, end_time, tests, device,
+                        test_parameters)
+    except TestLogger.TestLoggerException:
       logs_saved = False
 
     self._test_state_lock.acquire()
@@ -334,6 +335,8 @@ class HTTPRequest(object):
   def __init__(self, environ):
     self._environ = environ
     self._params = None
+    self._post_params = None
+
 
   def Path(self):
     """Return the path for the request."""
@@ -355,6 +358,29 @@ class HTTPRequest(object):
       for p in get_params:
         self._params[p] = get_params[p][0]
     return self._params.get(param, default)
+
+  def PostParam(self, param, default=None):
+    """Lookup the value of a POST parameter.
+
+    Args:
+      param: the name of the post parameter.
+      default: the value to return if the parameter wasn't supplied.
+
+    Returns:
+      The value of the post param, or None if it wasn't present.
+    """
+    if self._post_params is None:
+      self._post_params = {}
+      try:
+        request_body_size = int(self._environ.get('CONTENT_LENGTH', 0))
+      except (ValueError):
+        request_body_size = 0
+
+      request_body = self._environ['wsgi.input'].read(request_body_size)
+      post_params = urlparse.parse_qs(request_body)
+      for p in post_params:
+        self._post_params[p] = post_params[p][0]
+    return self._post_params.get(param, default)
 
 
 class HTTPResponse(object):
@@ -568,6 +594,22 @@ class RunDiscoveryHandler(OLAServerRequestHandler):
       'uids':  [str(u) for u in uids],
       'status': True,
     }
+
+class DownloadModelDataHandler(RequestHandler):
+  """Take the data in the form and return it as a downloadable file."""
+
+  def HandleRequest(self, request, response):
+    print dir(request)
+    model_data = request.PostParam('model_data') or ''
+    logging.info(model_data)
+
+    filename = 'model-data.txt'
+    response.SetStatus(HTTPResponse.OK)
+    response.SetHeader('Content-disposition',
+                       'attachment; filename="%s"' % filename)
+    response.SetHeader('Content-type', 'text/plain')
+    response.SetHeader('Content-length', '%d' % len(model_data))
+    response.AppendData(model_data)
 
 
 class DownloadResultsHandler(RequestHandler):
@@ -874,6 +916,8 @@ def BuildApplication(ola_thread, test_thread):
       RunDiscoveryHandler(ola_thread).HandleRequest)
   app.RegisterHandler('/DownloadResults',
       DownloadResultsHandler().HandleRequest)
+  app.RegisterHandler('/DownloadModelData',
+      DownloadModelDataHandler().HandleRequest)
 
   run_tests_handler = RunTestsHandler(ola_thread, test_thread)
   app.RegisterHandler('/RunCollector', run_tests_handler.HandleRequest)
@@ -901,14 +945,14 @@ def parse_options():
     production lighting rig.
   """)
   parser = OptionParser(usage, description=description)
-  parser.add_option('-p', '--pid_store', metavar='FILE',
-                    help='The file to load the PID definitions from.')
-  parser.add_option('-d', '--www_dir', default=DataLocation.location,
+  parser.add_option('-p', '--pid-location', metavar='DIR',
+                    help='The directory to load the PID definitions from.')
+  parser.add_option('-d', '--www-dir', default=DataLocation.location,
                     help='The root directory to serve static files.')
-  parser.add_option('-l', '--log_directory',
+  parser.add_option('-l', '--log-directory',
                     default=os.path.abspath('/tmp/ola-rdm-logs'),
                     help='The directory to store log files.')
-  parser.add_option('--world_writeable',
+  parser.add_option('--world-writeable',
                     action="store_true",
                     help='Make the log directory world writeable.')
 
@@ -943,7 +987,8 @@ def SetupLogDirectory(options):
 def main():
   options = parse_options()
   settings.update(options.__dict__)
-  pid_store = PidStore.GetStore(options.pid_store, ('pids.proto'))
+  pid_store = PidStore.GetStore(options.pid_location,
+                                ('pids.proto','draft_pids.proto'))
 
   logging.basicConfig(level=logging.INFO, format='%(message)s')
 

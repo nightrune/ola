@@ -27,12 +27,12 @@
 #include "plugins/e131/e131/E131PDU.h"
 #include "ola/testing/TestUtils.h"
 
-
 namespace ola {
 namespace plugin {
 namespace e131 {
 
 using ola::network::HostToNetwork;
+using std::string;
 
 class E131PDUTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(E131PDUTest);
@@ -41,11 +41,11 @@ class E131PDUTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testNestedE131PDU);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testSimpleRev2E131PDU();
     void testSimpleE131PDU();
     void testNestedE131PDU();
-  private:
+ private:
     static const unsigned int TEST_VECTOR;
 };
 

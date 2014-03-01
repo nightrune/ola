@@ -24,35 +24,35 @@
 #include <string>
 #include "olad/Plugin.h"
 #include "ola/plugin_id.h"
+#include "plugins/osc/OSCDevice.h"
 #include "plugins/osc/OSCTarget.h"
 
 namespace ola {
 namespace plugin {
 namespace osc {
 
-using ola::Plugin;
-using ola::PluginAdaptor;
-
 class OSCDevice;
 
-class OSCPlugin: public Plugin {
-  public:
-    explicit OSCPlugin(PluginAdaptor *plugin_adaptor):
-      Plugin(plugin_adaptor),
+class OSCPlugin: public ola::Plugin {
+ public:
+    explicit OSCPlugin(ola::PluginAdaptor *plugin_adaptor):
+      ola::Plugin(plugin_adaptor),
       m_device(NULL) {}
 
-    string Name() const { return PLUGIN_NAME; }
-    string Description() const;
+    std::string Name() const { return PLUGIN_NAME; }
+    std::string Description() const;
     ola_plugin_id Id() const { return OLA_PLUGIN_OSC; }
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();
 
-    unsigned int GetPortCount(const string &key) const;
-    bool ExtractOSCTarget(const string &str, OSCTarget *target);
+    unsigned int GetPortCount(const std::string &key) const;
+    bool ExtractOSCTarget(const std::string &str, OSCTarget *target);
+    void SetDataFormat(const std::string &format_option,
+                       OSCDevice::PortConfig *port_config);
 
     OSCDevice *m_device;
     static const char DEFAULT_ADDRESS_TEMPLATE[];
@@ -65,7 +65,14 @@ class OSCPlugin: public Plugin {
     static const char PLUGIN_PREFIX[];
     static const char PORT_ADDRESS_TEMPLATE[];
     static const char PORT_TARGETS_TEMPLATE[];
+    static const char PORT_FORMAT_TEMPLATE[];
     static const char UDP_PORT_KEY[];
+
+    static const char BLOB_FORMAT[];
+    static const char FLOAT_ARRAY_FORMAT[];
+    static const char FLOAT_INDIVIDUAL_FORMAT[];
+    static const char INT_ARRAY_FORMAT[];
+    static const char INT_INDIVIDUAL_FORMAT[];
 };
 }  // namespace osc
 }  // namespace plugin

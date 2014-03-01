@@ -26,6 +26,7 @@ namespace ola {
 namespace rdm {
 
 using ola::messaging::FieldDescriptorGroup;
+using ola::messaging::StringFieldDescriptor;
 
 
 /**
@@ -37,8 +38,8 @@ using ola::messaging::FieldDescriptorGroup;
  * This method is *not* re-entrant.
  * @param data_size the size in bytes of the data in this message
  * @param descriptor The descriptor to use to build the Message
- * @param a pointer to a int which is set to the length of the variable field
- * within this mesage.
+ * @param variable_field_size a pointer to a int which is set to the length of
+ * the variable field within this mesage.
  * @returns A enum which indicates if one (or more) variable length fields
  * exist, and if only one exists, what type it is.
  */
@@ -119,6 +120,12 @@ void VariableFieldSizeCalculator::Visit(
 
 void VariableFieldSizeCalculator::Visit(
     const ola::messaging::IPV4FieldDescriptor *descriptor) {
+  m_fixed_size_sum += descriptor->MaxSize();
+}
+
+
+void VariableFieldSizeCalculator::Visit(
+    const ola::messaging::MACFieldDescriptor *descriptor) {
   m_fixed_size_sum += descriptor->MaxSize();
 }
 

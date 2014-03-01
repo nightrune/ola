@@ -31,8 +31,8 @@ namespace network {
  * The InterfacePicker for windows
  */
 class WindowsInterfacePicker: public InterfacePicker {
-  public:
-    std::vector<Interface> GetInterfaces() const;
+ public:
+    std::vector<Interface> GetInterfaces(bool include_loopback) const;
 };
 }  // namespace network
 }  // namespace ola

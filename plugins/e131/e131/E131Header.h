@@ -28,15 +28,13 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using std::string;
-
 /*
  * Header for the E131 layer
  */
 class E131Header {
-  public:
+ public:
     E131Header() {}
-    E131Header(const string &source,
+    E131Header(const std::string &source,
                uint8_t priority,
                uint8_t sequence,
                uint16_t universe,
@@ -53,7 +51,7 @@ class E131Header {
     }
     ~E131Header() {}
 
-    const string Source() const { return m_source; }
+    const std::string Source() const { return m_source; }
     uint8_t Priority() const { return m_priority; }
     uint8_t Sequence() const { return m_sequence; }
     uint16_t Universe() const { return m_universe; }
@@ -87,8 +85,8 @@ class E131Header {
     static const uint8_t PREVIEW_DATA_MASK = 0x80;
     static const uint8_t STREAM_TERMINATED_MASK = 0x40;
 
-  private:
-    string m_source;
+ private:
+    std::string m_source;
     uint8_t m_priority;
     uint8_t m_sequence;
     uint16_t m_universe;
@@ -99,8 +97,8 @@ class E131Header {
 
 
 class E131Rev2Header: public E131Header {
-  public:
-    E131Rev2Header(const string &source,
+ public:
+    E131Rev2Header(const std::string &source,
                    uint8_t priority,
                    uint8_t sequence,
                    uint16_t universe,

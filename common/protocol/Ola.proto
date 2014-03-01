@@ -20,7 +20,7 @@
 
 package ola.proto;
 
-option cc_generic_services = true;
+option cc_generic_services = false;
 option py_generic_services = true;
 option java_generic_services = true;
 
@@ -62,6 +62,16 @@ enum PluginIds {
   OLA_PLUGIN_SPI = 15;
   OLA_PLUGIN_KINET = 16;
   OLA_PLUGIN_KARATE = 17;
+  OLA_PLUGIN_MILINST = 18;
+  OLA_PLUGIN_RENARD = 19;
+
+  /*
+   * To obtain a new plugin ID open a ticket at
+   * https://github.com/OpenLightingProject/ola/issues/new
+   * Plugin IDs are usually assigned just prior to merging the code into the
+   * mainline. For development of plugins please use OLA_PLUGIN_EXPERIMENTAL.
+   */
+  OLA_PLUGIN_EXPERIMENTAL = 10000;
 }
 
 /**
@@ -92,7 +102,7 @@ enum RDMResponseCode {
   RDM_DEST_UID_MISMATCH = 10;
   //Incorrect sub start code
   RDM_WRONG_SUB_START_CODE = 11;
-  //RDM response was smaller than the mimimun size
+  //RDM response was smaller than the minimum size
   RDM_PACKET_TOO_SHORT = 12;
   //The length field of packet didn't match length received
   RDM_PACKET_LENGTH_MISMATCH = 13;
@@ -318,13 +328,17 @@ message RDMDiscoveryRequest {
 
 message RDMResponse {
   required RDMResponseCode response_code = 1;
+  optional UID source_uid = 9;
+  optional UID dest_uid = 10;
+  optional int32 transaction_number = 11;
+
   // ACK, NACK or TIMER
   optional RDMResponseType response_type = 2;
   optional uint32 message_count = 3 [default = 0];
-  optional bytes data = 4 [default = ""]; // 0 - 231 bytes
-  optional uint32 param_id = 5;  // the param id, required for queued messages
-  optional RDMCommandClass command_class = 6; // the command class
   optional uint32 sub_device = 7; // the sub device
+  optional RDMCommandClass command_class = 6; // the command class
+  optional uint32 param_id = 5;  // the param id, required for queued messages
+  optional bytes data = 4 [default = ""]; // 0 - 231 bytes
   repeated bytes raw_response = 8;
 }
 

@@ -47,6 +47,10 @@ typedef enum {
   OLA_MANUFACTURER_PID_CODE_VERSION = 0x8001,
 } rdm_ola_manufacturer_pid;
 
+/**
+ * Also see the list here
+ * http://www.opendmx.net/index.php/Open_Lighting_Allocations#RDM_Model_Numbers
+ */
 typedef enum {
   // OLA Dummy RDM Responder
   OLA_DUMMY_DEVICE_MODEL = 1,
@@ -64,6 +68,8 @@ typedef enum {
   OLA_SENSOR_ONLY_MODEL = 7,
   // A E1.37 Dimmer
   OLA_E137_DIMMER_MODEL = 8,
+  // A E1.37-2 responder
+  OLA_E137_2_MODEL = 9,
 } ola_rdm_model_id;
 
 extern const char OLA_MANUFACTURER_LABEL[];

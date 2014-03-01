@@ -1,17 +1,17 @@
 /*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * ResponderSettings.h
  * Copyright (C) 2013 Simon Newton
@@ -29,20 +29,18 @@
 namespace ola {
 namespace rdm {
 
-using std::string;
-
 /**
  * @brief The base class all Settings inherit from.
  */
 class SettingInterface {
-  public:
+ public:
     virtual ~SettingInterface() {}
 
     /**
      * @brief The text description of this setting
      * @returns the string description of the setting.
      */
-    virtual string Description() const = 0;
+    virtual std::string Description() const = 0;
 
     /**
      * @brief Return the size of the _DESCRIPTION parameter data.
@@ -62,7 +60,7 @@ class SettingInterface {
  * @brief A Setting which has a description and no other properties.
  */
 class BasicSetting : SettingInterface {
-  public:
+ public:
     typedef const char* ArgType;
 
     /**
@@ -75,7 +73,7 @@ class BasicSetting : SettingInterface {
      * @brief The text description of this setting
      * @returns the string description of the setting.
      */
-    string Description() const { return m_description; }
+    std::string Description() const { return m_description; }
 
     unsigned int DescriptionResponseSize() const {
       return sizeof(description_s);
@@ -84,13 +82,13 @@ class BasicSetting : SettingInterface {
     unsigned int GenerateDescriptionResponse(uint8_t index,
                                              uint8_t *data) const;
 
-  private:
+ private:
     struct description_s {
       uint8_t setting;
       char description[MAX_RDM_STRING_LENGTH];
     } __attribute__((packed));
 
-    string m_description;
+    std::string m_description;
 };
 
 
@@ -99,7 +97,7 @@ class BasicSetting : SettingInterface {
  * See Section 4.10 of E1.37-1.
  */
 class FrequencyModulationSetting : SettingInterface {
-  public:
+ public:
     /**
      * @brief The constructor argument for the FrequencyModulationSetting
      */
@@ -120,7 +118,7 @@ class FrequencyModulationSetting : SettingInterface {
      * @brief The text description of this setting
      * @returns the string description of the setting.
      */
-    string Description() const { return m_description; }
+    std::string Description() const { return m_description; }
 
     /**
      * @brief returns the frequency for this setting.
@@ -134,7 +132,7 @@ class FrequencyModulationSetting : SettingInterface {
     unsigned int GenerateDescriptionResponse(uint8_t index,
                                              uint8_t *data) const;
 
-  private:
+ private:
     struct description_s {
       uint8_t setting;
       uint32_t frequency;
@@ -142,18 +140,26 @@ class FrequencyModulationSetting : SettingInterface {
     } __attribute__((packed));
 
     uint32_t m_frequency;
-    string m_description;
+    std::string m_description;
 };
 
 
 /**
- * Holds the list of settings for a class of responder. A single instance
+ * @brief Holds the list of settings for a class of responder. A single instance
  * is shared between all responders of the same type. Subclass this and use a
  * singleton.
+ *
+ * @note Settings are indexed from zero. SettingManager responsible for
+ * reporting correct indices with correct offset.
  */
 template <class SettingType>
 class SettingCollection {
-  public:
+ public:
+    /**
+     * zero_offset is used for the LOCK_STATE which is special because it has
+     * the unlocked state at index 0. However the 0 state isn't counted towards
+     * the total and does not have a description
+     */
     SettingCollection(const typename SettingType::ArgType args[],
                       unsigned int arg_count,
                       bool zero_offset = false)
@@ -176,10 +182,10 @@ class SettingCollection {
       return m_zero_offset ? 0 : 1;
     }
 
-  protected:
+ protected:
     SettingCollection() {}
 
-  private:
+ private:
     std::vector<SettingType> m_settings;
     const bool m_zero_offset;
 };
@@ -190,30 +196,45 @@ class SettingCollection {
  */
 template <class SettingType>
 class SettingManager {
-  public:
+ public:
     explicit SettingManager(const SettingCollection<SettingType> *settings)
         : m_settings(settings),
           m_current_setting(settings->Offset()) {
     }
 
+    virtual ~SettingManager() {}
+
     const RDMResponse *Get(const RDMRequest *request) const;
     const RDMResponse *Set(const RDMRequest *request);
     const RDMResponse *GetDescription(const RDMRequest *request) const;
 
-  private:
+    uint8_t Count() const {
+      return m_settings->Count();
+    }
+
+    uint8_t CurrentSetting() const {
+      return m_current_setting + m_settings->Offset();
+    }
+
+    bool ChangeSetting(uint8_t state);
+
+ private:
     const SettingCollection<SettingType> *m_settings;
-    uint8_t m_current_setting;
+    uint8_t m_current_setting; /**< Index to m_settings, including zero*/
 };
 
 typedef SettingCollection<BasicSetting> BasicSettingCollection;
 typedef SettingManager<BasicSetting> BasicSettingManager;
 
-
 template <class SettingType>
 const RDMResponse *SettingManager<SettingType>::Get(
     const RDMRequest *request) const {
-  uint16_t data = (m_current_setting << 8 |
-                   (m_settings->Count() + m_settings->Offset()));
+  uint16_t data = ((m_current_setting + m_settings->Offset()) << 8 |
+      m_settings->Count());
+  if (m_settings->Offset() == 0) {
+    // don't count the 0-state
+    data--;
+  }
   return ResponderHelper::GetUInt16Value(request, data);
 }
 
@@ -243,15 +264,26 @@ const RDMResponse *SettingManager<SettingType>::GetDescription(
   }
 
   unsigned int offset = m_settings->Offset();
-  if (arg < offset || arg >= m_settings->Count() + offset) {
+  // never reply for the first setting - see LOCK_STATE
+  if (arg == 0 || arg >= m_settings->Count() + offset) {
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
   } else {
     const SettingType *setting = m_settings->Lookup(arg - offset);
-
-    uint8_t output[setting->DescriptionResponseSize()];
+    uint8_t output[setting->DescriptionResponseSize()]; // NOLINT
     unsigned int size = setting->GenerateDescriptionResponse(arg, output);
     return GetResponseFromData(request, output, size, RDM_ACK);
   }
+}
+
+template <class SettingType>
+bool SettingManager<SettingType>::ChangeSetting(uint8_t new_setting) {
+  uint8_t offset = m_settings->Offset();
+
+  if (new_setting < offset || new_setting  >= m_settings->Count() + offset)
+    return false;
+
+  m_current_setting = new_setting - offset;
+  return true;
 }
 }  // namespace rdm
 }  // namespace ola

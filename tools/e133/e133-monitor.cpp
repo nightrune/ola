@@ -28,6 +28,7 @@
 #include <ola/StringUtils.h>
 #include <ola/acn/CID.h>
 #include <ola/base/Flags.h>
+#include <ola/base/Init.h>
 #include <ola/base/SysExits.h>
 #include <ola/e133/DeviceManager.h>
 #include <ola/e133/E133URLParser.h>
@@ -61,7 +62,7 @@ using std::endl;
 using std::string;
 using std::vector;
 
-DEFINE_s_string(pid_location, p, PID_DATA_DIR,
+DEFINE_s_string(pid_location, p, "",
                 "The directory to read PID definitiions from");
 DEFINE_s_string(target_addresses, t, "",
                 "List of IPs to connect to, overrides SLP");
@@ -71,7 +72,7 @@ DEFINE_s_string(target_addresses, t, "",
  * A very simple E1.33 Controller that acts as a passive monitor.
  */
 class SimpleE133Monitor {
-  public:
+ public:
     explicit SimpleE133Monitor(PidStoreHelper *pid_helper, bool enable_slp);
     ~SimpleE133Monitor();
 
@@ -80,7 +81,7 @@ class SimpleE133Monitor {
 
     void Run() { m_ss.Run(); }
 
-  private:
+ private:
     ola::rdm::CommandPrinter m_command_printer;
     ola::io::SelectServer m_ss;
     ola::io::StdinHandler m_stdin_handler;
@@ -213,11 +214,9 @@ bool SimpleE133Monitor::EndpointRequest(
  * Startup a node
  */
 int main(int argc, char *argv[]) {
-  ola::SetHelpString(
-      "[options]",
-      "Open a TCP connection to E1.33 Devices and wait for E1.33 messages.");
-  ola::ParseFlags(&argc, argv);
-  ola::InitLoggingFromFlags();
+  ola::AppInit(&argc, argv, "[options]",
+               "Open a TCP connection to E1.33 Devices and wait for E1.33 "
+               "messages.");
 
   PidStoreHelper pid_helper(FLAGS_pid_location, 4);
 

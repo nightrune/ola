@@ -18,6 +18,14 @@
  * Copyright (C) 2013 Simon Newton
  */
 
+/**
+ * @addtogroup network
+ * @{
+ * @file SocketCloser.h
+ * @brief Automatically close a socket when it goes out of scope.
+ * @}
+ */
+
 #ifndef INCLUDE_OLA_NETWORK_SOCKETCLOSER_H_
 #define INCLUDE_OLA_NETWORK_SOCKETCLOSER_H_
 
@@ -26,24 +34,55 @@
 namespace ola {
 namespace network {
 
-class SocketCloser {
-  public:
-    explicit SocketCloser(int fd)
-      : m_fd(fd) {
-    }
-    ~SocketCloser() {
-      if (m_fd >= 0)
-        close(m_fd);
-    }
+/**
+ * @addtogroup network
+ * @{
+ */
 
-    int Release() {
-      int fd = m_fd;
-      m_fd = -1;
-      return fd;
-    }
-  private:
-    int m_fd;
+/**
+ * @brief Automatically close a socket when it goes out of scope.
+ *
+ * This class is useful if you need to temporarily open a socket and want to
+ * make sure it's cleaned up. Think of it as an auto_ptr for file descriptors.
+ */
+class SocketCloser {
+ public:
+  /**
+   * @brief Create a new SocketCloser.
+   * @param fd the file descriptor to close.
+   */
+  explicit SocketCloser(int fd)
+    : m_fd(fd) {
+  }
+
+  /**
+   * @brief Destructor.
+   */
+  ~SocketCloser() {
+    if (m_fd >= 0)
+      close(m_fd);
+  }
+
+  /**
+   * @brief Release the file descriptor.
+   *
+   * Calling Release prevents the file descriptor from being closed when this
+   * object goes out of scope.
+   * @returns the original file descriptor or -1 if the descriptor was already
+   * released.
+   */
+  int Release() {
+    int fd = m_fd;
+    m_fd = -1;
+    return fd;
+  }
+
+ private:
+  int m_fd;
 };
+/**
+ * @}
+ */
 }  // namespace network
 }  // namespace ola
 #endif  // INCLUDE_OLA_NETWORK_SOCKETCLOSER_H_

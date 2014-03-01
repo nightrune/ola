@@ -36,9 +36,11 @@ namespace ola {
 namespace http {
 
 using std::ifstream;
+using std::map;
 using std::pair;
 using std::set;
 using std::string;
+using std::vector;
 using ola::io::UnmanagedFileDescriptor;
 using ola::web::JsonValue;
 using ola::web::JsonWriter;
@@ -206,7 +208,7 @@ HTTPRequest::~HTTPRequest() {
 }
 
 
-/*
+/**
  * Add a header to the request object.
  * @param key the header name
  * @param value the value of the header
@@ -217,7 +219,7 @@ void HTTPRequest::AddHeader(const string &key, const string &value) {
 }
 
 
-/*
+/**
  * Add a post parameter. This can be called multiple times and the values will
  * be appended.
  * @param key the parameter name
@@ -235,7 +237,7 @@ void HTTPRequest::AddPostParameter(const string &key, const string &value) {
 }
 
 
-/*
+/**
  * Process post data
  */
 void HTTPRequest::ProcessPostData(const char *data, size_t *data_size) {
@@ -243,7 +245,7 @@ void HTTPRequest::ProcessPostData(const char *data, size_t *data_size) {
 }
 
 
-/*
+/**
  * Return the value of the header sent with this request
  * @param key the name of the header
  * @returns the value of the header or empty string if it doesn't exist.
@@ -258,7 +260,7 @@ const string HTTPRequest::GetHeader(const string &key) const {
 }
 
 
-/*
+/**
  * Return the value of a url parameter
  * @param key the name of the parameter
  * @return the value of the parameter
@@ -273,7 +275,7 @@ const string HTTPRequest::GetParameter(const string &key) const {
     return string();
 }
 
-/*
+/**
  * Return whether an url parameter exists
  * @param key the name of the parameter
  * @return if the parameter exists
@@ -286,16 +288,17 @@ bool HTTPRequest::CheckParameterExists(const string &key) const {
     return true;
   } else {
     return false;
-    /**
-     *TODO(Peter): try and check the "trailer" ?key, only in since Tue Jul 17 2012
-     *const char *trailer = MHD_lookup_connection_value(m_connection,
-     *                                                    MHD_GET_ARGUMENT_KIND,
-     *                                                    NULL);
+    /*
+     * TODO(Peter): try and check the "trailer" ?key, only in since Tue Jul 17
+     * 2012
+     * const char *trailer = MHD_lookup_connection_value(m_connection,
+     *                                                   MHD_GET_ARGUMENT_KIND,
+     *                                                   NULL);
      */
   }
 }
 
-/*
+/**
  * Lookup a post parameter in this request
  * @param key the name of the parameter
  * @return the value of the parameter or the empty string if it doesn't exist
@@ -310,9 +313,9 @@ const string HTTPRequest::GetPostParameter(const string &key) const {
 }
 
 
-/*
+/**
  * Set the content-type header
- * @param type, the content type
+ * @param type the content type
  * @return true if the header was set correctly, false otherwise
  */
 void HTTPResponse::SetContentType(const string &type) {
@@ -328,7 +331,7 @@ void HTTPResponse::SetNoCache() {
 }
 
 
-/*
+/**
  * Set a header in the response
  * @param key the header name
  * @param value the header value
@@ -340,10 +343,9 @@ void HTTPResponse::SetHeader(const string &key, const string &value) {
 }
 
 
-
-/*
+/**
  * Send a JsonObject as the response.
- * @returns true on success, false on error
+ * @return true on success, false on error
  */
 int HTTPResponse::SendJson(const JsonValue &json) {
   const string output = JsonWriter::AsString(json);
@@ -352,7 +354,7 @@ int HTTPResponse::SendJson(const JsonValue &json) {
       static_cast<void*>(const_cast<char*>(output.data())),
       MHD_NO,
       MHD_YES);
-  map<string, string>::const_iterator iter;
+  HeadersMultiMap::const_iterator iter;
   for (iter = m_headers.begin(); iter != m_headers.end(); ++iter)
     MHD_add_response_header(response,
                             iter->first.c_str(),
@@ -361,12 +363,14 @@ int HTTPResponse::SendJson(const JsonValue &json) {
   MHD_destroy_response(response);
   return ret;
 }
-/*
+
+
+/**
  * Send the HTTP response
- * @returns true on success, false on error
+ * @return true on success, false on error
  */
 int HTTPResponse::Send() {
-  map<string, string>::const_iterator iter;
+  HeadersMultiMap::const_iterator iter;
   struct MHD_Response *response = MHD_create_response_from_data(
       m_data.length(),
       static_cast<void*>(const_cast<char*>(m_data.data())),
@@ -382,10 +386,9 @@ int HTTPResponse::Send() {
 }
 
 
-/*
+/**
  * Setup the HTTP server.
- * @param port the port to listen on
- * @param data_dir the directory to serve static content from
+ * @param options the configuration options for the server
  */
 HTTPServer::HTTPServer(const HTTPServerOptions &options)
     : Thread(),
@@ -396,7 +399,7 @@ HTTPServer::HTTPServer(const HTTPServerOptions &options)
 }
 
 
-/*
+/**
  * Destroy this object
  */
 HTTPServer::~HTTPServer() {
@@ -418,7 +421,7 @@ HTTPServer::~HTTPServer() {
 }
 
 
-/*
+/**
  * Setup the HTTP server
  * @return true on success, false on failure
  */
@@ -472,7 +475,7 @@ void *HTTPServer::Run() {
 }
 
 
-/*
+/**
  * Stop the HTTP server
  */
 void HTTPServer::Stop() {
@@ -488,7 +491,7 @@ void HTTPServer::Stop() {
 
 /**
  * This is run every loop iteration to update the list of sockets in the
-  * SelectServer from MHD.
+ * SelectServer from MHD.
  */
 void HTTPServer::UpdateSockets() {
   // We always call MHD_run so we send any queued responses. This isn't
@@ -566,7 +569,7 @@ void HTTPServer::UpdateSockets() {
 }
 
 
-/*
+/**
  * Call the appropriate handler.
  */
 int HTTPServer::DispatchRequest(const HTTPRequest *request,
@@ -590,7 +593,7 @@ int HTTPServer::DispatchRequest(const HTTPRequest *request,
 }
 
 
-/*
+/**
  * Register a handler
  * @param path the url to respond on
  * @param handler the Closure to call for this request. These will be freed
@@ -607,13 +610,13 @@ bool HTTPServer::RegisterHandler(const string &path,
 }
 
 
-/*
+/**
  * Register a static file. The root of the URL corresponds to the data dir.
  * @param path the URL path for the file e.g. '/foo.png'
  * @param content_type the content type.
  */
-bool HTTPServer::RegisterFile(const string &path,
-                              const string &content_type) {
+bool HTTPServer::RegisterFile(const std::string &path,
+                              const std::string &content_type) {
   if (path.empty() || path[0] != '/') {
     OLA_WARN << "Invalid static file: " << path;
     return false;
@@ -622,16 +625,16 @@ bool HTTPServer::RegisterFile(const string &path,
 }
 
 
-/*
+/**
  * Register a static file
  * @param path the path to serve on e.g. /foo.png
  * @param file the path to the file to serve relative to the data dir e.g.
  * images/foo.png
  * @param content_type the content type.
  */
-bool HTTPServer::RegisterFile(const string &path,
-                              const string &file,
-                              const string &content_type) {
+bool HTTPServer::RegisterFile(const std::string &path,
+                              const std::string &file,
+                              const std::string &content_type) {
   map<string, static_file_info>::const_iterator file_iter = (
       m_static_content.find(path));
 
@@ -648,7 +651,7 @@ bool HTTPServer::RegisterFile(const string &path,
 }
 
 
-/*
+/**
  * Set the default handler.
  * @param handler the default handler to call. This will be freed when the
  * HTTPServer is destroyed.
@@ -658,7 +661,7 @@ void HTTPServer::RegisterDefaultHandler(BaseHTTPCallback *handler) {
 }
 
 
-/*
+/**
  * Return a list of all handlers registered
  */
 void HTTPServer::Handlers(vector<string> *handlers) const {
@@ -672,7 +675,7 @@ void HTTPServer::Handlers(vector<string> *handlers) const {
     handlers->push_back(file_iter->first);
 }
 
-/*
+/**
  * Serve an error.
  * @param response the reponse to use.
  * @param details the error description
@@ -691,7 +694,7 @@ int HTTPServer::ServeError(HTTPResponse *response, const string &details) {
   return r;
 }
 
-/*
+/**
  * Serve a 404
  * @param response the response to use
  */
@@ -704,7 +707,7 @@ int HTTPServer::ServeNotFound(HTTPResponse *response) {
   return r;
 }
 
-/*
+/**
  * Serve a redirect
  * @param response the response to use
  * @param location the location to redirect to
@@ -722,8 +725,8 @@ int HTTPServer::ServeRedirect(HTTPResponse *response, const string &location) {
 /**
  * Return the contents of a file
  */
-int HTTPServer::ServeStaticContent(const string &path,
-                                   const string &content_type,
+int HTTPServer::ServeStaticContent(const std::string &path,
+                                   const std::string &content_type,
                                    HTTPResponse *response) {
   static_file_info file_info;
   file_info.file_path = path;
@@ -732,7 +735,7 @@ int HTTPServer::ServeStaticContent(const string &path,
 }
 
 
-/*
+/**
  * Serve static content.
  * @param file_info details on the file to server
  * @param response the response to use

@@ -34,6 +34,7 @@ namespace plugin {
 namespace e131 {
 
 using ola::acn::CID;
+using std::string;
 
 const char E131Plugin::CID_KEY[] = "cid";
 const char E131Plugin::DEFAULT_DSCP_VALUE[] = "0";
@@ -173,7 +174,7 @@ bool E131Plugin::SetDefaultPreferences() {
 
   save |= m_preferences->SetDefaultValue(
       DSCP_KEY,
-      IntValidator(0, 63),
+      UIntValidator(0, 63),
       DEFAULT_DSCP_VALUE);
 
   save |= m_preferences->SetDefaultValue(
@@ -183,12 +184,12 @@ bool E131Plugin::SetDefaultPreferences() {
 
   save |= m_preferences->SetDefaultValue(
       INPUT_PORT_COUNT_KEY,
-      IntValidator(0, 32),
+      UIntValidator(0, 128),
       DEFAULT_PORT_COUNT);
 
   save |= m_preferences->SetDefaultValue(
       OUTPUT_PORT_COUNT_KEY,
-      IntValidator(0, 32),
+      UIntValidator(0, 128),
       DEFAULT_PORT_COUNT);
 
   save |= m_preferences->SetDefaultValue(IP_KEY, StringValidator(true), "");
@@ -198,13 +199,13 @@ bool E131Plugin::SetDefaultPreferences() {
       BoolValidator(),
       BoolValidator::ENABLED);
 
-  set<string> revision_values;
+  std::set<string> revision_values;
   revision_values.insert(REVISION_0_2);
   revision_values.insert(REVISION_0_46);
 
   save |= m_preferences->SetDefaultValue(
       REVISION_KEY,
-      SetValidator(revision_values),
+      SetValidator<string>(revision_values),
       REVISION_0_46);
 
   if (save)

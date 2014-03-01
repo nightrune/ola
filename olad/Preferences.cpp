@@ -41,12 +41,14 @@
 
 namespace ola {
 
-using std::ifstream;
-using std::ofstream;
-using std::pair;
 using ola::thread::Mutex;
 using ola::thread::ConditionVariable;
-
+using std::ifstream;
+using std::ofstream;
+using std::map;
+using std::pair;
+using std::string;
+using std::vector;
 
 const char BoolValidator::ENABLED[] = "true";
 const char BoolValidator::DISABLED[] = "false";
@@ -67,7 +69,7 @@ bool BoolValidator::IsValid(const string &value) const {
 }
 
 
-bool IntValidator::IsValid(const string &value) const {
+bool UIntValidator::IsValid(const string &value) const {
   unsigned int output;
   if (!StringToInt(value, &output))
     return false;
@@ -76,8 +78,42 @@ bool IntValidator::IsValid(const string &value) const {
 }
 
 
-bool SetValidator::IsValid(const string &value) const {
+bool IntValidator::IsValid(const string &value) const {
+  int output;
+  if (!StringToInt(value, &output))
+    return false;
+
+  return (output >= m_gt && output <= m_lt);
+}
+
+
+template <>
+bool SetValidator<string>::IsValid(const string &value) const {
   return STLContains(m_values, value);
+}
+
+
+template <>
+bool SetValidator<unsigned int>::IsValid(const string &value) const {
+  unsigned int output;
+  // It's an integer based set validator, so if we can't parse it to an
+  // integer, it can't possibly match an integer and be valid
+  if (!StringToInt(value, &output))
+    return false;
+
+  return STLContains(m_values, output);
+}
+
+
+template <>
+bool SetValidator<int>::IsValid(const string &value) const {
+  int output;
+  // It's an integer based set validator, so if we can't parse it to an
+  // integer, it can't possibly match an integer and be valid
+  if (!StringToInt(value, &output))
+    return false;
+
+  return STLContains(m_values, output);
 }
 
 
@@ -104,9 +140,6 @@ bool IPv4Validator::IsValid(const string &value) const {
 // Prefs Factory
 //-----------------------------------------------------------------------------
 
-/**
- * Cleanup
- */
 PreferencesFactory::~PreferencesFactory() {
   map<string, Preferences*>::const_iterator iter;
   for (iter = m_preferences_map.begin(); iter != m_preferences_map.end();
@@ -117,9 +150,6 @@ PreferencesFactory::~PreferencesFactory() {
 }
 
 
-/**
- * Lookup a preference object
- */
 Preferences *PreferencesFactory::NewPreference(const string &name) {
   map<string, Preferences*>::iterator iter = m_preferences_map.find(name);
   if (iter == m_preferences_map.end()) {
@@ -135,56 +165,54 @@ Preferences *PreferencesFactory::NewPreference(const string &name) {
 // Memory Preferences
 //-----------------------------------------------------------------------------
 
-/*
- * Destroy this object
- */
 MemoryPreferences::~MemoryPreferences() {
   m_pref_map.clear();
 }
 
 
-/*
- * Clear the preferences
- */
 void MemoryPreferences::Clear() {
   m_pref_map.clear();
 }
 
 
-/*
- * Set a preference value, overiding the existing value.
- * @param key
- * @param value
- */
-void MemoryPreferences::SetValue(const string &key, const string &value) {
+void MemoryPreferences::SetValue(const std::string &key,
+                                 const std::string &value) {
   m_pref_map.erase(key);
   m_pref_map.insert(make_pair(key, value));
 }
 
 
-/*
- * Adds this preference value to the store
- * @param key
- * @param value
- */
-void MemoryPreferences::SetMultipleValue(const string &key,
-                                         const string &value) {
+void MemoryPreferences::SetValue(const std::string &key, unsigned int value) {
+  SetValue(key, IntToString(value));
+}
+
+
+void MemoryPreferences::SetValue(const std::string &key, int value) {
+  SetValue(key, IntToString(value));
+}
+
+
+void MemoryPreferences::SetMultipleValue(const std::string &key,
+                                         const std::string &value) {
   m_pref_map.insert(make_pair(key, value));
 }
 
 
-/*
- * Set a preference value only if it doesn't pass the validator.
- * Note this only checks the first value.
- * @param key
- * @param validator A Validator object
- * @param value the new value
- * @return true if we set the value, false if it already existed
- */
-bool MemoryPreferences::SetDefaultValue(const string &key,
+void MemoryPreferences::SetMultipleValue(const std::string &key,
+                                         unsigned int value) {
+  SetMultipleValue(key, IntToString(value));
+}
+
+
+void MemoryPreferences::SetMultipleValue(const std::string &key, int value) {
+  SetMultipleValue(key, IntToString(value));
+}
+
+
+bool MemoryPreferences::SetDefaultValue(const std::string &key,
                                         const Validator &validator,
-                                        const string &value) {
-  map<string, string>::const_iterator iter;
+                                        const std::string &value) {
+  PreferencesMap::const_iterator iter;
   iter = m_pref_map.find(key);
 
   if (iter == m_pref_map.end() || !validator.IsValid(iter->second)) {
@@ -195,14 +223,22 @@ bool MemoryPreferences::SetDefaultValue(const string &key,
 }
 
 
-/*
- * Get a preference value
- * @param key the key to fetch
- * @return the value corrosponding to key, or the empty string if the key
- * doesn't exist.
- */
+bool MemoryPreferences::SetDefaultValue(const std::string &key,
+                                        const Validator &validator,
+                                        unsigned int value) {
+  return SetDefaultValue(key, validator, IntToString(value));
+}
+
+
+bool MemoryPreferences::SetDefaultValue(const std::string &key,
+                                        const Validator &validator,
+                                        const int value) {
+  return SetDefaultValue(key, validator, IntToString(value));
+}
+
+
 string MemoryPreferences::GetValue(const string &key) const {
-  map<string, string>::const_iterator iter;
+  PreferencesMap::const_iterator iter;
   iter = m_pref_map.find(key);
 
   if (iter != m_pref_map.end())
@@ -211,13 +247,9 @@ string MemoryPreferences::GetValue(const string &key) const {
 }
 
 
-/*
- * Returns all preference values corrosponding to this key
- * @returns a vector of strings.
- */
 vector<string> MemoryPreferences::GetMultipleValue(const string &key) const {
   vector<string> values;
-  map<string, string>::const_iterator iter;
+  PreferencesMap::const_iterator iter;
 
   for (iter = m_pref_map.find(key);
        iter != m_pref_map.end() && iter->first == key; ++iter) {
@@ -227,36 +259,18 @@ vector<string> MemoryPreferences::GetMultipleValue(const string &key) const {
 }
 
 
-/*
- * Remove a preference value.
- * @param key
- */
+bool MemoryPreferences::HasKey(const string &key) const {
+  return STLContains(m_pref_map, key);
+}
+
+
 void MemoryPreferences::RemoveValue(const string &key) {
   m_pref_map.erase(key);
 }
 
 
-/*
- * Set a value as a bool.
- * @param key
- * @param value
- */
-void MemoryPreferences::SetValueAsBool(const string &key, bool value) {
-  m_pref_map.erase(key);
-  if (value)
-    m_pref_map.insert(make_pair(key, BoolValidator::ENABLED));
-  else
-    m_pref_map.insert(make_pair(key, BoolValidator::DISABLED));
-}
-
-
-/*
- * Get a preference value as a bool
- * @param key the key to fetch
- * @return true if the value is 'true' or false otherwise
- */
 bool MemoryPreferences::GetValueAsBool(const string &key) const {
-  map<string, string>::const_iterator iter;
+  PreferencesMap::const_iterator iter;
   iter = m_pref_map.find(key);
 
   if (iter != m_pref_map.end())
@@ -265,9 +279,18 @@ bool MemoryPreferences::GetValueAsBool(const string &key) const {
 }
 
 
+void MemoryPreferences::SetValueAsBool(const string &key, bool value) {
+  m_pref_map.erase(key);
+  m_pref_map.insert(make_pair(key, (value ? BoolValidator::ENABLED :
+                                            BoolValidator::DISABLED)));
+}
+
+
+
 
 // FilePreferenceSaverThread
 //-----------------------------------------------------------------------------
+
 FilePreferenceSaverThread::FilePreferenceSaverThread() {
   // set a long poll interval so we don't spin
   m_ss.SetDefaultInterval(TimeInterval(60, 0));
@@ -288,29 +311,18 @@ void FilePreferenceSaverThread::SavePreferences(
 }
 
 
-/**
- * Called by the new thread.
- */
 void *FilePreferenceSaverThread::Run() {
   m_ss.Run();
   return NULL;
 }
 
 
-/**
- * Stop the saving thread
- */
 bool FilePreferenceSaverThread::Join(void *ptr) {
   m_ss.Terminate();
   return Thread::Join(ptr);
 }
 
 
-/**
- * This can be used to syncronize with the file saving thread. Useful if you
- * want to make sure the files have been written to disk before continuing.
- * This blocks until all pending save requests are complete.
- */
 void FilePreferenceSaverThread::Syncronize() {
   Mutex syncronize_mutex;
   ConditionVariable condition_var;
@@ -324,9 +336,6 @@ void FilePreferenceSaverThread::Syncronize() {
 }
 
 
-/**
- * Perform the save
- */
 void FilePreferenceSaverThread::SaveToFile(
     const string *filename_ptr,
     const PreferencesMap *pref_map_ptr) {
@@ -348,9 +357,6 @@ void FilePreferenceSaverThread::SaveToFile(
 }
 
 
-/**
- * Notify the blocked thread we're done
- */
 void FilePreferenceSaverThread::CompleteSyncronization(
     ConditionVariable *condition,
     Mutex *mutex) {
@@ -365,36 +371,23 @@ void FilePreferenceSaverThread::CompleteSyncronization(
 // FileBackedPreferences
 //-----------------------------------------------------------------------------
 
-/*
- * Load the preferences from storage
- */
 bool FileBackedPreferences::Load() {
   return LoadFromFile(FileName());
 }
 
 
-/*
- * Save the preferences to storage
- */
 bool FileBackedPreferences::Save() const {
   m_saver_thread->SavePreferences(FileName(), m_pref_map);
   return true;
 }
 
 
-/*
- * Return the name of the file used to save the preferences
- */
 const string FileBackedPreferences::FileName() const {
   return (m_directory + "/" + OLA_CONFIG_PREFIX + m_preference_name +
           OLA_CONFIG_SUFFIX);
 }
 
 
-/*
- * Load these preferences from a file
- * @param filename the filename to load from
- */
 bool FileBackedPreferences::LoadFromFile(const string &filename) {
   ifstream pref_file(filename.data());
 

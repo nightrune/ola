@@ -14,7 +14,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * OpenDmxDevice.cpp
- * The open dmx device
+ * The Open DMX device
  * Copyright (C) 2005-2008 Simon Newton
  */
 
@@ -32,6 +32,7 @@ namespace plugin {
 namespace opendmx {
 
 using ola::Device;
+using std::string;
 
 
 /*

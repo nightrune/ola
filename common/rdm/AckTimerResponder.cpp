@@ -48,10 +48,10 @@ const AckTimerResponder::Personalities *
     AckTimerResponder::Personalities::Instance() {
   if (!instance) {
     PersonalityList personalities;
-    personalities.push_back(new Personality(0, "Personality 1"));
-    personalities.push_back(new Personality(5, "Personality 2"));
-    personalities.push_back(new Personality(10, "Personality 3"));
-    personalities.push_back(new Personality(20, "Personality 4"));
+    personalities.push_back(Personality(0, "Personality 1"));
+    personalities.push_back(Personality(5, "Personality 2"));
+    personalities.push_back(Personality(10, "Personality 3"));
+    personalities.push_back(Personality(20, "Personality 4"));
     instance = new Personalities(personalities);
   }
   return instance;
@@ -101,7 +101,7 @@ const ResponderOps<AckTimerResponder>::ParamHandler
  * QUEUED_MESSAGE.
  */
 class QueuedResponse {
-  public:
+ public:
     // Takes ownership of the param data
     QueuedResponse(
         const ola::TimeStamp &valid_after,
@@ -131,7 +131,7 @@ class QueuedResponse {
     const uint8_t* ParamData() const { return m_param_data; }
     unsigned int ParamDataSize() const { return m_param_data_size; }
 
-  private:
+ private:
     ola::TimeStamp m_valid_after;
     rdm_pid m_pid;
     RDMCommand::RDMCommandClass m_command_class;
@@ -239,7 +239,7 @@ const RDMResponse *AckTimerResponder::ResponseFromQueuedMessage(
 }
 
 /**
- * Return an empty STATUS_MESSAGE response.
+ * Return an empty STATUS_MESSAGES response.
  */
 const RDMResponse *AckTimerResponder::EmptyStatusMessage(
     const RDMRequest *request) {

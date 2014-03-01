@@ -24,8 +24,6 @@
 #include <string>
 #include <fstream>
 
-using std::string;
-
 #ifndef EXAMPLES_SHOWSAVER_H_
 #define EXAMPLES_SHOWSAVER_H_
 
@@ -33,8 +31,8 @@ using std::string;
  * Write show data to a file.
  */
 class ShowSaver {
-  public:
-    explicit ShowSaver(const string &filename);
+ public:
+    explicit ShowSaver(const std::string &filename);
     ~ShowSaver();
 
     bool Open();
@@ -44,8 +42,8 @@ class ShowSaver {
                   unsigned int universe,
                   const ola::DmxBuffer &data);
 
-  private:
-    const string m_filename;
+ private:
+    const std::string m_filename;
     std::ofstream m_show_file;
     ola::TimeStamp m_last_frame;
 

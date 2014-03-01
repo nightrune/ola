@@ -15,10 +15,12 @@
  *
  * IPV4Address.cpp
  * A IPV4 address
- * Copyright (C) 2011 Simon Newton
+ * Copyright (C) 2011-2014 Simon Newton
  */
 
 #include <assert.h>
+#include <math.h>
+#include <stdint.h>
 #include <ola/network/IPV4Address.h>
 #include <ola/network/NetworkUtils.h>
 #include <string>
@@ -32,7 +34,7 @@ std::string IPV4Address::ToString() const {
 
 IPV4Address* IPV4Address::FromString(const std::string &address) {
   struct in_addr addr;
-  if (!StringToAddress(address, addr))
+  if (!StringToAddress(address, &addr))
     return NULL;
 
   return new IPV4Address(addr);
@@ -40,19 +42,36 @@ IPV4Address* IPV4Address::FromString(const std::string &address) {
 
 bool IPV4Address::FromString(const std::string &address, IPV4Address *target) {
   struct in_addr addr;
-  if (!StringToAddress(address, addr))
+  if (!StringToAddress(address, &addr))
     return false;
   *target = IPV4Address(addr);
   return true;
 }
 
-
 IPV4Address IPV4Address::FromStringOrDie(const std::string &address) {
   struct in_addr addr;
-  assert(StringToAddress(address, addr));
+  assert(StringToAddress(address, &addr));
   return IPV4Address(addr);
 }
 
+bool IPV4Address::ToCIDRMask(IPV4Address address, uint8_t *mask) {
+  uint32_t netmask = NetworkToHost(address.AsInt());
+  uint8_t bits = 0;
+  bool seen_one = false;
+  for (uint8_t i = 0; i < 32; i++) {
+    if (netmask & 1) {
+      bits++;
+      seen_one = true;
+    } else {
+      if (seen_one) {
+        return false;
+      }
+    }
+    netmask = netmask >> 1;
+  }
+  *mask = bits;
+  return true;
+}
 
 IPV4Address IPV4Address::Loopback() {
   return IPV4Address(HostToNetwork(0x7f000001));

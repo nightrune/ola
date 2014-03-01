@@ -24,7 +24,7 @@
 #include "tools/ola_trigger/Context.h"
 #include "ola/testing/TestUtils.h"
 
-
+using std::string;
 
 class ContextTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(ContextTest);
@@ -33,7 +33,7 @@ class ContextTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testAsString);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testContext();
     void testSlotOffsetAndValue();
     void testAsString();

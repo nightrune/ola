@@ -32,6 +32,7 @@ namespace plugin {
 namespace e131 {
 
 using ola::io::IOQueue;
+using ola::io::OutputStream;
 using ola::testing::ASSERT_DATA_EQUALS;
 
 class PDUTest: public CppUnit::TestFixture {
@@ -40,7 +41,7 @@ class PDUTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testBlockToOutputStream);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testPDUBlock();
     void testBlockToOutputStream();
 

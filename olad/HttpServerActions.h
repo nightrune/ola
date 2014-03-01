@@ -24,19 +24,17 @@
 #include <stdint.h>
 #include <string>
 #include "ola/ActionQueue.h"
-#include "ola/OlaCallbackClient.h"
+#include "ola/client/OlaClient.h"
+#include "ola/base/Macro.h"
 
 namespace ola {
-
-using std::string;
-
 
 /*
  * The base action
  */
 class BaseHttpAction: public Action {
-  public:
-    explicit BaseHttpAction(OlaCallbackClient *client):
+ public:
+    explicit BaseHttpAction(client::OlaClient *client):
       Action(),
       m_client(client),
       m_failed(false),
@@ -46,20 +44,19 @@ class BaseHttpAction: public Action {
 
     bool Failed() const  { return m_failed; }
     void Perform(SingleUseCallback0<void> *on_done);
-    void CallbackComplete(const string &error);
+    void CallbackComplete(const client::Result &result);
 
-  protected:
-    OlaCallbackClient *m_client;
+ protected:
+    client::OlaClient *m_client;
 
     void RequestComplete(bool failure);
-    virtual bool DoAction() = 0;
+    virtual void DoAction() = 0;
 
-  private:
+ private:
     bool m_failed;
     SingleUseCallback0<void> *m_on_done;
 
-    BaseHttpAction(const BaseHttpAction&);
-    BaseHttpAction& operator=(const BaseHttpAction&);
+    DISALLOW_COPY_AND_ASSIGN(BaseHttpAction);
 };
 
 
@@ -67,10 +64,10 @@ class BaseHttpAction: public Action {
  * An action that sets the name of a universe
  */
 class SetNameAction: public BaseHttpAction {
-  public:
-    SetNameAction(OlaCallbackClient *client,
+ public:
+    SetNameAction(client::OlaClient *client,
                   unsigned int universe,
-                  const string &name,
+                  const std::string &name,
                   bool is_fatal):
       BaseHttpAction(client),
       m_universe(universe),
@@ -80,16 +77,15 @@ class SetNameAction: public BaseHttpAction {
 
     bool IsFatal() const { return m_is_fatal; }
 
-  protected:
-    bool DoAction();
+ protected:
+    void DoAction();
 
-  private:
+ private:
     unsigned int m_universe;
-    string m_name;
+    std::string m_name;
     bool m_is_fatal;
 
-    SetNameAction(const SetNameAction&);
-    SetNameAction& operator=(const SetNameAction&);
+    DISALLOW_COPY_AND_ASSIGN(SetNameAction);
 };
 
 
@@ -97,10 +93,10 @@ class SetNameAction: public BaseHttpAction {
  * An action that sets the merge mode of a universe
  */
 class SetMergeModeAction: public BaseHttpAction {
-  public:
-    SetMergeModeAction(OlaCallbackClient *client,
+ public:
+    SetMergeModeAction(client::OlaClient *client,
                        unsigned int universe,
-                       OlaUniverse::merge_mode mode):
+                       client::OlaUniverse::merge_mode mode):
       BaseHttpAction(client),
       m_universe(universe),
       m_merge_mode(mode) {
@@ -108,15 +104,14 @@ class SetMergeModeAction: public BaseHttpAction {
 
     bool IsFatal() const { return false; }
 
-  protected:
-    bool DoAction();
+ protected:
+    void DoAction();
 
-  private:
+ private:
     unsigned int m_universe;
-    OlaUniverse::merge_mode m_merge_mode;
+    client::OlaUniverse::merge_mode m_merge_mode;
 
-    SetMergeModeAction(const SetMergeModeAction&);
-    SetMergeModeAction& operator=(const SetMergeModeAction&);
+    DISALLOW_COPY_AND_ASSIGN(SetMergeModeAction);
 };
 
 
@@ -124,13 +119,13 @@ class SetMergeModeAction: public BaseHttpAction {
  * An action that adds or removes a port from a universe.
  */
 class PatchPortAction: public BaseHttpAction {
-  public:
-    PatchPortAction(OlaCallbackClient *client,
+ public:
+    PatchPortAction(client::OlaClient *client,
                   unsigned int device_alias,
                   unsigned int port,
-                  PortDirection direction,
+                  client::PortDirection direction,
                   unsigned int universe,
-                  PatchAction action):
+                  client::PatchAction action):
       BaseHttpAction(client),
       m_device_alias(device_alias),
       m_port(port),
@@ -141,18 +136,17 @@ class PatchPortAction: public BaseHttpAction {
 
     bool IsFatal() const { return false; }
 
-  protected:
-    bool DoAction();
+ protected:
+    void DoAction();
 
-  private:
+ private:
     unsigned int m_device_alias;
     unsigned int m_port;
-    PortDirection m_direction;
+    client::PortDirection m_direction;
     unsigned int m_universe;
-    PatchAction m_action;
+    client::PatchAction m_action;
 
-    PatchPortAction(const PatchPortAction&);
-    PatchPortAction& operator=(const PatchPortAction&);
+    DISALLOW_COPY_AND_ASSIGN(PatchPortAction);
 };
 
 
@@ -160,11 +154,11 @@ class PatchPortAction: public BaseHttpAction {
  * An action that sets a port priority to inherit mode.
  */
 class PortPriorityInheritAction: public BaseHttpAction {
-  public:
-    PortPriorityInheritAction(OlaCallbackClient *client,
+ public:
+    PortPriorityInheritAction(client::OlaClient *client,
                               unsigned int device_alias,
                               unsigned int port,
-                              PortDirection direction):
+                              client::PortDirection direction):
       BaseHttpAction(client),
       m_device_alias(device_alias),
       m_port(port),
@@ -173,29 +167,28 @@ class PortPriorityInheritAction: public BaseHttpAction {
 
     bool IsFatal() const { return false; }
 
-  protected:
-    bool DoAction();
+ protected:
+    void DoAction();
 
-  private:
+ private:
     unsigned int m_device_alias;
     unsigned int m_port;
-    PortDirection m_direction;
+    client::PortDirection m_direction;
 
-    PortPriorityInheritAction(const PortPriorityInheritAction&);
-    PortPriorityInheritAction& operator=(const PortPriorityInheritAction&);
+    DISALLOW_COPY_AND_ASSIGN(PortPriorityInheritAction);
 };
 
 
 /*
  * An action that sets a port priority to override mode.
  */
-class PortPriorityOverrideAction: public BaseHttpAction {
-  public:
-    PortPriorityOverrideAction(OlaCallbackClient *client,
-                              unsigned int device_alias,
-                              unsigned int port,
-                              PortDirection direction,
-                              uint8_t overide_value):
+class PortPriorityStaticAction: public BaseHttpAction {
+ public:
+    PortPriorityStaticAction(client::OlaClient *client,
+                             unsigned int device_alias,
+                             unsigned int port,
+                             client::PortDirection direction,
+                             uint8_t overide_value):
       BaseHttpAction(client),
       m_device_alias(device_alias),
       m_port(port),
@@ -205,17 +198,16 @@ class PortPriorityOverrideAction: public BaseHttpAction {
 
     bool IsFatal() const { return false; }
 
-  protected:
-    bool DoAction();
+ protected:
+    void DoAction();
 
-  private:
+ private:
     unsigned int m_device_alias;
     unsigned int m_port;
-    PortDirection m_direction;
+    client::PortDirection m_direction;
     uint8_t m_override_value;
 
-    PortPriorityOverrideAction(const PortPriorityOverrideAction&);
-    PortPriorityOverrideAction& operator=(const PortPriorityOverrideAction&);
+    DISALLOW_COPY_AND_ASSIGN(PortPriorityStaticAction);
 };
 }  // namespace ola
 #endif  // OLAD_HTTPSERVERACTIONS_H_

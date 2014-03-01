@@ -41,18 +41,22 @@
 
 #include <string.h>
 
-#include <map>
 #include <string>
+#include <ostream>
 
 #include "ola/Logging.h"
 #include "ola/io/Descriptor.h"
 #include "ola/network/NetworkUtils.h"
 #include "plugins/usbpro/BaseUsbProWidget.h"
+#include "plugins/usbpro/GenericUsbProWidget.h"
 #include "plugins/usbpro/UsbProWidgetDetector.h"
 
 namespace ola {
 namespace plugin {
 namespace usbpro {
+
+using std::string;
+
 
 UsbProWidgetInformation& UsbProWidgetInformation::operator=(
     const UsbProWidgetInformation &other) {
@@ -61,6 +65,8 @@ UsbProWidgetInformation& UsbProWidgetInformation::operator=(
   manufacturer = other.manufacturer;
   device = other.device;
   serial = other.serial;
+  has_firmware_version = other.has_firmware_version;
+  firmware_version = other.firmware_version;
   return *this;
 }
 
@@ -70,7 +76,7 @@ UsbProWidgetInformation& UsbProWidgetInformation::operator=(
  * @param scheduler a SchedulingExecutorInterface to use to register events.
  * @param on_success A callback to run if discovery succeeds.
  * @param on_failure A callback to run if discovery fails.
- * @param timeout the time in ms between each discovery message.
+ * @param message_interval the time in ms between each discovery message.
  */
 UsbProWidgetDetector::UsbProWidgetDetector(
     ola::thread::SchedulingExecutorInterface *scheduler,
@@ -148,11 +154,16 @@ void UsbProWidgetDetector::HandleMessage(DispatchingUsbProWidget *widget,
     case BaseUsbProWidget::SERIAL_LABEL:
       HandleSerialResponse(widget, length, data);
       break;
+    case BaseUsbProWidget::GET_PARAMS:
+      HandleGetParams(widget, length, data);
+      break;
     case BaseUsbProWidget::HARDWARE_VERSION_LABEL:
       HandleHardwareVersionResponse(widget, length, data);
       break;
     case ENTTEC_SNIFFER_LABEL:
       HandleSnifferPacket(widget);
+      break;
+    case GenericUsbProWidget::RECEIVED_DMX_LABEL:
       break;
     default:
       OLA_WARN << "Unknown response label: 0x" << std::hex <<
@@ -224,17 +235,42 @@ void UsbProWidgetDetector::SendSerialRequest(DispatchingUsbProWidget *widget) {
   SetupTimeout(widget, &discovery_state);
 }
 
+/**
+ * Set a GET_PARAMS request
+ */
+void UsbProWidgetDetector::SendGetParams(DispatchingUsbProWidget *widget) {
+  uint16_t data = 0;
+  widget->SendMessage(DispatchingUsbProWidget::GET_PARAMS,
+                      reinterpret_cast<uint8_t*>(&data), sizeof(data));
+  DiscoveryState &discovery_state = m_widgets[widget];
+  discovery_state.discovery_state = DiscoveryState::GET_PARAM_SENT;
+  SetupTimeout(widget, &discovery_state);
+}
 
 /**
  * Send a Hardware version message, this is only valid for Enttec Usb Pro MkII
  * widgets.
  */
-void UsbProWidgetDetector::SendHardwareVersionRequest(
+void UsbProWidgetDetector::MaybeSendHardwareVersionRequest(
     DispatchingUsbProWidget *widget) {
-  widget->SendMessage(DispatchingUsbProWidget::HARDWARE_VERSION_LABEL, NULL, 0);
-  DiscoveryState &discovery_state = m_widgets[widget];
-  discovery_state.discovery_state = DiscoveryState::HARDWARE_VERSION_SENT;
-  SetupTimeout(widget, &discovery_state);
+  WidgetStateMap::iterator iter = m_widgets.find(widget);
+  if (iter == m_widgets.end())
+    return;
+
+  UsbProWidgetInformation &information = iter->second.information;
+  if (information.esta_id == 0 && information.device_id == 0) {
+    // This widget didn't respond to Manufacturer or Device messages,
+    // but did respond to GetSerial, so it's probably a USB Pro. Now we
+    // need to check if it's a MK II widget.
+    widget->SendMessage(
+        DispatchingUsbProWidget::HARDWARE_VERSION_LABEL, NULL, 0);
+    DiscoveryState &discovery_state = m_widgets[widget];
+    discovery_state.discovery_state = DiscoveryState::HARDWARE_VERSION_SENT;
+    SetupTimeout(widget, &discovery_state);
+  } else {
+    // otherwise there are no more messages to send.
+    CompleteWidgetDiscovery(widget);
+  }
 }
 
 
@@ -265,6 +301,9 @@ void UsbProWidgetDetector::DiscoveryTimeout(DispatchingUsbProWidget *widget) {
         break;
       case DiscoveryState::DEVICE_SENT:
         SendSerialRequest(widget);
+        break;
+      case DiscoveryState::GET_PARAM_SENT:
+        MaybeSendHardwareVersionRequest(widget);
         break;
       case DiscoveryState::HARDWARE_VERSION_SENT:
         CompleteWidgetDiscovery(widget);
@@ -357,16 +396,33 @@ void UsbProWidgetDetector::HandleSerialResponse(
       sizeof(information.serial);
   }
 
-  if (information.esta_id == 0 && information.device_id == 0) {
-    // This widget didn't respond to Manufacturer or Device messages, but did
-    // respond to GetSerial, so it's probably a USB Pro. Now we need to check
-    // if it's a MK II widget.
-    SendHardwareVersionRequest(widget);
+  SendGetParams(widget);
+}
+
+void UsbProWidgetDetector::HandleGetParams(DispatchingUsbProWidget *widget,
+                                           unsigned int length,
+                                           const uint8_t *data) {
+  WidgetStateMap::iterator iter = m_widgets.find(widget);
+  if (iter == m_widgets.end())
     return;
+
+  struct widget_params {
+    uint8_t firmware_lo;
+    uint8_t firmware_hi;
+    uint8_t break_time;
+    uint8_t mab_time;
+    uint8_t output_rate;
+  };
+
+  if (length < sizeof(widget_params)) {
+    OLA_WARN << "Response to GET_PARAMS too small, ignoring";
+  } else {
+    const widget_params *params = reinterpret_cast<const widget_params*>(data);
+    UsbProWidgetInformation &information = iter->second.information;
+    information.SetFirmware((params->firmware_hi << 8) + params->firmware_lo);
   }
 
-  // otherwise there are no more messages to send.
-  CompleteWidgetDiscovery(widget);
+  MaybeSendHardwareVersionRequest(widget);
 }
 
 
@@ -440,10 +496,23 @@ void UsbProWidgetDetector::CompleteWidgetDiscovery(
     return;
   }
 
-  OLA_INFO << "Detected USB Device: ESTA Id: 0x" << std::hex <<
-    information.esta_id  << " (" << information.manufacturer << "), device: "
-    << information.device_id << " (" << information.device << "), serial: " <<
-    "0x" << information.serial;
+  std::ostringstream str;
+  str << "ESTA Id: 0x" << std::hex << information.esta_id;
+  if (!information.manufacturer.empty()) {
+    str << " (" << information.manufacturer << ")";
+  }
+  str << ", device Id: " << information.device_id;
+  if (!information.device.empty()) {
+    str << " (" << information.device << ")";
+  }
+  str << ", serial: " << "0x" << information.serial << ", f/w version: ";
+  if (information.has_firmware_version) {
+     str << std::dec << (information.firmware_version >> 8) << "." <<
+       (information.firmware_version & 0xff);
+  } else {
+    str << "N/A";
+  }
+  OLA_INFO << "Detected USB Device: " << str.str();
 
   const UsbProWidgetInformation *widget_info = new UsbProWidgetInformation(
       information);

@@ -26,24 +26,24 @@
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <map>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "ola/network/Socket.h"
 #include "common/protocol/Ola.pb.h"
-#include "common/rpc/StreamRpcChannel.h"
+#include "common/rpc/RpcChannel.h"
 #include "ola/BaseTypes.h"
 #include "ola/ExportMap.h"
 #include "ola/Logging.h"
 #include "ola/network/InterfacePicker.h"
+#include "ola/network/Socket.h"
 #include "ola/rdm/PidStore.h"
 #include "ola/rdm/UID.h"
 #include "ola/stl/STLUtils.h"
 #include "olad/Client.h"
-#include "olad/DeviceManager.h"
 #include "olad/ClientBroker.h"
+#include "olad/DeviceManager.h"
+#include "olad/DiscoveryAgent.h"
 #include "olad/OlaServer.h"
 #include "olad/OlaServerServiceImpl.h"
 #include "olad/Plugin.h"
@@ -62,14 +62,18 @@
 
 namespace ola {
 
+using ola::proto::OlaClientService_Stub;
 using ola::rdm::RootPidStore;
-using ola::rpc::StreamRpcChannel;
+using ola::rpc::RpcChannel;
 using std::auto_ptr;
 using std::pair;
+using std::vector;
 
 const char OlaServer::UNIVERSE_PREFERENCES[] = "universe";
 const char OlaServer::K_CLIENT_VAR[] = "clients-connected";
 const char OlaServer::K_UID_VAR[] = "server-uid";
+// The Bonjour API expects <service>[,<sub-type>] so we use that form here.
+const char OlaServer::K_DISCOVERY_SERVICE_TYPE[] = "_http._tcp,_ola";
 const unsigned int OlaServer::K_HOUSEKEEPING_TIMEOUT_MS = 10000;
 
 
@@ -104,6 +108,15 @@ OlaServer::OlaServer(OlaClientServiceFactory *factory,
   }
 
   m_export_map->GetIntegerVar(K_CLIENT_VAR);
+
+  DiscoveryAgentFactory discovery_agent_factory;
+  m_discovery_agent.reset(discovery_agent_factory.New());
+  if (m_discovery_agent.get()) {
+    if (!m_discovery_agent->Init()) {
+      OLA_WARN << "Failed to Init DiscoveryAgent";
+      m_discovery_agent.reset();
+    }
+  }
 }
 
 
@@ -232,10 +245,23 @@ bool OlaServer::Init() {
   m_ss->Execute(
       ola::NewSingleCallback(m_plugin_manager.get(), &PluginManager::LoadAll));
 
+  bool web_server_started = false;
+
 #ifdef HAVE_LIBMICROHTTPD
-  if (!StartHttpServer(iface))
+  if (m_options.http_enable && StartHttpServer(iface)) {
+    web_server_started = true;
+  } else {
     OLA_WARN << "Failed to start the HTTP server.";
+  }
 #endif
+
+  if (web_server_started && m_discovery_agent.get()) {
+    DiscoveryAgentInterface::RegisterOptions options;
+    options.txt_data["path"] = "/";
+    m_discovery_agent->RegisterService(
+        "OLA Web Console",
+        K_DISCOVERY_SERVICE_TYPE, m_options.http_port, options);
+  }
 
   m_housekeeping_timeout = m_ss->RegisterRepeatingTimeout(
       K_HOUSEKEEPING_TIMEOUT_MS,
@@ -287,6 +313,7 @@ void OlaServer::NewConnection(ola::io::ConnectedDescriptor *descriptor) {
 void OlaServer::NewTCPConnection(ola::network::TCPSocket *socket) {
   if (!socket)
     return;
+  socket->SetNoDelay();
   InternalNewConnection(socket);
 }
 
@@ -322,7 +349,9 @@ bool OlaServer::RunHousekeeping() {
   vector<Universe*>::iterator iter = universes.begin();
   const TimeStamp *now = m_ss->WakeUpTime();
   for (; iter != universes.end(); ++iter) {
-    if ((*iter)->RDMDiscoveryInterval().Seconds() &&
+    (*iter)->CleanStaleSourceClients();
+    if ((*iter)->IsActive() &&
+        (*iter)->RDMDiscoveryInterval().Seconds() &&
         *now - (*iter)->LastRDMDiscovery() > (*iter)->RDMDiscoveryInterval()) {
       // run incremental discovery
       (*iter)->RunRDMDiscovery(NULL, false);
@@ -397,7 +426,7 @@ void OlaServer::StopPlugins() {
  */
 void OlaServer::InternalNewConnection(
     ola::io::ConnectedDescriptor *socket) {
-  StreamRpcChannel *channel = new StreamRpcChannel(NULL, socket, m_export_map);
+  RpcChannel *channel = new RpcChannel(NULL, socket, m_export_map);
   channel->SetChannelCloseHandler(
       NewSingleCallback(this, &OlaServer::ChannelClosed,
                         socket->ReadDescriptor()));

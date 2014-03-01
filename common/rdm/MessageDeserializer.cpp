@@ -32,6 +32,8 @@ namespace ola {
 namespace rdm {
 
 using ola::messaging::MessageFieldInterface;
+using std::string;
+using std::vector;
 
 MessageDeserializer::MessageDeserializer()
     : m_data(NULL),
@@ -123,6 +125,18 @@ void MessageDeserializer::Visit(
     new ola::messaging::IPV4MessageField(
       descriptor,
       ola::network::IPV4Address(data)));
+}
+
+
+void MessageDeserializer::Visit(
+    const ola::messaging::MACFieldDescriptor *descriptor) {
+  if (!CheckForData(descriptor->MaxSize()))
+    return;
+
+  ola::network::MACAddress mac_address(m_data + m_offset);
+  m_offset += descriptor->MaxSize();
+  m_message_stack.top().push_back(
+    new ola::messaging::MACMessageField(descriptor, mac_address));
 }
 
 

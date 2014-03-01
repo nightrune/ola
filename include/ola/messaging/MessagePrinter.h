@@ -33,13 +33,14 @@ namespace messaging {
  * The base class for all message printers.
  */
 class MessagePrinter: public MessageVisitor {
-  public:
+ public:
     virtual ~MessagePrinter() {}
 
     std::string AsString(const class Message *message);
 
     virtual void Visit(const BoolMessageField*) {}
     virtual void Visit(const IPV4MessageField*) {}
+    virtual void Visit(const MACMessageField*) {}
     virtual void Visit(const UIDMessageField*) {}
     virtual void Visit(const StringMessageField*) {}
     virtual void Visit(const BasicMessageField<uint8_t>*) {}
@@ -51,12 +52,14 @@ class MessagePrinter: public MessageVisitor {
     virtual void Visit(const GroupMessageField*) {}
     virtual void PostVisit(const GroupMessageField*) {}
 
-  protected:
+ protected:
     std::stringstream& Stream() { return m_str; }
     virtual void PostStringHook() {}
-    virtual string TransformLabel(const string &label) { return label; }
+    virtual std::string TransformLabel(const std::string &label) {
+      return label;
+    }
 
-  private:
+ private:
     std::stringstream m_str;
 };
 
@@ -65,7 +68,7 @@ class MessagePrinter: public MessageVisitor {
  * The generic printer returns key: value fields.
  */
 class GenericMessagePrinter: public MessagePrinter {
-  public:
+ public:
     GenericMessagePrinter(unsigned int indent_size = DEFAULT_INDENT,
                           unsigned int initial_indent = 0)
         : m_indent(initial_indent),
@@ -75,6 +78,7 @@ class GenericMessagePrinter: public MessagePrinter {
 
     virtual void Visit(const BoolMessageField*);
     virtual void Visit(const IPV4MessageField*);
+    virtual void Visit(const MACMessageField*);
     virtual void Visit(const UIDMessageField*);
     virtual void Visit(const StringMessageField*);
     virtual void Visit(const BasicMessageField<uint8_t>*);
@@ -88,16 +92,16 @@ class GenericMessagePrinter: public MessagePrinter {
 
     static const unsigned int DEFAULT_INDENT = 2;
 
-  private:
+ private:
     unsigned int m_indent, m_indent_size;
 
-    void AppendUInt(const string &name,
+    void AppendUInt(const std::string &name,
                     unsigned int value,
-                    const string &label,
+                    const std::string &label,
                     int8_t multipler);
-    void AppendInt(const string &name,
+    void AppendInt(const std::string &name,
                    int value,
-                   const string &label,
+                   const std::string &label,
                    int8_t multipler);
     void AppendMultipler(int8_t multipler);
 };

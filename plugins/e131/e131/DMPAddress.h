@@ -30,8 +30,6 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using ola::network::HostToNetwork;
-
 typedef enum {
   ONE_BYTES = 0x00,
   TWO_BYTES = 0x01,
@@ -82,7 +80,7 @@ unsigned int DMPSizeToByteSize(dmp_address_size size);
  * or absolute, ranged or non-ranged.
  */
 class BaseDMPAddress {
-  public:
+ public:
     BaseDMPAddress() {}
     virtual ~BaseDMPAddress() {}
 
@@ -109,7 +107,7 @@ class BaseDMPAddress {
     // True if this is a range address.
     virtual bool IsRange() const = 0;
 
-  protected:
+ protected:
     virtual unsigned int BaseSize() const = 0;
 };
 
@@ -119,7 +117,7 @@ class BaseDMPAddress {
  */
 template<typename type>
 class DMPAddress: public BaseDMPAddress {
-  public:
+ public:
     explicit DMPAddress(type start):
       BaseDMPAddress(),
       m_start(start) {}
@@ -134,22 +132,22 @@ class DMPAddress: public BaseDMPAddress {
         *length = 0;
         return false;
       }
-      type field = HostToNetwork(m_start);
+      type field = ola::network::HostToNetwork(m_start);
       memcpy(data, &field, BaseSize());
       *length = Size();
       return true;
     }
 
     void Write(ola::io::OutputStream *stream) const {
-      *stream << HostToNetwork(m_start);
+      *stream << ola::network::HostToNetwork(m_start);
     }
 
     bool IsRange() const { return false; }
 
-  protected:
+ protected:
     unsigned int BaseSize() const { return sizeof(type); }
 
-  private:
+ private:
     type m_start;
 };
 
@@ -169,7 +167,7 @@ const BaseDMPAddress *NewSingleAddress(unsigned int value);
  */
 template <typename type>
 class RangeDMPAddress: public BaseDMPAddress {
-  public:
+ public:
     RangeDMPAddress(type start,
                     type increment,
                     type number):
@@ -188,9 +186,9 @@ class RangeDMPAddress: public BaseDMPAddress {
         return false;
       }
       type field[3];
-      field[0] = HostToNetwork(m_start);
-      field[1] = HostToNetwork(m_increment);
-      field[2] = HostToNetwork(m_number);
+      field[0] = ola::network::HostToNetwork(m_start);
+      field[1] = ola::network::HostToNetwork(m_increment);
+      field[2] = ola::network::HostToNetwork(m_number);
       memcpy(data, &field, Size());
       *length = Size();
       return true;
@@ -198,18 +196,18 @@ class RangeDMPAddress: public BaseDMPAddress {
 
     void Write(ola::io::OutputStream *stream) const {
       type field[3];
-      field[0] = HostToNetwork(m_start);
-      field[1] = HostToNetwork(m_increment);
-      field[2] = HostToNetwork(m_number);
+      field[0] = ola::network::HostToNetwork(m_start);
+      field[1] = ola::network::HostToNetwork(m_increment);
+      field[2] = ola::network::HostToNetwork(m_number);
       stream->Write(reinterpret_cast<uint8_t*>(&field), Size());
     }
 
     bool IsRange() const { return true; }
 
-  protected:
+ protected:
     unsigned int BaseSize() const { return sizeof(type); }
 
-  private:
+ private:
     type m_start, m_increment, m_number;
 };
 
@@ -232,7 +230,7 @@ const BaseDMPAddress *NewRangeAddress(unsigned int value,
 const BaseDMPAddress *DecodeAddress(dmp_address_size size,
                                     dmp_address_type type,
                                     const uint8_t *data,
-                                    unsigned int &length);
+                                    unsigned int *length);
 
 
 /*
@@ -241,7 +239,7 @@ const BaseDMPAddress *DecodeAddress(dmp_address_size size,
  */
 template <typename type>
 class DMPAddressData {
-  public:
+ public:
     DMPAddressData(const type *address,
                    const uint8_t *data,
                    unsigned int length):
@@ -280,7 +278,7 @@ class DMPAddressData {
       stream->Write(m_data, m_length);
     }
 
-  private:
+ private:
     const type *m_address;
     const uint8_t *m_data;
     unsigned int m_length;

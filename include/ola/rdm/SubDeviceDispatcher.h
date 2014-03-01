@@ -29,66 +29,70 @@
 #ifndef INCLUDE_OLA_RDM_SUBDEVICEDISPATCHER_H_
 #define INCLUDE_OLA_RDM_SUBDEVICEDISPATCHER_H_
 
+#include <ola/rdm/RDMControllerInterface.h>
+
 #include <map>
 #include <string>
 #include <vector>
-#include "ola/rdm/RDMControllerInterface.h"
 
 namespace ola {
 namespace rdm {
 
 class SubDeviceDispatcher: public ola::rdm::RDMControllerInterface {
-  public:
-    SubDeviceDispatcher() {}
-    ~SubDeviceDispatcher() {}
+ public:
+  SubDeviceDispatcher() {}
+  ~SubDeviceDispatcher() {}
 
-    void AddSubDevice(uint16_t sub_device_number,
-                      ola::rdm::RDMControllerInterface *device);
+  void AddSubDevice(uint16_t sub_device_number,
+                    ola::rdm::RDMControllerInterface *device);
 
-    void SendRDMRequest(const ola::rdm::RDMRequest *request,
-                        ola::rdm::RDMCallback *callback);
-
-  private:
-    struct FanOutTracker {
-      public:
-        FanOutTracker(uint16_t number_of_subdevices,
+  void SendRDMRequest(const ola::rdm::RDMRequest *request,
                       ola::rdm::RDMCallback *callback);
 
-        bool IncrementAndCheckIfComplete() {
-          return ++m_responses_so_far == m_number_of_subdevices;
-        }
+ private:
+  struct FanOutTracker {
+   public:
+    FanOutTracker(uint16_t number_of_subdevices,
+                  ola::rdm::RDMCallback *callback);
 
-        void SetRootResponse(ola::rdm::rdm_response_code code,
-                             const ola::rdm::RDMResponse *response);
+    bool IncrementAndCheckIfComplete() {
+      return ++m_responses_so_far == m_number_of_subdevices;
+    }
 
-        void RunCallback();
+    void SetResponse(ola::rdm::rdm_response_code code,
+                     const ola::rdm::RDMResponse *response);
 
-      private:
-        uint16_t m_number_of_subdevices;
-        uint16_t m_responses_so_far;
-        ola::rdm::RDMCallback *m_callback;
+    void RunCallback();
 
-        ola::rdm::rdm_response_code m_response_code;
-        const ola::rdm::RDMResponse *m_response;
-    };
+    uint16_t NumResponses() const {
+      return m_responses_so_far;
+    }
 
-    typedef std::map<uint16_t, ola::rdm::RDMControllerInterface*> SubDeviceMap;
+   private:
+    uint16_t m_number_of_subdevices;
+    uint16_t m_responses_so_far;
+    ola::rdm::RDMCallback *m_callback;
 
-    SubDeviceMap m_subdevices;
+    ola::rdm::rdm_response_code m_response_code;
+    const ola::rdm::RDMResponse *m_response;
+  };
 
-    void FanOutToSubDevices(const ola::rdm::RDMRequest *request,
-                            ola::rdm::RDMCallback *callback);
+  typedef std::map<uint16_t, ola::rdm::RDMControllerInterface*> SubDeviceMap;
 
-    void NackIfNotBroadcast(const ola::rdm::RDMRequest *request,
-                            ola::rdm::RDMCallback *callback,
-                            ola::rdm::rdm_nack_reason nack_reason);
+  SubDeviceMap m_subdevices;
 
-    void HandleSubDeviceResponse(
-        FanOutTracker *tracker,
-        uint16_t sub_device_id,
-        ola::rdm::rdm_response_code code,
-        const ola::rdm::RDMResponse *response,
-        const std::vector<std::string> &packets);
+  void FanOutToSubDevices(const ola::rdm::RDMRequest *request,
+                          ola::rdm::RDMCallback *callback);
+
+  void NackIfNotBroadcast(const ola::rdm::RDMRequest *request,
+                          ola::rdm::RDMCallback *callback,
+                          ola::rdm::rdm_nack_reason nack_reason);
+
+  void HandleSubDeviceResponse(
+      FanOutTracker *tracker,
+      ola::rdm::rdm_response_code code,
+      const ola::rdm::RDMResponse *response,
+      const std::vector<std::string> &packets);
 };
 }  // namespace rdm
 }  // namespace ola

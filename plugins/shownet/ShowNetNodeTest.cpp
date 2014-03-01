@@ -37,6 +37,7 @@ namespace shownet {
 
 using ola::DmxBuffer;
 using std::map;
+using std::string;
 
 class ShowNetNodeTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(ShowNetNodeTest);
@@ -45,7 +46,7 @@ class ShowNetNodeTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testSendAndReceive);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void setUp();
     void tearDown();
     void testHandlePacket();
@@ -53,7 +54,7 @@ class ShowNetNodeTest: public CppUnit::TestFixture {
     void testSendAndReceive();
     void UpdateData(unsigned int universe);
     void SendAndReceiveForUniverse(unsigned int universe);
-  private:
+ private:
     bool m_hander_called;
     ShowNetNode *m_node;
 };
@@ -189,7 +190,7 @@ void ShowNetNodeTest::testPopulatePacket() {
   unsigned int header_size = sizeof(packet) - sizeof(packet.data);
   unsigned int encoded_data_size = sizeof(expected_packet.data);
   ola::dmx::RunLengthEncoder encoder;
-  encoder.Encode(buffer, expected_packet.data, encoded_data_size);
+  encoder.Encode(buffer, expected_packet.data, &encoded_data_size);
 
   m_node->SetName(NAME);
   unsigned int size = m_node->PopulatePacket(&packet, universe, buffer);

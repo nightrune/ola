@@ -1,53 +1,39 @@
 include $(top_srcdir)/common.mk
 
-HEADER_FILES = AutoStart.h OlaClient.h OlaCallbackClient.h OlaDevice.h \
-               OlaClientWrapper.h StreamingClient.h common.h
+# These headers are deprecated and will be removed 6 months after the 0.9.0
+# release.
+DEPRECATED = OlaCallbackClient.h OlaDevice.h StreamingClient.h
 
+# HEADERS
+##################################################
 pkgincludedir = $(includedir)/ola
-pkginclude_HEADERS = $(HEADER_FILES)
+pkginclude_HEADERS = AutoStart.h OlaClientWrapper.h $(DEPRECATED)
 
-EXTRA_DIST = $(HEADER_FILES) OlaClientCore.h common-h.in
-
+# LIBRARIES
+##################################################
 lib_LTLIBRARIES = libola.la
 libola_la_SOURCES = AutoStart.cpp \
-                    OlaClient.cpp \
+                    ClientRDMAPIShim.cpp \
                     OlaCallbackClient.cpp \
+                    OlaClient.cpp \
+                    OlaClientCore.h \
                     OlaClientCore.cpp \
                     OlaClientWrapper.cpp \
                     StreamingClient.cpp
 libola_la_LDFLAGS = -version-info 1:1:0
-libola_la_LIBADD = $(top_builddir)/common/libolacommon.la
+libola_la_LIBADD = ../common/libolacommon.la
 
-# Test Programs
+# TESTS
+##################################################
 if BUILD_TESTS
 TESTS = OlaClientTester
 endif
 check_PROGRAMS = $(TESTS)
+
 OlaClientTester_SOURCES = StreamingClientTest.cpp
 OlaClientTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
 OlaClientTester_LDADD = $(COMMON_TESTING_LIBS) \
                         $(PLUGIN_LIBS) \
-                        $(top_builddir)/common/libolacommon.la \
-                        $(top_builddir)/olad/libolaserver.la \
+                        ../common/libolacommon.la \
+                        ../olad/libolaserver.la \
                         ./libola.la
-
-## @end 1
-## @start 2
-# Regenerate common.h with config.status whenever common-h.in changes.
-common.h: stamp-common
-	@:
-stamp-common: $(srcdir)/common-h.in $(top_builddir)/config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES= CONFIG_HEADERS= CONFIG_OTHER=sic/common.h \
-	  $(SHELL) ./config.status
-	echo timestamp > $@
-## @end 2
-distclean-local:
-	rm -f $(builddir)/common.h $(builddir)/stamp-common
-
-# Don't distribute common.h, since it is build host dependent!
-dist-hook:
-	rm -f $(distdir)/common.h
-
-install-exec-hook:
-	$(LN_S) -f $(includedir)/ola/OlaClientWrapper.h $(DESTDIR)$(includedir)/ola/SimpleClient.h	

@@ -13,7 +13,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * RDMENUMS.h
+ * RDMEnums.h
  * Provide a generic RDM ENUMS that can use different implementations.
  * Copyright (C) 2010 Simon Newton
  */
@@ -21,8 +21,8 @@
 /**
  * @addtogroup rdm_helpers
  * @{
- * @file RDMENUMS.h
- * @brief Provides a generic RDM ENUMS that can use different implementations
+ * @file RDMEnums.h
+ * @brief Various constants used in RDM.
  * @}
  */
 
@@ -53,7 +53,7 @@ typedef enum {
   PID_DISC_UNIQUE_BRANCH = 0x0001,
   PID_DISC_MUTE = 0x0002,
   PID_DISC_UN_MUTE = 0x0003,
-  // network managment
+  // network management
   PID_PROXIED_DEVICES = 0x0010,
   PID_PROXIED_DEVICE_COUNT = 0x0011,
   PID_COMMS_STATUS = 0x0015,
@@ -78,7 +78,7 @@ typedef enum {
   PID_SOFTWARE_VERSION_LABEL = 0x00C0,
   PID_BOOT_SOFTWARE_VERSION_ID = 0x00C1,
   PID_BOOT_SOFTWARE_VERSION_LABEL = 0x00C2,
-  // dmx512
+  // DMX512
   PID_DMX_PERSONALITY = 0x00E0,
   PID_DMX_PERSONALITY_DESCRIPTION = 0x00E1,
   PID_DMX_START_ADDRESS = 0x00F0,
@@ -93,7 +93,7 @@ typedef enum {
   PID_DEVICE_HOURS = 0x0400,
   PID_LAMP_HOURS = 0x0401,
   PID_LAMP_STRIKES = 0x0402,
-  PID_LAMP_STATE =  0x0403,
+  PID_LAMP_STATE = 0x0403,
   PID_LAMP_ON_MODE = 0x0404,
   PID_DEVICE_POWER_CYCLES = 0x0405,
   // display settings
@@ -113,20 +113,29 @@ typedef enum {
   PID_CAPTURE_PRESET = 0x1030,
   PID_PRESET_PLAYBACK = 0x1031,
 
-  // E1.37 PIDS
+  // E1.37-1 PIDS
+  // DMX512 setup
   PID_DMX_BLOCK_ADDRESS = 0x0140,
   PID_DMX_FAIL_MODE = 0x0141,
   PID_DMX_STARTUP_MODE = 0x0142,
+
+  // Dimmer Settings
   PID_DIMMER_INFO = 0x0340,
   PID_MINIMUM_LEVEL = 0x0341,
   PID_MAXIMUM_LEVEL = 0x0342,
   PID_CURVE = 0x0343,
   PID_CURVE_DESCRIPTION = 0x0344,
+
+  // Control
   PID_OUTPUT_RESPONSE_TIME = 0x0345,
   PID_OUTPUT_RESPONSE_TIME_DESCRIPTION = 0x0346,
   PID_MODULATION_FREQUENCY = 0x0347,
   PID_MODULATION_FREQUENCY_DESCRIPTION = 0x0348,
+
+  // Power/Lamp Settings
   PID_BURN_IN = 0x0440,
+
+  // Configuration
   PID_LOCK_PIN = 0x0640,
   PID_LOCK_STATE = 0x0641,
   PID_LOCK_STATE_DESCRIPTION = 0x0642,
@@ -137,26 +146,42 @@ typedef enum {
   PID_POWER_ON_SELF_TEST = 0x1044,
 
   // Draft E1.33 PIDs - DO NOT USE
-  PID_ENDPOINT_LIST = 0x7fe0,
-  PID_ENDPOINT_LIST_CHANGE = 0x7fee,
-  PID_ENDPOINT_IDENTIFY = 0x7fe9,
-  PID_ENDPOINT_TO_UNIVERSE = 0x7fe1,
-  PID_RDM_TRAFFIC_ENABLE = 0x7ef2,
-  PID_ENDPOINT_MODE = 0x7fe3,
-  PID_ENDPOINT_LABEL = 0x7fe4,
-  PID_DISCOVERY_STATE = 0x7fe5,
-  PID_BACKGROUND_DISCOVERY = 0x7fea,
-  PID_ENDPOINT_TIMING = 0x7fe6,
-  PID_ENDPOINT_TIMING_DESCRIPTION = 0x7fe7,
-  PID_ENDPOINT_DEVICE_LIST_CHANGE = 0x7feb,
-  PID_ENDPOINT_DEVICES = 0x7fec,
-  PID_BINDING_CONTROL_FIELDS = 0x7fe8,
-  PID_TCP_COMMS_STATUS = 0x7fed,
-  PID_BACKGROUND_QUEUED_STATUS_POLICY = 0x7fd0,
-  PID_BACKGROUND_QUEUED_STATUS_POLICY_DESCRIPTION = 0x7fd1,
-  PID_BACKGROUND_STATUS_TYPE = 0x7fd2,
-  PID_QUEUED_STATUS_ENDPOINT_COLLECTION = 0x7fd3,
-  PID_QUEUED_STATUS_UID_COLLECTION = 0x7fd4,
+  PID_ENDPOINT_LIST = 0x7FE0,
+  PID_ENDPOINT_TO_UNIVERSE = 0x7FE1,
+  PID_RDM_TRAFFIC_ENABLE = 0x7FE2,
+  PID_ENDPOINT_MODE = 0x7FE3,
+  PID_ENDPOINT_LABEL = 0x7FE4,
+  PID_DISCOVERY_STATE = 0x7FE5,
+  PID_ENDPOINT_TIMING = 0x7FE6,
+  PID_ENDPOINT_TIMING_DESCRIPTION = 0x7FE7,
+  PID_BINDING_CONTROL_FIELDS = 0x7FE8,
+  PID_ENDPOINT_IDENTIFY = 0x7FE9,
+  PID_BACKGROUND_DISCOVERY = 0x7FEA,
+  PID_ENDPOINT_DEVICE_LIST_CHANGE = 0x7FEB,
+  PID_ENDPOINT_DEVICES = 0x7FEC,
+  PID_TCP_COMMS_STATUS = 0x7FED,
+  PID_ENDPOINT_LIST_CHANGE = 0x7FEE,
+  PID_BACKGROUND_QUEUED_STATUS_POLICY = 0x7FD0,
+  PID_BACKGROUND_QUEUED_STATUS_POLICY_DESCRIPTION = 0x7FD1,
+  PID_BACKGROUND_STATUS_TYPE = 0x7FD2,
+  PID_QUEUED_STATUS_ENDPOINT_COLLECTION = 0x7FD3,
+  PID_QUEUED_STATUS_UID_COLLECTION = 0x7FD4,
+
+  // Draft E1.37-2 PIDs - DO NOT USE, values will change
+  PID_LIST_INTERFACES = 0xFFE0,
+  PID_INTERFACE_LABEL = 0xFFE1,
+  PID_INTERFACE_HARDWARE_ADDRESS_TYPE1 = 0xFFE2,
+  PID_IPV4_DHCP_MODE = 0xFFE3,
+  PID_IPV4_ZEROCONF_MODE = 0xFFE4,
+  PID_IPV4_CURRENT_ADDRESS = 0xFFE5,
+  PID_IPV4_STATIC_ADDRESS = 0xFFE6,
+  PID_INTERFACE_RENEW_DHCP = 0xFFE7,
+  PID_INTERFACE_RELEASE_DHCP = 0xFFE8,
+  PID_INTERFACE_APPLY_CONFIGURATION = 0xFFE9,
+  PID_IPV4_DEFAULT_ROUTE = 0xFFEA,
+  PID_DNS_NAME_SERVER = 0xFFEB,
+  PID_DNS_HOSTNAME = 0xFFEC,
+  PID_DNS_DOMAIN_NAME = 0xFFED,
 } rdm_pid;
 
 
@@ -376,7 +401,7 @@ typedef enum {
   PRODUCT_DETAIL_METAL_HALIDE = 0x0002,
   PRODUCT_DETAIL_INCANDESCENT = 0x0003,
   PRODUCT_DETAIL_LED = 0x0004,
-  PRODUCT_DETAIL_FLUROESCENT = 0x0005,
+  PRODUCT_DETAIL_FLUORESCENT = 0x0005,
   PRODUCT_DETAIL_COLDCATHODE = 0x0006,
   PRODUCT_DETAIL_ELECTROLUMINESCENT = 0x0007,
   PRODUCT_DETAIL_LASER = 0x0008,
@@ -454,7 +479,9 @@ typedef enum {
 } rdm_product_detail;
 
 
-// slot types
+/**
+ * @brief The RDM slot types, from table C-1 of the standard.
+ */
 typedef enum {
   ST_PRIMARY = 0x00,
   ST_SEC_FINE = 0x01,
@@ -468,7 +495,9 @@ typedef enum {
 } rdm_slot_type;
 
 
-// slot definitions
+/**
+ * @brief The RDM slot definitions, from table C-2 of the standard.
+ */
 typedef enum {
   SD_INTENSITY = 0x0001,
   SD_INTENSITY_MASTER = 0x0002,
@@ -546,7 +575,7 @@ typedef enum {
   LAMP_ON_MODE_OFF = 0x00,
   LAMP_ON_MODE_DMX = 0x01,
   LAMP_ON_MODE_ON = 0x02,
-  LAMP_ON_MODE_AFTER_CAL = 0x03,
+  LAMP_ON_MODE_ON_AFTER_CAL = 0x03,
 } rdm_lamp_mode;
 
 typedef enum {
@@ -562,34 +591,77 @@ typedef enum {
   DISPLAY_INVERT_AUTO = 0x02,
 } rdm_display_invert;
 
+// The identify modes from E1.37-1
+typedef enum {
+  IDENTIFY_MODE_QUIET = 0x00,
+  IDENTIFY_MODE_LOUD = 0xFF,
+} rdm_identify_mode;
+
+typedef enum {
+  RESET_WARM = 0x01,
+  RESET_COLD = 0xFF,
+} rdm_reset_device_mode;
+
 // the two special presets
 static const uint16_t PRESET_PLAYBACK_OFF = 0x0000;
-static const uint16_t PRESET_PLAYBACK_ALL = 0xffff;
+static const uint16_t PRESET_PLAYBACK_ALL = 0xFFFF;
+
+static const uint8_t ALL_SENSORS = 0xff;
 
 // bit masks for sensor values
 static const uint8_t SENSOR_RECORDED_VALUE = 0x01;
 static const uint8_t SENSOR_RECORDED_RANGE_VALUES = 0x02;
-static const uint8_t ALL_SENSORS = 0xff;
 
-// The identify modes from E1.37-1
-static const uint8_t IDENTIFY_MODE_QUIET = 0x00;
-static const uint8_t IDENTIFY_MODE_LOUD = 0xff;
+// Consts for sensor values when unsupported
+static const uint8_t SENSOR_RECORDED_UNSUPPORTED = 0x0000;
+static const uint8_t SENSOR_RECORDED_RANGE_UNSUPPORTED = 0x0000;
+
+// Consts for SENSOR_DEFINITION's range_min
+static const int16_t SENSOR_DEFINITION_RANGE_MIN_UNDEFINED = -0x8000;
+
+// Consts for SENSOR_DEFINITION's range_max
+static const int16_t SENSOR_DEFINITION_RANGE_MAX_UNDEFINED = 0x7FFF;
+
+// Consts for SENSOR_DEFINITION's normal_min
+static const int16_t SENSOR_DEFINITION_NORMAL_MIN_UNDEFINED = -0x8000;
+
+// Consts for SENSOR_DEFINITION's normal_max
+static const int16_t SENSOR_DEFINITION_NORMAL_MAX_UNDEFINED = 0x7FFF;
+
+// The maximum PIN
+static const uint16_t MAX_LOCK_PIN = 9999;
 
 // The Preset programmed modes
 typedef enum {
-  PRESET_NOT_PROGRAMMED = 0,
-  PRESET_PROGRAMMED = 1,
-  PRESET_PROGRAMMED_READ_ONLY = 2,
+  PRESET_NOT_PROGRAMMED = 0x00,
+  PRESET_PROGRAMMED = 0x01,
+  PRESET_PROGRAMMED_READ_ONLY = 0x02,
 } rdm_preset_programmed_mode;
 
 // The RDM merge modes
 typedef enum {
-  MERGEMODE_DEFAULT = 0,
-  MERGEMODE_HTP = 1,
-  MERGEMODE_LTP = 2,
-  MERGEMODE_DMX_ONLY = 3,
-  MERGEMODE_OTHER = 0xff,
-} rdm_preset_merge_mode;
+  MERGEMODE_DEFAULT = 0x00,
+  MERGEMODE_HTP = 0x01,
+  MERGEMODE_LTP = 0x02,
+  MERGEMODE_DMX_ONLY = 0x03,
+  MERGEMODE_OTHER = 0xFF,
+} rdm_preset_mergemode;
+
+// Consts for E1.37-2
+static const uint16_t IPV4_UNCONFIGURED = 0x00000000;
+static const uint16_t NO_DEFAULT_ROUTE = 0x00000000;
+
+typedef enum {
+  DHCP_STATUS_INACTIVE = 0x00,
+  DHCP_STATUS_ACTIVE = 0x01,
+  DHCP_STATUS_UNKNOWN = 0x02,
+  DHCP_STATUS_MAX,
+} rdm_dhcp_status;
+
+static const uint8_t MAX_RDM_HOSTNAME_LENGTH = 63;
+static const uint8_t MAX_RDM_DOMAIN_NAME_LENGTH = 231;
+
+static const int16_t DNS_NAME_SERVER_MAX_INDEX = 2;
 }  // namespace rdm
 }  // namespace ola
 #endif  // INCLUDE_OLA_RDM_RDMENUMS_H_

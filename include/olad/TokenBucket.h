@@ -22,11 +22,12 @@
 #define INCLUDE_OLAD_TOKENBUCKET_H_
 
 #include <ola/Clock.h>
+#include <ola/base/Macro.h>
 
 namespace ola {
 
 class TokenBucket {
-  public:
+ public:
     TokenBucket(unsigned int initial,
                 unsigned int rate_per_second,
                 unsigned int max,
@@ -40,14 +41,13 @@ class TokenBucket {
     bool GetToken(const TimeStamp &now);
     unsigned int Count(const TimeStamp &now);
 
-  private:
+ private:
     unsigned int m_count;
     unsigned int m_rate;
     unsigned int m_max;
     TimeStamp m_last;
 
-    TokenBucket(const TokenBucket&);
-    TokenBucket& operator=(const TokenBucket&);
+    DISALLOW_COPY_AND_ASSIGN(TokenBucket);
 };
 }  // namespace ola
 #endif  // INCLUDE_OLAD_TOKENBUCKET_H_

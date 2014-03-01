@@ -39,7 +39,7 @@ namespace rdm {
  * This visitor serializes the message.
  */
 class MessageSerializer: public ola::messaging::MessageVisitor {
-  public:
+ public:
     explicit MessageSerializer(unsigned int initial_size = INITIAL_BUFFER_SIZE);
     ~MessageSerializer();
 
@@ -48,6 +48,7 @@ class MessageSerializer: public ola::messaging::MessageVisitor {
 
     void Visit(const ola::messaging::BoolMessageField*);
     void Visit(const ola::messaging::IPV4MessageField*);
+    void Visit(const ola::messaging::MACMessageField*);
     void Visit(const ola::messaging::UIDMessageField*);
     void Visit(const ola::messaging::StringMessageField*);
     void Visit(const ola::messaging::BasicMessageField<uint8_t>*);
@@ -59,7 +60,7 @@ class MessageSerializer: public ola::messaging::MessageVisitor {
     void Visit(const ola::messaging::GroupMessageField*);
     void PostVisit(const ola::messaging::GroupMessageField*);
 
-  private:
+ private:
     uint8_t *m_data;
     unsigned int m_offset, m_buffer_size, m_initial_buffer_size;
 

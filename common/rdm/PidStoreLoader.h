@@ -38,7 +38,7 @@ namespace rdm {
  * The PidStore Loader
  */
 class PidStoreLoader {
-  public:
+ public:
     PidStoreLoader() {}
     ~PidStoreLoader() {}
 
@@ -54,7 +54,7 @@ class PidStoreLoader {
     const RootPidStore *LoadFromStream(std::istream *data,
                                        bool validate = true);
 
-  private:
+ private:
     PidStoreLoader(const PidStoreLoader&);
     PidStoreLoader& operator=(const PidStoreLoader&);
     DescriptorConsistencyChecker m_checker;
@@ -62,7 +62,7 @@ class PidStoreLoader {
     const RootPidStore *BuildStore(const ola::rdm::pid::PidStore &store_pb,
                                    bool validate);
     template <typename pb_object>
-    bool GetPidList(vector<const PidDescriptor*> *pids,
+    bool GetPidList(std::vector<const PidDescriptor*> *pids,
                     const pb_object &store,
                     bool validate,
                     bool limit_pid_values);
@@ -82,7 +82,7 @@ class PidStoreLoader {
         const ola::rdm::pid::Field &field);
     const ola::messaging::FieldDescriptor *GroupFieldToFieldDescriptor(
         const ola::rdm::pid::Field &field);
-    PidDescriptor::sub_device_valiator ConvertSubDeviceValidator(
+    PidDescriptor::sub_device_validator ConvertSubDeviceValidator(
         const ola::rdm::pid::SubDeviceRange &sub_device_range);
     void CleanStore();
 };

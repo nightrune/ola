@@ -27,6 +27,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "ola/base/Macro.h"
 #include "ola/rdm/RDMCommand.h"
 #include "ola/rdm/RDMControllerInterface.h"
 #include "ola/Callback.h"
@@ -36,7 +37,7 @@
 namespace ola {
 
 class ClientBroker {
-  public:
+ public:
     ClientBroker() {}
     ~ClientBroker() {}
 
@@ -48,10 +49,7 @@ class ClientBroker {
                         const ola::rdm::RDMRequest *request,
                         ola::rdm::RDMCallback *callback);
 
-  private:
-    ClientBroker(const ClientBroker&);
-    ClientBroker& operator=(const ClientBroker&);
-
+ private:
     void RequestComplete(const Client *key,
                          ola::rdm::RDMCallback *callback,
                          ola::rdm::rdm_response_code code,
@@ -60,6 +58,8 @@ class ClientBroker {
 
     typedef std::set<const Client*> client_set;
     client_set m_clients;
+
+    DISALLOW_COPY_AND_ASSIGN(ClientBroker);
 };
 }  // namespace ola
 #endif  // OLAD_CLIENTBROKER_H_

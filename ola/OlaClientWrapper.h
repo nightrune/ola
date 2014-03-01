@@ -26,38 +26,36 @@
 #define OLA_OLACLIENTWRAPPER_H_
 
 #include <ola/AutoStart.h>
-#include <ola/OlaClient.h>
 #include <ola/OlaCallbackClient.h>
+#include <ola/client/OlaClient.h>
 #include <ola/io/SelectServer.h>
 #include <ola/network/SocketAddress.h>
 #include <ola/network/TCPSocket.h>
+
 #include <memory>
 
 namespace ola {
-
-using ola::io::SelectServer;
-using ola::network::TCPSocket;
-using std::auto_ptr;
+namespace client {
 
 /*
  * The base class, not used directly.
  */
 class BaseClientWrapper {
-  public:
+ public:
     BaseClientWrapper() {}
     virtual ~BaseClientWrapper();
 
-    SelectServer *GetSelectServer() { return &m_ss; }
+    ola::io::SelectServer *GetSelectServer() { return &m_ss; }
 
     bool Setup();
     bool Cleanup();
     void SocketClosed();
 
-  protected:
-    auto_ptr<TCPSocket> m_socket;
+ protected:
+    std::auto_ptr<ola::network::TCPSocket> m_socket;
 
-  private:
-    SelectServer m_ss;
+ private:
+    ola::io::SelectServer m_ss;
 
     virtual void CreateClient() = 0;
     virtual bool StartupClient() = 0;
@@ -70,7 +68,7 @@ class BaseClientWrapper {
  */
 template <typename ClientClass>
 class GenericClientWrapper: public BaseClientWrapper {
-  public:
+ public:
     explicit GenericClientWrapper(bool auto_start = true):
         BaseClientWrapper(),
         m_auto_start(auto_start) {
@@ -79,8 +77,8 @@ class GenericClientWrapper: public BaseClientWrapper {
 
     ClientClass *GetClient() const { return m_client.get(); }
 
-  private:
-    auto_ptr<ClientClass> m_client;
+ private:
+    std::auto_ptr<ClientClass> m_client;
     bool m_auto_start;
 
     void CreateClient() {
@@ -98,21 +96,24 @@ class GenericClientWrapper: public BaseClientWrapper {
     }
 
     void InitSocket() {
-      if (m_auto_start)
+      if (m_auto_start) {
         m_socket.reset(ola::client::ConnectToServer(OLA_DEFAULT_PORT));
-      else
-        m_socket.reset(TCPSocket::Connect(
+      } else {
+        m_socket.reset(ola::network::TCPSocket::Connect(
             ola::network::IPV4SocketAddress(
               ola::network::IPV4Address::Loopback(),
              OLA_DEFAULT_PORT)));
+      }
+      m_socket->SetNoDelay();
     }
 };
 
 typedef GenericClientWrapper<OlaClient> OlaClientWrapper;
-// for historical reasons we typedef SimpleClient to OlaClientWrapper
-typedef GenericClientWrapper<OlaClient> SimpleClient;
+}  // namespace client
 
+// Legacy
+typedef ola::client::GenericClientWrapper<OlaCallbackClient>
+    OlaCallbackClientWrapper;
 
-typedef GenericClientWrapper<OlaCallbackClient> OlaCallbackClientWrapper;
 }  // namespace ola
 #endif  // OLA_OLACLIENTWRAPPER_H_

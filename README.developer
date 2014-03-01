@@ -5,6 +5,8 @@ This file provides some information for developers looking to submit patches to
 OLA. The first section contains some general notes, and the latter
 sections address particular languages.
 
+Also take a look at README which includes some relevant information for
+developers too.
 
 General
 ===============================================================================
@@ -12,9 +14,8 @@ General
 Code Reviews
 ------------
 
-To have patches reviewed please push your changes to a Google Code Repo, or
-github. Then open an issue with 'Type-Review' at
-http://code.google.com/p/linux-lighting/issues/list
+To have patches reviewed please push your changes to GitHub and create a Pull
+Request from within your fork.
 
 If you're using Google Code please enable comments on the repo. Under
 Administer -> Source check:
@@ -42,7 +43,8 @@ changes don't break the tests.
 
 The tests are performed with `make check` in the root ola directory. The same
 command can be run within a sub directory to only run a particular set of
-tests.
+tests (although you may experience issues with this method, running from the
+root ola directory is guaranteed to work).
 
 
 C++
@@ -96,6 +98,17 @@ cpplint.py can be downloaded here:
 
 Run it with:
    --filter=-legal/copyright,-readability/streams,-runtime/arrays
+
+Doxygen
+-------
+
+The code is documented using Doxygen. There is an automatically generated
+version available from:
+http://docs.openlighting.org/doc/
+
+If you want to build it yourself, install Doxygen, run ./configure in the ola
+root directory, then run make doxygen-doc. The files will be generated into 
+html/
 
 Race Conditions
 ---------------
@@ -172,3 +185,20 @@ We use the Google Python style guide:
 
 However we deviate from the standard and use 2 space indents, so it's
 consistent with the C++ code.
+
+Build System
+===============================================================================
+
+Autotools is a complex beast. Even after reading two books and a using it for a
+decade I still feel like I hardly understand it.
+
+Useful tips
+-----------
+
+* Run `make distcheck` to ensure you haven't broken anything.
+* Use $(srcdir), $(top_srcdir) to reference files where required. This is to
+  support VPATH builds:
+  http://www.gnu.org/software/automake/manual/html_node/VPATH-Builds.html
+* Prefer manualy dependiencies over BUILT_SOURCES where possible, see
+  http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
+  As far as I can tell this doesn't work for libraries.

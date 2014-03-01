@@ -55,7 +55,7 @@ namespace network {
  * This is done as an Interface so we can mock it out for testing.
  */
 class UDPSocketInterface: public ola::io::BidirectionalFileDescriptor {
-  public:
+ public:
     UDPSocketInterface(): ola::io::BidirectionalFileDescriptor() {}
     ~UDPSocketInterface() {}
     virtual bool Init() = 0;
@@ -88,11 +88,11 @@ class UDPSocketInterface: public ola::io::BidirectionalFileDescriptor {
     virtual bool RecvFrom(uint8_t *buffer, ssize_t *data_read) const = 0;
     virtual bool RecvFrom(uint8_t *buffer,
                           ssize_t *data_read,
-                          IPV4Address &source) const = 0;
+                          IPV4Address &source) const = 0;  // NOLINT
     virtual bool RecvFrom(uint8_t *buffer,
                           ssize_t *data_read,
-                          IPV4Address &source,
-                          uint16_t &port) const = 0;
+                          IPV4Address &source,  // NOLINT
+                          uint16_t &port) const = 0;  // NOLINT
 
     virtual bool EnableBroadcast() = 0;
     virtual bool SetMulticastInterface(const IPV4Address &iface) = 0;
@@ -103,7 +103,7 @@ class UDPSocketInterface: public ola::io::BidirectionalFileDescriptor {
                                 const IPV4Address &group) = 0;
     virtual bool SetTos(uint8_t tos) = 0;
 
-  private:
+ private:
     UDPSocketInterface(const UDPSocketInterface &other);
     UDPSocketInterface& operator=(const UDPSocketInterface &other);
 };
@@ -113,7 +113,7 @@ class UDPSocketInterface: public ola::io::BidirectionalFileDescriptor {
  * A UDPSocket (non connected)
  */
 class UDPSocket: public UDPSocketInterface {
-  public:
+ public:
     UDPSocket(): UDPSocketInterface(),
                  m_fd(ola::io::INVALID_DESCRIPTOR),
                  m_bound_to_port(false) {}
@@ -146,11 +146,11 @@ class UDPSocket: public UDPSocketInterface {
     bool RecvFrom(uint8_t *buffer, ssize_t *data_read) const;
     bool RecvFrom(uint8_t *buffer,
                   ssize_t *data_read,
-                  IPV4Address &source) const;
+                  IPV4Address &source) const;  // NOLINT
     bool RecvFrom(uint8_t *buffer,
                   ssize_t *data_read,
-                  IPV4Address &source,
-                  uint16_t &port) const;
+                  IPV4Address &source,  // NOLINT
+                  uint16_t &port) const;  // NOLINT
 
     bool EnableBroadcast();
     bool SetMulticastInterface(const IPV4Address &iface);
@@ -162,7 +162,7 @@ class UDPSocket: public UDPSocketInterface {
 
     bool SetTos(uint8_t tos);
 
-  private:
+ private:
     int m_fd;
     bool m_bound_to_port;
     UDPSocket(const UDPSocket &other);

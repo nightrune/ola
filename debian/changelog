@@ -1,3 +1,40 @@
+ola (0.8.33-2) unstable; urgency=low
+
+  * Remove logic_rdm_sniffer since it causes debuild failures.
+
+ -- Simon Newton <nomis52@gmail.com>  Tue Dec 17 18:25:55 2013 -0800
+
+ola (0.8.33-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- RenZO <renzo@imaginux.com>  Sat, 19 Oct 2013 22:48:32 +0200
+
+ola (0.8.32-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- RenZO <renzo@imaginux.com>  Sun, 29 Sep 2013 17:15:41 +0200
+
+ola (0.8.31-3) unstable; urgency=low
+
+  * New ola-logic-sniffer package
+
+ -- RenZO <renzo@imaginux.com>  Mon, 19 Aug 2013 00:16:57 +0200
+
+ola (0.8.31-2) unstable; urgency=low
+
+  * Add logic_rdm_sniffer
+    (requires libSaleaeDevice.so from Saleae Device SDK)
+
+ -- RenZO <renzo@imaginux.com>  Sat, 17 Aug 2013 15:33:24 +0200
+
+ola (0.8.31-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- RenZO <renzo@imaginux.com>  Mon, 12 Aug 2013 15:13:53 +0200
+
 ola (0.8.30-1) unstable; urgency=low
 
   * New upstream release

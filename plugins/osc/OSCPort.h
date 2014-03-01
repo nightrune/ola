@@ -22,6 +22,7 @@
 #define PLUGINS_OSC_OSCPORT_H_
 
 #include <string>
+#include <vector>
 #include "olad/Port.h"
 #include "plugins/osc/OSCAddressTemplate.h"
 #include "plugins/osc/OSCDevice.h"
@@ -38,10 +39,10 @@ namespace osc {
  * template, as well as the current value.
  */
 class OSCInputPort: public BasicInputPort {
-  public:
+ public:
     /**
      * Create an OSCInputPort.
-     * @param device the parent device
+     * @param parent the parent device
      * @param port_id the id for this port
      * @param plugin_adaptor a PluginAdaptor object, used by the base class.
      * @param node the OSCNode object to use
@@ -51,12 +52,7 @@ class OSCInputPort: public BasicInputPort {
                  unsigned int port_id,
                  PluginAdaptor *plugin_adaptor,
                  OSCNode *node,
-                 const string &address)
-        : BasicInputPort(parent, port_id, plugin_adaptor),
-          m_node(node),
-          m_address(address),
-          m_actual_address(address) {
-    }
+                 const std::string &address);
 
     /**
      * Just return our DmxBuffer.
@@ -67,49 +63,23 @@ class OSCInputPort: public BasicInputPort {
      * Called during the patch process, just before the Universe of this port
      * changes.
      */
-    bool PreSetUniverse(Universe *old_universe, Universe *new_universe) {
-      // if the old_universe is not NULL, we need to de-register
-      if (old_universe) {
-        m_node->RegisterAddress(m_actual_address, NULL);
-        // reset the actual address
-        m_actual_address = m_address;
-      }
-
-      // if we've been supplied with a new universe, attempt to register
-      if (new_universe) {
-        string osc_address = ExpandTemplate(m_address,
-                                            new_universe->UniverseId());
-        bool ok = m_node->RegisterAddress(
-            osc_address,
-            NewCallback(this, &OSCInputPort::NewDMXData));
-
-        if (!ok)
-          // means that another port is registered with the same address
-          return false;
-        // update the address since the registration was successful.
-        m_actual_address = osc_address;
-      }
-      return true;
-    }
+    bool PreSetUniverse(Universe *old_universe, Universe *new_universe);
 
     /**
      * Return the actual description
      */
-    string Description() const { return m_actual_address; }
+    std::string Description() const { return m_actual_address; }
 
-  private:
+ private:
     OSCNode *m_node;
     DmxBuffer m_buffer;
-    const string m_address;
-    string m_actual_address;
+    const std::string m_address;
+    std::string m_actual_address;
 
     /**
      * This is called when we receive new DMX values via OSC.
      */
-    void NewDMXData(const DmxBuffer &data) {
-      m_buffer = data;  // store the data
-      DmxChanged();  // signal that our data has changed
-    }
+    void NewDMXData(const DmxBuffer &data);
 };
 
 
@@ -117,22 +87,25 @@ class OSCInputPort: public BasicInputPort {
  * The Output Port class, for sending DMX via OSC.
  */
 class OSCOutputPort: public BasicOutputPort {
-  public:
+ public:
     /**
      * Create an OSCOutputPort.
      * @param device the parent device
      * @param port_id the id for this port
      * @param node the OSCNode object to use
-     * @param description the string description for this port.
      */
     OSCOutputPort(OSCDevice *device,
                   unsigned int port_id,
                   OSCNode *node,
-                  const string &description)
-        : BasicOutputPort(device, port_id),
-          m_node(node),
-          m_description(description) {
-    }
+                  const std::vector<OSCTarget> &targets,
+                  OSCNode::DataFormat data_format);
+    ~OSCOutputPort();
+
+    /**
+     * Called during the patch process, just before the Universe of this port
+     * changes.
+     */
+    bool PreSetUniverse(Universe *old_universe, Universe *new_universe);
 
     /**
      * Send this DMX buffer using OSC. The second argument (priority) is not
@@ -140,17 +113,23 @@ class OSCOutputPort: public BasicOutputPort {
      * @param buffer the DMX data
      */
     bool WriteDMX(const DmxBuffer &buffer, uint8_t) {
-      return m_node->SendData(this->PortId(), buffer);
+      return m_node->SendData(this->PortId(), m_data_format, buffer);
     }
 
     /**
      * Return the description for this port
      */
-    string Description() const { return m_description; }
+    std::string Description() const { return m_description; }
 
-  private:
+ private:
     OSCNode *m_node;
-    const string m_description;
+    const std::vector<OSCTarget> m_template_targets;
+    std::vector<OSCTarget> m_registered_targets;
+    std::string m_description;
+    OSCNode::DataFormat m_data_format;
+
+    void RemoveTargets();
+    void SetUnpatchedDescription();
 };
 }  // namespace osc
 }  // namespace plugin

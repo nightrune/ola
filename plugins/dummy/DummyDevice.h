@@ -32,20 +32,18 @@ class AbstractPlugin;
 namespace plugin {
 namespace dummy {
 
-using std::string;
-
 class DummyDevice: public Device {
-  public:
+ public:
     DummyDevice(
         AbstractPlugin *owner,
-        const string &name,
+        const std::string &name,
         const DummyPort::Options &port_options)
         : Device(owner, name),
           m_port_options(port_options) {
     }
-    string DeviceId() const { return "1"; }
+    std::string DeviceId() const { return "1"; }
 
-  protected:
+ protected:
     uint16_t m_number_of_devices;
     uint16_t m_number_of_subdevices;
     const DummyPort::Options m_port_options;

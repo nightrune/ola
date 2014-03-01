@@ -43,7 +43,7 @@ namespace rdm {
  * This visitor inflates the message from raw data.
  */
 class MessageDeserializer: public ola::messaging::FieldDescriptorVisitor {
-  public:
+ public:
     explicit MessageDeserializer();
     ~MessageDeserializer();
 
@@ -57,6 +57,7 @@ class MessageDeserializer: public ola::messaging::FieldDescriptorVisitor {
 
     void Visit(const ola::messaging::BoolFieldDescriptor*);
     void Visit(const ola::messaging::IPV4FieldDescriptor*);
+    void Visit(const ola::messaging::MACFieldDescriptor*);
     void Visit(const ola::messaging::UIDFieldDescriptor*);
     void Visit(const ola::messaging::StringFieldDescriptor*);
     void Visit(const ola::messaging::IntegerFieldDescriptor<uint8_t>*);
@@ -68,7 +69,7 @@ class MessageDeserializer: public ola::messaging::FieldDescriptorVisitor {
     void Visit(const ola::messaging::FieldDescriptorGroup*);
     void PostVisit(const ola::messaging::FieldDescriptorGroup*) {}
 
-  private:
+ private:
     const uint8_t *m_data;
     unsigned int m_length;
     unsigned int m_offset;

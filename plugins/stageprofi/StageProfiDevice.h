@@ -21,8 +21,8 @@
 #ifndef PLUGINS_STAGEPROFI_STAGEPROFIDEVICE_H_
 #define PLUGINS_STAGEPROFI_STAGEPROFIDEVICE_H_
 
+#include <memory>
 #include <string>
-#include "ola/DmxBuffer.h"
 #include "ola/network/Socket.h"
 #include "olad/Device.h"
 
@@ -33,27 +33,25 @@ class AbstractPlugin;
 namespace plugin {
 namespace stageprofi {
 
-using ola::Device;
-
 class StageProfiDevice: public Device {
-  public:
+ public:
     StageProfiDevice(AbstractPlugin *owner,
-                     const string &name,
-                     const string &dev_path);
+                     const std::string &name,
+                     const std::string &dev_path);
     ~StageProfiDevice();
 
     // I don't think this get us full stickiness because USB devices may
     // appear as different devices.
-    string DeviceId() const { return m_path; }
+    std::string DeviceId() const { return m_path; }
     ola::io::ConnectedDescriptor *GetSocket() const;
 
-  protected:
+ protected:
     bool StartHook();
     void PrePortStop();
 
-  private:
-    string m_path;
-    class StageProfiWidget *m_widget;
+ private:
+    std::string m_path;
+    std::auto_ptr<class StageProfiWidget> m_widget;
 };
 }  // namespace stageprofi
 }  // namespace plugin

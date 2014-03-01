@@ -39,7 +39,7 @@ using std::stringstream;
 using std::vector;
 
 void StringSplit(const string &input,
-                 vector<string> &tokens,
+                 vector<string> &tokens,  // NOLINT
                  const string &delimiters) {
   string::size_type start_offset = 0;
   string::size_type end_offset = 0;
@@ -95,6 +95,20 @@ string IntToString(unsigned int i) {
   return str.str();
 }
 
+bool StringToBool(const string &value, bool *output) {
+  string lc_value(value);
+  ToLower(&lc_value);
+  if ((lc_value == "true") || (lc_value == "t") || (lc_value == "1")) {
+    *output = true;
+    return true;
+  } else if ((lc_value == "false") || (lc_value == "f") || (lc_value == "0")) {
+    *output = false;
+    return true;
+  }
+  return false;
+}
+
+
 bool StringToInt(const string &value, unsigned int *output, bool strict) {
   if (value.empty())
     return false;
@@ -117,7 +131,7 @@ bool StringToInt(const string &value, uint16_t *output, bool strict) {
   unsigned int v;
   if (!StringToInt(value, &v, strict))
     return false;
-  if (v > 0xffff)
+  if (v > UINT16_MAX)
     return false;
   *output = static_cast<uint16_t>(v);
   return true;
@@ -127,7 +141,7 @@ bool StringToInt(const string &value, uint8_t *output, bool strict) {
   unsigned int v;
   if (!StringToInt(value, &v, strict))
     return false;
-  if (v > 0xff)
+  if (v > UINT8_MAX)
     return false;
   *output = static_cast<uint8_t>(v);
   return true;
@@ -224,6 +238,35 @@ string EscapeString(const string &original) {
   return result;
 }
 
+string EncodeString(const string &original) {
+  stringstream encoded;
+  for (string::const_iterator iter = original.begin();
+       iter != original.end();
+       ++iter) {
+    if (isprint(*iter)) {
+      encoded << *iter;
+    } else {
+      encoded << "\\x" << std::setfill('0') << std::setw(2) << std::hex <<
+          static_cast<unsigned int>(*iter);
+    }
+  }
+  return encoded.str();
+}
+
+void ReplaceAll(string *original, const string &find, const string &replace) {
+  if (original->empty())
+    return;  // No text, so nothing to do
+
+  if (find.empty())
+    return;  // Nothing to find, so nothing to do
+
+  size_t start = 0;
+  while ((start = original->find(find, start)) != string::npos) {
+    original->replace(start, find.length(), replace);
+    start += find.length();  // Move to the end of the replaced section
+  }
+}
+
 bool HexStringToInt(const string &value, uint8_t *output) {
   uint32_t temp;
   if (!HexStringToInt(value, &temp))
@@ -316,8 +359,14 @@ void CapitalizeLabel(string *s) {
 
 void CustomCapitalizeLabel(string *s) {
   static const char* const transforms[] = {
+    "dhcp",
     "dmx",
+    "dns",
     "ip",
+    "ipv4",  // Should really be IPv4 probably, but better than nothing
+    "led",
+    "rdm",
+    "uid",
     NULL
   };
   const size_t size = s->size();
@@ -358,7 +407,7 @@ void FormatData(std::ostream *out,
   for (unsigned int i = 0; i != length; i++) {
     raw << std::setfill('0') << std::setw(2) <<
         static_cast<unsigned int>(data[i]) << " ";
-    if (data[i] >= ' ' && data[i] <= '~')
+    if (isprint(data[i]))
       ascii << data[i];
     else
       ascii << ".";

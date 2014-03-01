@@ -138,7 +138,7 @@ class TestFixture(object):
     logging.debug(string)
     self._debug.append(string)
 
-  def Property(self, property):
+  def Property(self, property, default=None):
     """Lookup a device property.
 
     Args:
@@ -151,7 +151,7 @@ class TestFixture(object):
       raise UndeclaredPropertyException(
         '%s attempted to get %s which wasn\'t declared' %
         (self.__class__.__name__, property))
-    return getattr(self._device_properties, property)
+    return getattr(self._device_properties, property, default)
 
   def SetProperty(self, property, value):
     """Set a device property.
@@ -166,7 +166,7 @@ class TestFixture(object):
         (self.__class__.__name__, property))
     setattr(self._device_properties, property, value)
 
-  def SetPropertyFromDict(self, dictionary, property):
+  def SetPropertyFromDict(self, dictionary, property, default=None):
     """Set a property to the value of the same name in a dictionary.
 
     Often it's useful to set a property to a value in a dictionary where the
@@ -176,7 +176,7 @@ class TestFixture(object):
       dictionary: A dictionary that has a value for the property key
       property: the name of the property.
     """
-    self.SetProperty(property, dictionary[property])
+    self.SetProperty(property, dictionary.get(property, default))
 
   @property
   def state(self):
@@ -196,9 +196,11 @@ class TestFixture(object):
     self.Test()
 
   def SetNotRun(self, message=None):
+    """Set the state of the test to NOT_RUN and stop further processing."""
     self._state = TestState.NOT_RUN
     if message:
       self.LogDebug(' ' + message)
+    self.Stop()
 
   def SetBroken(self, message):
     self.LogDebug(' Broken: %s' % message)
@@ -489,7 +491,7 @@ class ResponderTestFixture(TestFixture):
       return
 
     queued_message_pid = self.LookupPid('QUEUED_MESSAGE')
-    status_message_pid = self.LookupPid('STATUS_MESSAGE')
+    status_messages_pid = self.LookupPid('STATUS_MESSAGES')
     if (response.pid == queued_message_pid.value and
         response.response_type == OlaClient.RDM_NACK_REASON):
         # A Nack here is fatal because if we get an ACK_TIMER, QUEUED_MESSAGE
@@ -498,7 +500,7 @@ class ResponderTestFixture(TestFixture):
                        response.nack_reason)
         self.Stop()
         return
-    elif (response.pid == status_message_pid.value and
+    elif (response.pid == status_messages_pid.value and
           unpacked_data.get('messages', None) == []):
         # this means we've run out of messages
         if self._state == TestState.NOT_RUN:
@@ -601,7 +603,6 @@ class ResponderTestFixture(TestFixture):
       self.LogDebug('  %s' % result)
     self.Stop()
 
-
   def _GetQueuedMessage(self):
     """Fetch queued messages."""
     queued_message_pid = self.LookupPid('QUEUED_MESSAGE')
@@ -633,6 +634,21 @@ class OptionalParameterTestFixture(ResponderTestFixture):
     self.AddExpectedResults(result)
 
   def AddIfSetSupported(self, result):
+    # The lock modes means that some sets may return NR_WRITE_PROTECT. Account
+    # for that here.
     if not self.PidSupported():
-      result = self.NackSetResult(RDMNack.NR_UNKNOWN_PID)
-    self.AddExpectedResults(result)
+      expected_results = self.NackSetResult(RDMNack.NR_UNKNOWN_PID)
+    else:
+      expected_results = [
+        self.NackSetResult(
+          RDMNack.NR_WRITE_PROTECT,
+          advisory='SET %s was write protected, try changing the lock mode if'
+                   ' enabled' %
+            self.pid.name)
+      ]
+      if isinstance(result, list):
+        expected_results.extend(result)
+      else:
+        expected_results.append(result)
+
+    self.AddExpectedResults(expected_results)

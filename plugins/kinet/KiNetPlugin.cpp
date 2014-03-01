@@ -25,16 +25,17 @@
 #include "ola/network/IPV4Address.h"
 #include "olad/PluginAdaptor.h"
 #include "olad/Preferences.h"
-#include "plugins/kinet/KiNetPlugin.h"
 #include "plugins/kinet/KiNetDevice.h"
+#include "plugins/kinet/KiNetPlugin.h"
 
 
 namespace ola {
 namespace plugin {
 namespace kinet {
 
-using std::vector;
 using ola::network::IPV4Address;
+using std::string;
+using std::vector;
 
 const char KiNetPlugin::POWER_SUPPLY_KEY[] = "power_supply";
 const char KiNetPlugin::PLUGIN_NAME[] = "KiNET";
@@ -52,6 +53,9 @@ bool KiNetPlugin::StartHook() {
   vector<IPV4Address> power_supplies;
 
   for (; iter != power_supplies_strings.end(); ++iter) {
+    if (iter->empty()) {
+      continue;
+    }
     IPV4Address target;
     if (IPV4Address::FromString(*iter, &target)) {
       power_supplies.push_back(target);

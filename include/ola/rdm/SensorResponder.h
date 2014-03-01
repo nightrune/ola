@@ -28,12 +28,14 @@
 #ifndef INCLUDE_OLA_RDM_SENSORRESPONDER_H_
 #define INCLUDE_OLA_RDM_SENSORRESPONDER_H_
 
+#include <ola/rdm/RDMControllerInterface.h>
+#include <ola/rdm/RDMEnums.h>
+#include <ola/rdm/ResponderOps.h>
+#include <ola/rdm/ResponderSensor.h>
+#include <ola/rdm/UID.h>
+
 #include <string>
 #include <vector>
-#include "ola/rdm/RDMControllerInterface.h"
-#include "ola/rdm/RDMEnums.h"
-#include "ola/rdm/ResponderOps.h"
-#include "ola/rdm/UID.h"
 
 namespace ola {
 namespace rdm {
@@ -42,57 +44,48 @@ namespace rdm {
  * A simulated responder with no footprint and just sensors.
  */
 class SensorResponder: public RDMControllerInterface {
-  public:
-    explicit SensorResponder(const UID &uid);
+ public:
+  explicit SensorResponder(const UID &uid);
+  ~SensorResponder();
 
-    void SendRDMRequest(const RDMRequest *request, RDMCallback *callback);
+  void SendRDMRequest(const RDMRequest *request, RDMCallback *callback);
 
-  private:
-    /**
-     * The RDM Operations for the SensorResponder.
-     */
-    class RDMOps : public ResponderOps<SensorResponder> {
-      public:
-        static RDMOps *Instance() {
-          if (!instance)
-            instance = new RDMOps();
-          return instance;
-        }
+ private:
+  /**
+   * The RDM Operations for the SensorResponder.
+   */
+  class RDMOps : public ResponderOps<SensorResponder> {
+   public:
+    static RDMOps *Instance() {
+      if (!instance)
+        instance = new RDMOps();
+      return instance;
+    }
 
-      private:
-        RDMOps() : ResponderOps<SensorResponder>(PARAM_HANDLERS) {}
+   private:
+    RDMOps() : ResponderOps<SensorResponder>(PARAM_HANDLERS) {}
 
-        static RDMOps *instance;
-    };
+    static RDMOps *instance;
+  };
 
-    struct sensor_value_s {
-      uint8_t sensor;
-      int16_t value;
-      int16_t lowest;
-      int16_t highest;
-      int16_t recorded;
-    } __attribute__((packed));
+  const UID m_uid;
+  bool m_identify_mode;
+  Sensors m_sensors;
 
-    typedef vector<class FakeSensor*> FakeSensors;
+  const RDMResponse *GetDeviceInfo(const RDMRequest *request);
+  const RDMResponse *GetProductDetailList(const RDMRequest *request);
+  const RDMResponse *GetIdentify(const RDMRequest *request);
+  const RDMResponse *SetIdentify(const RDMRequest *request);
+  const RDMResponse *GetManufacturerLabel(const RDMRequest *request);
+  const RDMResponse *GetDeviceLabel(const RDMRequest *request);
+  const RDMResponse *GetDeviceModelDescription(const RDMRequest *request);
+  const RDMResponse *GetSoftwareVersionLabel(const RDMRequest *request);
+  const RDMResponse *GetSensorDefinition(const RDMRequest *request);
+  const RDMResponse *GetSensorValue(const RDMRequest *request);
+  const RDMResponse *SetSensorValue(const RDMRequest *request);
+  const RDMResponse *RecordSensor(const RDMRequest *request);
 
-    const UID m_uid;
-    bool m_identify_mode;
-    FakeSensors m_sensors;
-
-    const RDMResponse *GetDeviceInfo(const RDMRequest *request);
-    const RDMResponse *GetProductDetailList(const RDMRequest *request);
-    const RDMResponse *GetIdentify(const RDMRequest *request);
-    const RDMResponse *SetIdentify(const RDMRequest *request);
-    const RDMResponse *GetManufacturerLabel(const RDMRequest *request);
-    const RDMResponse *GetDeviceLabel(const RDMRequest *request);
-    const RDMResponse *GetDeviceModelDescription(const RDMRequest *request);
-    const RDMResponse *GetSoftwareVersionLabel(const RDMRequest *request);
-    const RDMResponse *GetSensorDefinition(const RDMRequest *request);
-    const RDMResponse *GetSensorValue(const RDMRequest *request);
-    const RDMResponse *SetSensorValue(const RDMRequest *request);
-    const RDMResponse *RecordSensor(const RDMRequest *request);
-
-    static const ResponderOps<SensorResponder>::ParamHandler PARAM_HANDLERS[];
+  static const ResponderOps<SensorResponder>::ParamHandler PARAM_HANDLERS[];
 };
 }  // namespace rdm
 }  // namespace ola

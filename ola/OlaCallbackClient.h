@@ -14,8 +14,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * OlaCallbackClient.h
- * This is the main client API to OLA. Unlike the OlaClient class it uses
- * Callbacks for all notifications.
+ * The legacy callback client.
  * Copyright (C) 2010 Simon Newton
  */
 
@@ -25,33 +24,58 @@
 #include <ola/Callback.h>
 #include <ola/DmxBuffer.h>
 #include <ola/OlaDevice.h>
-#include <ola/common.h>
+#include <ola/client/Result.h>
+#include <ola/base/Macro.h>
 #include <ola/network/Socket.h>
 #include <ola/plugin_id.h>
 #include <ola/rdm/RDMAPIImplInterface.h>
+#include <ola/rdm/RDMCommand.h>
 #include <ola/rdm/UID.h>
 #include <ola/rdm/UIDSet.h>
 #include <ola/timecode/TimeCode.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
+/**
+ * @file
+ * @brief
+ * @deprecated Include <ola/client/OlaClient.h> instead.
+ */
+
 namespace ola {
 
-using std::string;
+namespace client {
+class OlaClientCore;
+}
 
+enum PatchAction {PATCH, UNPATCH};
+enum RegisterAction {REGISTER, UNREGISTER};
+enum PortDirection {INPUT_PORT, OUTPUT_PORT};
+
+/**
+ * @brief The legacy callback client.
+ * @deprecated Use ola::client::OlaClient instead.
+ */
 class OlaCallbackClient: public ola::rdm::RDMAPIImplInterface {
-  public:
+ public:
     struct PluginState {
-      string name;
+      std::string name;
       bool enabled;
       bool active;
-      string preferences_source;
-      vector<OlaPlugin> conflicting_plugins;
+      std::string preferences_source;
+      std::vector<OlaPlugin> conflicting_plugins;
     };
 
-    typedef SingleUseCallback2<void, const PluginState&, const string&>
+    typedef SingleUseCallback2<void, const PluginState&, const std::string&>
       PluginStateCallback;
+
+    typedef Callback3<void, unsigned int, const DmxBuffer&, const std::string&>
+        DMXCallback;
+
+    typedef Callback4<void, unsigned int, uint8_t, const DmxBuffer&,
+                      const std::string&> DMXCallbackWithPriority;
 
     explicit OlaCallbackClient(ola::io::ConnectedDescriptor *descriptor);
     ~OlaCallbackClient();
@@ -64,12 +88,14 @@ class OlaCallbackClient: public ola::rdm::RDMAPIImplInterface {
     // plugin methods
     bool FetchPluginList(
         SingleUseCallback2<void,
-                           const vector<class OlaPlugin>&,
-                           const string&> *callback);
+                           const std::vector<OlaPlugin>&,
+                           const std::string&> *callback);
 
     bool FetchPluginDescription(
         ola_plugin_id plugin_id,
-        SingleUseCallback2<void, const string&, const string&> *callback);
+        SingleUseCallback2<void,
+                           const std::string&,
+                           const std::string&> *callback);
 
     bool FetchPluginState(ola_plugin_id plugin_id,
                           PluginStateCallback *callback);
@@ -78,56 +104,55 @@ class OlaCallbackClient: public ola::rdm::RDMAPIImplInterface {
     bool FetchDeviceInfo(
         ola_plugin_id filter,
         SingleUseCallback2<void,
-                           const vector <class OlaDevice>&,
-                           const string&> *callback);
+                           const std::vector<OlaDevice>&,
+                           const std::string&> *callback);
 
     bool FetchCandidatePorts(
         unsigned int universe_id,
         SingleUseCallback2<void,
-                           const vector <class OlaDevice>&,
-                           const string&> *callback);
+                           const std::vector<OlaDevice>&,
+                           const std::string&> *callback);
 
     bool FetchCandidatePorts(
         SingleUseCallback2<void,
-                           const vector <class OlaDevice>&,
-                           const string&> *callback);
+                           const std::vector<OlaDevice>&,
+                           const std::string&> *callback);
 
     bool ConfigureDevice(
         unsigned int device_alias,
-        const string &msg,
-        SingleUseCallback2<void, const string&, const string&> *callback);
+        const std::string &msg,
+        SingleUseCallback2<void, const std::string&,
+                           const std::string&> *callback);
 
     // port methods
     bool SetPortPriorityInherit(
         unsigned int device_alias,
         unsigned int port,
         PortDirection port_direction,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
     bool SetPortPriorityOverride(
         unsigned int device_alias,
         unsigned int port,
         PortDirection port_direction,
         uint8_t value,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
 
     // universe methods
     bool FetchUniverseList(
         SingleUseCallback2<void,
-                           const vector <class OlaUniverse>&,
-                           const string &> *callback);
+                           const std::vector<OlaUniverse>&,
+                           const std::string &> *callback);
     bool FetchUniverseInfo(
         unsigned int universe,
-        SingleUseCallback2<void,
-                           class OlaUniverse&,
-                           const string &> *callback);
+        SingleUseCallback2<void, OlaUniverse&, const std::string &> *callback);
     bool SetUniverseName(
         unsigned int uni,
-        const string &name,
-        SingleUseCallback1<void, const string&> *callback);
+        const std::string &name,
+        SingleUseCallback1<void, const std::string&> *callback);
     bool SetUniverseMergeMode(
         unsigned int uni,
         OlaUniverse::merge_mode mode,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
 
     // patching
     bool Patch(
@@ -136,47 +161,56 @@ class OlaCallbackClient: public ola::rdm::RDMAPIImplInterface {
         ola::PortDirection port_direction,
         ola::PatchAction action,
         unsigned int uni,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
 
-    // dmx methods
+    // DMX methods
     void SetDmxCallback(
         Callback3<void,
                   unsigned int,
-                  const DmxBuffer&, const string&> *callback);
+                  const DmxBuffer&, const std::string&> *callback);
+
+    // Similar to above, but this also passes the source priority.
+    void SetDmxCallback(
+        Callback4<void,
+                  unsigned int,
+                  uint8_t,
+                  const DmxBuffer&, const std::string&> *callback);
 
     bool RegisterUniverse(
         unsigned int universe,
         ola::RegisterAction register_action,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
     bool SendDmx(
         unsigned int universe,
         const DmxBuffer &data,
-        SingleUseCallback1<void, const string&> *callback);
+        SingleUseCallback1<void, const std::string&> *callback);
     bool SendDmx(
         unsigned int universe,
         const DmxBuffer &data,
-        Callback1<void, const string&> *callback);
+        Callback1<void, const std::string&> *callback);
     // A version of SendDmx that doesn't wait for confirmation
     bool SendDmx(unsigned int universe, const DmxBuffer &data);
 
     bool FetchDmx(
         unsigned int universe,
-        SingleUseCallback2<void, const DmxBuffer&, const string&> *callback);
+        SingleUseCallback2<void, const DmxBuffer&,
+                           const std::string&> *callback);
 
     // rdm methods
     bool FetchUIDList(
         unsigned int universe,
         SingleUseCallback2<void,
                            const ola::rdm::UIDSet&,
-                           const string&> *callback);
+                           const std::string&> *callback);
     bool RunDiscovery(
         unsigned int universe,
         bool full,
         ola::SingleUseCallback2<void,
                                 const ola::rdm::UIDSet&,
-                                const string&> *callback);
+                                const std::string&> *callback);
     bool SetSourceUID(const ola::rdm::UID &uid,
-                      ola::SingleUseCallback1<void, const string&> *callback);
+                      ola::SingleUseCallback1<void,
+                                              const std::string&> *callback);
 
     bool RDMGet(ola::rdm::RDMAPIImplInterface::rdm_callback *callback,
                 unsigned int universe,
@@ -208,14 +242,109 @@ class OlaCallbackClient: public ola::rdm::RDMAPIImplInterface {
                 unsigned int data_length);
 
     // timecode
-    bool SendTimeCode(ola::SingleUseCallback1<void, const string&> *callback,
+    bool SendTimeCode(ola::SingleUseCallback1<void,
+                                              const std::string&> *callback,
                       const ola::timecode::TimeCode &timecode);
 
-  private:
-    OlaCallbackClient(const OlaCallbackClient&);
-    OlaCallbackClient operator=(const OlaCallbackClient&);
+ private:
+    std::auto_ptr<client::OlaClientCore> m_core;
+    std::auto_ptr<DMXCallback> m_dmx_callback;
+    std::auto_ptr<DMXCallbackWithPriority> m_priority_dmx_callback;
 
-    class OlaClientCore *m_core;
+    void HandlePluginList(
+        SingleUseCallback2<void, const std::vector<OlaPlugin>&,
+                           const std::string&> *callback,
+        const client::Result &result,
+        const std::vector<OlaPlugin> &plugins);
+
+    void HandlePluginDescription(
+        SingleUseCallback2<void,
+                           const std::string&,
+                           const std::string&> *callback,
+        const client::Result &result,
+        const std::string &description);
+
+    void HandlePluginState(
+        PluginStateCallback *callback,
+        const client::Result &result,
+        const client::PluginState &state);
+
+    void HandleDeviceInfo(
+        SingleUseCallback2<void,
+                           const std::vector<OlaDevice>&,
+                           const std::string&> *callback,
+        const client::Result &result,
+        const std::vector<OlaDevice> &devices);
+
+    void HandleConfigureDevice(
+        SingleUseCallback2<void,
+                           const std::string&,
+                           const std::string&> *callback,
+        const client::Result &result,
+        const std::string &reply);
+
+    void HandleUniverseList(
+        SingleUseCallback2<void, const std::vector<OlaUniverse>&,
+                           const std::string &> *callback,
+        const client::Result &result,
+        const std::vector<OlaUniverse> &universes);
+
+    void HandleUniverseInfo(
+        SingleUseCallback2<void, OlaUniverse&, const std::string&> *callback,
+        const client::Result &result,
+        const OlaUniverse &universe);
+
+    void HandleFetchDmx(
+        SingleUseCallback2<void,
+                           const DmxBuffer&,
+                           const std::string&> *callback,
+        const client::Result &result,
+        const client::DMXMetadata &metadata,
+        const DmxBuffer &data);
+
+    void HandleDiscovery(
+        ola::SingleUseCallback2<void,
+                                const ola::rdm::UIDSet&,
+                                const std::string&> *callback,
+        const client::Result &result,
+        const ola::rdm::UIDSet &uids);
+
+    void HandleSetCallback(
+        ola::SingleUseCallback1<void, const std::string&> *callback,
+        const client::Result &result);
+
+    void HandleRepeatableSetCallback(
+        ola::Callback1<void, const std::string&> *callback,
+        const client::Result &result);
+
+    void HandleDMX(const client::DMXMetadata &metadata,
+                   const DmxBuffer &data);
+
+    void HandleRDMResponse(
+        ola::rdm::RDMAPIImplInterface::rdm_callback *callback,
+        const client::Result &result,
+        const client::RDMMetadata &metadata,
+        const ola::rdm::RDMResponse *response);
+
+    void HandleRDMResponseWithPid(
+        ola::rdm::RDMAPIImplInterface::rdm_pid_callback *callback,
+        const client::Result &result,
+        const client::RDMMetadata &metadata,
+        const ola::rdm::RDMResponse *response);
+
+    void GetResponseStatusAndData(
+        const client::Result &result,
+        ola::rdm::rdm_response_code response_code,
+        const ola::rdm::RDMResponse *response,
+        rdm::ResponseStatus *response_status,
+        std::string *data);
+
+    void GetParamFromReply(
+        const std::string &message_type,
+        const ola::rdm::RDMResponse *response,
+        ola::rdm::ResponseStatus *new_status);
+
+    DISALLOW_COPY_AND_ASSIGN(OlaCallbackClient);
 };
 }  // namespace ola
 #endif  // OLA_OLACALLBACKCLIENT_H_

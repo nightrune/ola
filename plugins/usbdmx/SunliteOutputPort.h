@@ -39,7 +39,7 @@ namespace usbdmx {
 class SunliteDevice;
 
 class SunliteOutputPort: public BasicOutputPort, ola::thread::Thread {
-  public:
+ public:
     SunliteOutputPort(SunliteDevice *parent,
                       unsigned int id,
                       libusb_device *usb_device);
@@ -49,9 +49,9 @@ class SunliteOutputPort: public BasicOutputPort, ola::thread::Thread {
     void *Run();
 
     bool WriteDMX(const DmxBuffer &buffer, uint8_t priority);
-    string Description() const { return ""; }
+    std::string Description() const { return ""; }
 
-  private:
+ private:
     enum {SUNLITE_PACKET_SIZE = 0x340};
 
     static const unsigned int CHUNKS_PER_PACKET = 26;

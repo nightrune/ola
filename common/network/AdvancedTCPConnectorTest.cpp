@@ -45,7 +45,6 @@ using ola::network::AdvancedTCPConnector;
 using ola::network::GenericSocketAddress;
 using ola::network::IPV4Address;
 using ola::network::IPV4SocketAddress;
-using ola::network::StringToAddress;
 using ola::network::TCPAcceptingSocket;
 using ola::network::TCPSocket;
 using std::auto_ptr;
@@ -64,7 +63,7 @@ class AdvancedTCPConnectorTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testEarlyDestruction);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     AdvancedTCPConnectorTest()
         : CppUnit::TestFixture(),
           m_localhost(IPV4Address::Loopback()),
@@ -88,7 +87,7 @@ class AdvancedTCPConnectorTest: public CppUnit::TestFixture {
       m_ss->Terminate();
     }
 
-  private:
+ private:
     ola::MockClock m_clock;
     SelectServer *m_ss;
     auto_ptr<ola::network::TCPSocketFactory> m_tcp_socket_factory;
@@ -98,7 +97,7 @@ class AdvancedTCPConnectorTest: public CppUnit::TestFixture {
     TCPSocket *m_connected_socket;
 
     void ConfirmState(unsigned int line,
-                      AdvancedTCPConnector &connector,
+                      const AdvancedTCPConnector &connector,
                       const IPV4SocketAddress &endpoint,
                       AdvancedTCPConnector::ConnectionState state,
                       unsigned int failed_attempts);
@@ -319,7 +318,7 @@ void AdvancedTCPConnectorTest::testEarlyDestruction() {
  */
 void AdvancedTCPConnectorTest::ConfirmState(
     unsigned int line,
-    AdvancedTCPConnector &connector,
+    const AdvancedTCPConnector &connector,
     const IPV4SocketAddress &endpoint,
     AdvancedTCPConnector::ConnectionState expected_state,
     unsigned int expected_attempts) {

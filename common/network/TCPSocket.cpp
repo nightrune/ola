@@ -20,9 +20,11 @@
 
 #include <errno.h>
 #include <fcntl.h>
+/* FreeBSD needs types.h before tcp.h */
+#include <sys/types.h>
+#include <netinet/tcp.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/uio.h>
 #include <unistd.h>
 
@@ -71,6 +73,22 @@ bool TCPSocket::Close() {
   if (m_sd != ola::io::INVALID_DESCRIPTOR) {
     close(m_sd);
     m_sd = ola::io::INVALID_DESCRIPTOR;
+  }
+  return true;
+}
+
+/*
+ * Set the TCP_NODELAY option
+ */
+bool TCPSocket::SetNoDelay() {
+  int flag = 1;
+  int result = setsockopt(m_sd, IPPROTO_TCP, TCP_NODELAY,
+                          reinterpret_cast<char*>(&flag),
+                          sizeof(flag));
+  if (result < 0) {
+    OLA_WARN << "Can't set TCP_NODELAY for " << m_sd << ", "
+             << strerror(errno);
+    return false;
   }
   return true;
 }

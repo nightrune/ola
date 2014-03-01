@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "ola/Logging.h"
+#include "ola/io/IOUtils.h"
 #include "olad/PluginAdaptor.h"
 #include "olad/Preferences.h"
 #include "plugins/opendmx/OpenDmxDevice.h"
@@ -37,6 +38,7 @@ namespace plugin {
 namespace opendmx {
 
 using ola::PluginAdaptor;
+using std::string;
 using std::vector;
 
 const char OpenDmxPlugin::OPENDMX_DEVICE_PATH[] = "/dev/dmx0";
@@ -59,8 +61,8 @@ bool OpenDmxPlugin::StartHook() {
 
   for (; iter != devices.end(); ++iter) {
     // first check if it's there
-    int fd = open(iter->c_str(), O_WRONLY);
-    if (fd >= 0) {
+    int fd;
+    if (ola::io::Open(*iter, O_WRONLY, &fd)) {
       close(fd);
       OpenDmxDevice *device = new OpenDmxDevice(
           this,
@@ -113,7 +115,7 @@ string OpenDmxPlugin::Description() const {
 "--- Config file : ola-opendmx.conf ---\n"
 "\n"
 "device = /dev/dmx0\n"
-"The path to the open dmx usb device. Multiple entries are supported.\n"
+"The path to the Open DMX USB device. Multiple entries are supported.\n"
 "\n";
 }
 

@@ -51,7 +51,7 @@ typedef ola::SingleUseCallback2<void, bool, const usb_pro_parameters&>
  * of this.
  */
 class GenericUsbProWidget: public BaseUsbProWidget {
-  public:
+ public:
     explicit GenericUsbProWidget(ola::io::ConnectedDescriptor *descriptor);
     ~GenericUsbProWidget();
 
@@ -67,16 +67,16 @@ class GenericUsbProWidget: public BaseUsbProWidget {
                        uint8_t mab_time,
                        uint8_t rate);
 
-  protected:
+    static const uint8_t RECEIVED_DMX_LABEL = 5;
+
+ protected:
     // child classes can intercept this.
     virtual void HandleMessage(uint8_t label,
                                const uint8_t *data,
                                unsigned int length);
     void HandleDMX(const uint8_t *data, unsigned int length);
 
-    static const uint8_t RECEIVED_DMX_LABEL = 5;
-
-  private:
+ private:
     bool m_active;
     DmxBuffer m_input_buffer;
     ola::Callback0<void> *m_dmx_callback;

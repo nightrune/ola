@@ -26,15 +26,13 @@
 #include "ola/BaseTypes.h"
 #include "ola/DmxBuffer.h"
 
-using std::string;
-
 namespace ola {
 namespace plugin {
 namespace karate {
 
 class KarateLight {
-  public:
-  explicit KarateLight(const string &dev);
+ public:
+  explicit KarateLight(const std::string &dev);
   ~KarateLight();
   bool Init();
   void Close();
@@ -48,7 +46,7 @@ class KarateLight {
   uint16_t GetDMXOffset() const { return m_dmx_offset; }
   bool IsActive() const { return m_active; }
 
-  private:
+ private:
   bool ReadBack(uint8_t *rd_data, uint8_t *rd_len);
   bool ReadByteFromEeprom(uint8_t addr, uint8_t *data);
   bool SendCommand(uint8_t cmd, const uint8_t *output_buffer,
@@ -56,7 +54,7 @@ class KarateLight {
                    int n_bytes_expected);
   bool UpdateColors();
 
-  const string m_devname;
+  const std::string m_devname;
   int m_fd;
 
   static const uint16_t CMD_MAX_LENGTH = 64;

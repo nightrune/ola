@@ -18,7 +18,6 @@
  * Copyright (C) 2012 Simon Newton
  */
 
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -31,7 +30,7 @@ namespace ola {
 namespace plugin {
 namespace osc {
 
-using std::ostringstream;
+using std::string;
 using std::vector;
 
 const char OSCDevice::DEVICE_NAME[] = "OSC Device";
@@ -43,18 +42,17 @@ const char OSCDevice::DEVICE_NAME[] = "OSC Device";
  * @param udp_port the UDP port to listen on
  * @param addresses a list of strings to use as OSC addresses for the input
  *   ports.
- * @param targets a vector-of-vectors of OSCTargets to use for the output
- *   ports.
+ * @param port_configs config to use for the ports
  */
 OSCDevice::OSCDevice(AbstractPlugin *owner,
                      PluginAdaptor *plugin_adaptor,
                      uint16_t udp_port,
                      const vector<string> &addresses,
-                     const vector<vector<OSCTarget> > &targets)
+                     const PortConfigs &port_configs)
     : Device(owner, DEVICE_NAME),
       m_plugin_adaptor(plugin_adaptor),
       m_port_addresses(addresses),
-      m_port_targets(targets) {
+      m_port_configs(port_configs) {
   OSCNode::OSCNodeOptions options;
   options.listen_port = udp_port;
   // allocate a new OSCNode but delay the call to Init() until later
@@ -83,24 +81,17 @@ bool OSCDevice::StartHook() {
   }
 
   // Create an output port for each list of OSC Targets.
-  for (unsigned int i = 0; i < m_port_targets.size(); ++i) {
-    const vector<OSCTarget> &targets = m_port_targets[i];
-    ostringstream str;
-
-    if (targets.empty()) {
+  PortConfigs::const_iterator port_iter = m_port_configs.begin();
+  for (int i = 0; port_iter != m_port_configs.end(); ++port_iter, ++i) {
+    const PortConfig &port_config = *port_iter;
+    if (port_config.targets.empty()) {
       OLA_INFO << "No targets specified for OSC Output port " << i;
       continue;
     }
 
-    vector<OSCTarget>::const_iterator iter = targets.begin();
-    for (; iter != targets.end(); ++iter) {
-      if (iter != targets.begin())
-        str << ", ";
-      str << iter->socket_address << iter->osc_address;
-      m_osc_node->AddTarget(i, *iter);
-    }
     OSCOutputPort *port = new OSCOutputPort(this, i, m_osc_node.get(),
-                                            str.str());
+                                            port_config.targets,
+                                            port_config.data_format);
     if (!AddPort(port)) {
       delete port;
       ok = false;

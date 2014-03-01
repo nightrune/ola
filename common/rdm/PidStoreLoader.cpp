@@ -38,9 +38,11 @@
 namespace ola {
 namespace rdm {
 
+using ola::messaging::Descriptor;
 using ola::messaging::FieldDescriptor;
 using std::map;
 using std::set;
+using std::string;
 using std::stringstream;
 using std::vector;
 
@@ -215,7 +217,7 @@ bool PidStoreLoader::GetPidList(vector<const PidDescriptor*> *pids,
       set<uint16_t>::const_iterator value_iter = seen_values.find(pid.value());
       if (value_iter != seen_values.end()) {
         OLA_WARN << "Pid " << pid.value() << " exists multiple times in the "
-            " pid file";
+            "pid file";
         ok = false;
         break;
       }
@@ -224,7 +226,7 @@ bool PidStoreLoader::GetPidList(vector<const PidDescriptor*> *pids,
       set<string>::const_iterator name_iter = seen_names.find(pid.name());
       if (name_iter != seen_names.end()) {
         OLA_WARN << "Pid " << pid.name() << " exists multiple times in the "
-            " pid file";
+            "pid file";
         ok = false;
         break;
       }
@@ -263,11 +265,11 @@ bool PidStoreLoader::GetPidList(vector<const PidDescriptor*> *pids,
 PidDescriptor *PidStoreLoader::PidToDescriptor(const ola::rdm::pid::Pid &pid,
                                                bool validate) {
   // populate sub device validators
-  PidDescriptor::sub_device_valiator get_validator =
+  PidDescriptor::sub_device_validator get_validator =
     PidDescriptor::ANY_SUB_DEVICE;
   if (pid.has_get_sub_device_range())
     get_validator = ConvertSubDeviceValidator(pid.get_sub_device_range());
-  PidDescriptor::sub_device_valiator set_validator =
+  PidDescriptor::sub_device_validator set_validator =
     PidDescriptor::ANY_SUB_DEVICE;
   if (pid.has_set_sub_device_range())
     set_validator = ConvertSubDeviceValidator(pid.set_sub_device_range());
@@ -412,6 +414,9 @@ const FieldDescriptor *PidStoreLoader::FieldToFieldDescriptor(
     case ola::rdm::pid::IPV4:
       descriptor = new ola::messaging::IPV4FieldDescriptor(field.name());
       break;
+    case ola::rdm::pid::MAC:
+      descriptor = new ola::messaging::MACFieldDescriptor(field.name());
+      break;
     case ola::rdm::pid::UID:
       descriptor = new ola::messaging::UIDFieldDescriptor(field.name());
       break;
@@ -530,7 +535,7 @@ const FieldDescriptor *PidStoreLoader::GroupFieldToFieldDescriptor(
 /**
  * Convert a protobuf sub device enum to a PidDescriptor one.
  */
-PidDescriptor::sub_device_valiator PidStoreLoader::ConvertSubDeviceValidator(
+PidDescriptor::sub_device_validator PidStoreLoader::ConvertSubDeviceValidator(
     const ola::rdm::pid::SubDeviceRange &sub_device_range) {
   switch (sub_device_range) {
     case ola::rdm::pid::ROOT_DEVICE:

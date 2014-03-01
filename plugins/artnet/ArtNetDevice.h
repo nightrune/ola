@@ -29,16 +29,10 @@
 
 namespace ola {
 
-
 class Preferences;
 
 namespace plugin {
 namespace artnet {
-
-using google::protobuf::RpcController;
-using ola::Device;
-using ola::plugin::artnet::Request;
-using std::string;
 
 class ArtNetDevice: public Device {
  public:
@@ -47,12 +41,15 @@ class ArtNetDevice: public Device {
                class PluginAdaptor *plugin_adaptor);
 
   // only one ArtNet device
-  string DeviceId() const { return "1"; }
+  std::string DeviceId() const { return "1"; }
 
-  void Configure(RpcController *controller,
-                 const string &request,
-                 string *response,
-                 google::protobuf::Closure *done);
+  void EnterConfigurationMode() { m_node->EnterConfigurationMode(); }
+  void ExitConfigurationMode() { m_node->ExitConfigurationMode(); }
+
+  void Configure(ola::rpc::RpcController *controller,
+                 const std::string &request,
+                 std::string *response,
+                 ConfigureCallback *done);
 
   static const char K_ALWAYS_BROADCAST_KEY[];
   static const char K_DEVICE_NAME[];
@@ -61,6 +58,7 @@ class ArtNetDevice: public Device {
   static const char K_LONG_NAME_KEY[];
   static const char K_LOOPBACK_KEY[];
   static const char K_NET_KEY[];
+  static const char K_OUTPUT_PORT_KEY[];
   static const char K_SHORT_NAME_KEY[];
   static const char K_SUBNET_KEY[];
   // 10s between polls when we're sending data, DMX-workshop uses 8s;
@@ -77,10 +75,10 @@ class ArtNetDevice: public Device {
   class PluginAdaptor *m_plugin_adaptor;
   ola::thread::timeout_id m_timeout_id;
 
-  void HandleOptions(Request *request, string *response);
+  void HandleOptions(Request *request, std::string *response);
   void HandleNodeList(Request *request,
-                      string *response,
-                      RpcController *controller);
+                      std::string *response,
+                      ola::rpc::RpcController *controller);
 };
 }  // namespace artnet
 }  // namespace plugin

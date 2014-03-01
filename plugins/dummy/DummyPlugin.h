@@ -21,6 +21,7 @@
 #ifndef PLUGINS_DUMMY_DUMMYPLUGIN_H_
 #define PLUGINS_DUMMY_DUMMYPLUGIN_H_
 
+#include <stdint.h>
 #include <string>
 #include "olad/Plugin.h"
 #include "ola/plugin_id.h"
@@ -29,23 +30,20 @@ namespace ola {
 namespace plugin {
 namespace dummy {
 
-using ola::Plugin;
-using ola::PluginAdaptor;
-
 class DummyDevice;
 
 class DummyPlugin: public Plugin {
-  public:
+ public:
     explicit DummyPlugin(PluginAdaptor *plugin_adaptor):
       Plugin(plugin_adaptor),
       m_device(NULL) {}
 
-    string Name() const { return PLUGIN_NAME; }
-    string Description() const;
+    std::string Name() const { return PLUGIN_NAME; }
+    std::string Description() const;
     ola_plugin_id Id() const { return OLA_PLUGIN_DUMMY; }
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();
@@ -53,14 +51,15 @@ class DummyPlugin: public Plugin {
     DummyDevice *m_device;  // the dummy device
     static const char ACK_TIMER_COUNT_KEY[];
     static const char ADVANCED_DIMMER_KEY[];
-    static const char DEFAULT_DEVICE_COUNT[];
-    static const char DEFAULT_ACK_TIMER_DEVICE_COUNT[];
-    static const char DEFAULT_SUBDEVICE_COUNT[];
+    static const uint8_t DEFAULT_DEVICE_COUNT;
+    static const uint8_t DEFAULT_ACK_TIMER_DEVICE_COUNT;
+    static const uint16_t DEFAULT_SUBDEVICE_COUNT;
     static const char DEVICE_NAME[];
     static const char DIMMER_COUNT_KEY[];
     static const char DIMMER_SUBDEVICE_COUNT_KEY[];
     static const char DUMMY_DEVICE_COUNT_KEY[];
     static const char MOVING_LIGHT_COUNT_KEY[];
+    static const char NETWORK_COUNT_KEY[];
     static const char PLUGIN_NAME[];
     static const char PLUGIN_PREFIX[];
     static const char SENSOR_COUNT_KEY[];

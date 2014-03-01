@@ -28,11 +28,9 @@ namespace ola {
 namespace plugin {
 namespace osc {
 
-using ola::network::IPV4SocketAddress;
-
 struct OSCTarget {
-  IPV4SocketAddress socket_address;
-  string osc_address;
+  ola::network::IPV4SocketAddress socket_address;
+  std::string osc_address;
 
   // The default constructor.
   OSCTarget() {}
@@ -44,9 +42,23 @@ struct OSCTarget {
   }
 
   // A constuctor that initializes the member variables as well.
-  OSCTarget(const IPV4SocketAddress &socket_address, const string &osc_address)
+  OSCTarget(const ola::network::IPV4SocketAddress &socket_address,
+            const std::string &osc_address)
       : socket_address(socket_address),
         osc_address(osc_address) {
+  }
+
+  std::string ToString() const {
+    return socket_address.ToString() + osc_address;
+  }
+
+  /**
+   * @brief A helper function to write a OSCTarget to an ostream.
+   * @param out the ostream
+   * @param target the OSCTarget to write.
+   */
+  friend std::ostream& operator<<(std::ostream &out, const OSCTarget &target) {
+    return out << target.ToString();
   }
 };
 }  // namespace osc

@@ -35,16 +35,16 @@ namespace usbpro {
  * The device for a Robe Universe Interface.
  */
 class RobeDevice: public UsbSerialDevice {
-  public:
+ public:
     RobeDevice(ola::PluginAdaptor *plugin_adaptor,
                ola::AbstractPlugin *owner,
-               const string &name,
+               const std::string &name,
                RobeWidget *widget);
 
-    string DeviceId() const { return m_device_id; }
+    std::string DeviceId() const { return m_device_id; }
 
-  private:
-    string m_device_id;
+ private:
+    std::string m_device_id;
     class RobeOutputPort *m_output_port;
     class RobeInputPort *m_input_port;
 };
@@ -54,7 +54,7 @@ class RobeDevice: public UsbSerialDevice {
  * The Input port
  */
 class RobeInputPort: public BasicInputPort {
-  public:
+ public:
     RobeInputPort(RobeDevice *parent,
                   RobeWidget *widget,
                   ola::PluginAdaptor *plugin_adaptor)
@@ -74,10 +74,10 @@ class RobeInputPort: public BasicInputPort {
         m_widget->ChangeToReceiveMode();
     }
 
-    string Description() const { return ""; }
+    std::string Description() const { return ""; }
 
-  private:
-    string m_path;
+ private:
+    std::string m_path;
     RobeWidget *m_widget;
 };
 
@@ -87,10 +87,10 @@ class RobeInputPort: public BasicInputPort {
  * ports, but I haven't figured out how to use that yet.
  */
 class RobeOutputPort: public BasicOutputPort {
-  public:
+ public:
     RobeOutputPort(RobeDevice *parent, RobeWidget *widget);
 
-    string Description() const { return ""; }
+    std::string Description() const { return ""; }
     bool WriteDMX(const DmxBuffer &buffer, uint8_t priority);
 
     void SendRDMRequest(const ola::rdm::RDMRequest *request,
@@ -106,7 +106,7 @@ class RobeOutputPort: public BasicOutputPort {
       m_widget->RunIncrementalDiscovery(callback);
     }
 
-  private:
+ private:
     RobeWidget *m_widget;
 };
 }  // namespace usbpro

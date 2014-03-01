@@ -32,16 +32,14 @@ namespace ola {
 namespace plugin {
 namespace e131 {
 
-using ola::network::IPV4Address;
-
 /*
  * The OutgoingUDPTransport is a small shim that provides the options to
  * UDPTransportImpl.
  */
 class OutgoingUDPTransport: public OutgoingTransport {
-  public:
+ public:
     OutgoingUDPTransport(class OutgoingUDPTransportImpl *impl,
-                         const IPV4Address &destination,
+                         const ola::network::IPV4Address &destination,
                          uint16_t port = ola::acn::ACN_PORT)
         : m_impl(impl),
           m_destination(destination),
@@ -51,9 +49,9 @@ class OutgoingUDPTransport: public OutgoingTransport {
 
     bool Send(const PDUBlock<PDU> &pdu_block);
 
-  private:
+ private:
     class OutgoingUDPTransportImpl *m_impl;
-    IPV4Address m_destination;
+    ola::network::IPV4Address m_destination;
     uint16_t m_port;
 
     OutgoingUDPTransport(const OutgoingUDPTransport&);
@@ -65,7 +63,7 @@ class OutgoingUDPTransport: public OutgoingTransport {
  * OutgoingUDPTransportImpl is the class that actually does the sending.
  */
 class OutgoingUDPTransportImpl {
-  public:
+ public:
     OutgoingUDPTransportImpl(ola::network::UDPSocket *socket,
                              PreamblePacker *packer = NULL)
         : m_socket(socket),
@@ -82,10 +80,10 @@ class OutgoingUDPTransportImpl {
     }
 
     bool Send(const PDUBlock<PDU> &pdu_block,
-              const IPV4Address &destination,
+              const ola::network::IPV4Address &destination,
               uint16_t port);
 
-  private:
+ private:
     ola::network::UDPSocket *m_socket;
     PreamblePacker *m_packer;
     bool m_free_packer;
@@ -98,7 +96,7 @@ class OutgoingUDPTransportImpl {
  * transport for multiple sockets.
  */
 class IncomingUDPTransport {
-  public:
+ public:
     IncomingUDPTransport(ola::network::UDPSocket *socket,
                          class BaseInflator *inflator);
     ~IncomingUDPTransport() {
@@ -108,7 +106,7 @@ class IncomingUDPTransport {
 
     void Receive();
 
-  private:
+ private:
     ola::network::UDPSocket *m_socket;
     class BaseInflator *m_inflator;
     uint8_t *m_recv_buffer;

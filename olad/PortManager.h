@@ -21,18 +21,18 @@
 #ifndef OLAD_PORTMANAGER_H_
 #define OLAD_PORTMANAGER_H_
 
-#include <string>
 #include <vector>
 #include "olad/Device.h"
 #include "olad/DeviceManager.h"
 #include "olad/PortBroker.h"
 #include "olad/UniverseStore.h"
+#include "ola/base/Macro.h"
 
 
 namespace ola {
 
 class PortManager {
-  public:
+ public:
     explicit PortManager(UniverseStore *universe_store,
                          PortBroker *broker)
         : m_universe_store(universe_store),
@@ -46,12 +46,9 @@ class PortManager {
     bool UnPatchPort(OutputPort *port);
 
     bool SetPriorityInherit(Port *port);
-    bool SetPriorityOverride(Port *port, uint8_t value);
+    bool SetPriorityStatic(Port *port, uint8_t value);
 
-  private:
-    PortManager(const PortManager&);
-    PortManager& operator=(const PortManager&);
-
+ private:
     template<class PortClass>
     bool GenericPatchPort(PortClass *port,
                           unsigned int new_universe_id);
@@ -73,11 +70,13 @@ class PortManager {
                                      unsigned int universe_id) const;
 
     template<class PortClass>
-    bool CheckForPortMatchingUniverse(const vector<PortClass*> &ports,
+    bool CheckForPortMatchingUniverse(const std::vector<PortClass*> &ports,
                                       unsigned int universe_id) const;
 
     UniverseStore * const m_universe_store;
     PortBroker *m_broker;
+
+    DISALLOW_COPY_AND_ASSIGN(PortManager);
 };
 }  // namespace ola
 #endif  // OLAD_PORTMANAGER_H_

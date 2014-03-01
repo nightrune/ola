@@ -37,6 +37,7 @@
 #include "ola/base/Flags.h"
 #include "ola/base/Init.h"
 #include "ola/base/SysExits.h"
+#include "ola/base/Version.h"
 #include "ola/thread/SignalThread.h"
 #include "olad/OlaDaemon.h"
 
@@ -45,25 +46,25 @@ using ola::thread::SignalThread;
 using std::cout;
 using std::endl;
 
-DEFINE_bool(http, true, "Disable the HTTP server");
-DEFINE_bool(http_quit, true, "Disable the HTTP /quit hanlder");
-DEFINE_s_bool(daemon, f, false, "Fork and run in the background");
-DEFINE_s_bool(version, v, false, "Print version information");
-DEFINE_s_string(http_data_dir, d, "", "Path to the static www content");
+DEFINE_bool(http, true, "Disable the HTTP server.");
+DEFINE_bool(http_quit, true, "Disable the HTTP /quit handler.");
+DEFINE_s_bool(daemon, f, false, "Fork and run in the background.");
+DEFINE_s_string(http_data_dir, d, "", "The path to the static www content.");
 DEFINE_s_string(interface, i, "",
                 "The interface name (e.g. eth0) or IP of the network interface "
-                "to use");
-DEFINE_string(pid_location, PID_DATA_DIR,
-              "The directory containing the PID definitions");
+                "to use.");
+DEFINE_string(pid_location, "",
+              "The directory containing the PID definitions.");
 DEFINE_s_uint16(http_port, p, ola::OlaServer::DEFAULT_HTTP_PORT,
-                "Port to run the http server on");
+                "The port to run the http server on. Defaults to 9090.");
 
 
 /**
  * This is called by the SelectServer loop to start up the SignalThread. If the
  * thread fails to start, we terminate the SelectServer
  */
-void StartSignalThread(ola::SelectServer *ss, SignalThread *signal_thread) {
+void StartSignalThread(ola::io::SelectServer *ss,
+                       SignalThread *signal_thread) {
   if (!signal_thread->Start()) {
     ss->Terminate();
   }
@@ -77,13 +78,8 @@ int main(int argc, char *argv[]) {
   ola::SetHelpString("[options]", "Start the OLA Daemon.");
   ola::ParseFlags(&argc, argv);
 
-  if (FLAGS_version) {
-    cout << "OLA Daemon version " << VERSION << endl;
-    exit(ola::EXIT_OK);
-  }
-
   ola::InitLoggingFromFlags();
-  OLA_INFO << "OLA Daemon version " << VERSION;
+  OLA_INFO << "OLA Daemon version " << ola::base::Version::GetVersion();
 
   #ifndef OLAD_SKIP_ROOT_CHECK
   if (!ola::GetEUID()) {
@@ -126,10 +122,12 @@ int main(int argc, char *argv[]) {
   // to do what we actually want them to.
   signal_thread.InstallSignalHandler(
       SIGINT,
-      ola::NewCallback(olad->GetSelectServer(), &ola::SelectServer::Terminate));
+      ola::NewCallback(olad->GetSelectServer(),
+                       &ola::io::SelectServer::Terminate));
   signal_thread.InstallSignalHandler(
       SIGTERM,
-      ola::NewCallback(olad->GetSelectServer(), &ola::SelectServer::Terminate));
+      ola::NewCallback(olad->GetSelectServer(),
+                       &ola::io::SelectServer::Terminate));
 
   // We can't start the signal thread here, otherwise there is a race
   // condition if a signal arrives before we enter the SelectServer Run()

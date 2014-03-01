@@ -26,7 +26,7 @@
 #include "tools/ola_trigger/VariableInterpolator.h"
 #include "ola/testing/TestUtils.h"
 
-
+using std::string;
 
 class VariableInterpolatorTest: public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(VariableInterpolatorTest);
@@ -37,7 +37,7 @@ class VariableInterpolatorTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testMissingVariables);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testNoInterpolation();
     void testSimpleInterpolation();
     void testNestedInterpolation();

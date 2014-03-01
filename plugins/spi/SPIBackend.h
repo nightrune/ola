@@ -14,180 +14,237 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * SPIBackend.h
- * Provides a SPI device which can be managed by RDM.
+ * The backend for SPI output. These are the classes which write the data to
+ * the SPI bus.
  * Copyright (C) 2013 Simon Newton
  */
 
 #ifndef PLUGINS_SPI_SPIBACKEND_H_
 #define PLUGINS_SPI_SPIBACKEND_H_
 
+#include <stdint.h>
+#include <ola/thread/Mutex.h>
+#include <ola/thread/Thread.h>
 #include <string>
 #include <vector>
-#include "ola/DmxBuffer.h"
-#include "ola/rdm/RDMControllerInterface.h"
-#include "ola/rdm/UID.h"
-#include "ola/stl/STLUtils.h"
-#include "ola/rdm/ResponderOps.h"
+
+#include "plugins/spi/SPIWriter.h"
 
 namespace ola {
 namespace plugin {
 namespace spi {
 
-using ola::rdm::UID;
-using ola::rdm::RDMRequest;
-using ola::rdm::RDMResponse;
+/**
+ * The interface for all SPI Backends.
+ */
+class SPIBackendInterface {
+ public:
+    virtual ~SPIBackendInterface() {}
 
-class Personality {
-  public:
-    Personality(uint16_t footprint, const string &description)
-        : m_footprint(footprint),
-          m_description(description) {
-    }
+    virtual uint8_t *Checkout(uint8_t output, unsigned int length) = 0;
+    virtual uint8_t *Checkout(uint8_t output,
+                              unsigned int length,
+                              unsigned int latch_bytes) = 0;
+    virtual void Commit(uint8_t output) = 0;
 
-    uint16_t footprint() const { return m_footprint; }
-    string description() const { return m_description; }
+    virtual std::string DevicePath() const = 0;
 
-  private:
-    uint16_t m_footprint;
-    const string m_description;
+    virtual bool Init() = 0;
+
+ protected:
+    static const char SPI_DROP_VAR[];
+    static const char SPI_DROP_VAR_KEY[];
 };
 
 
-class PersonalityManager {
-  public:
-    PersonalityManager() : m_active_personality(0) {}
-
-    ~PersonalityManager() {
-      STLDeleteElements(&m_personalities);
-    }
-
-    void AddPersonality(uint8_t footprint, const string &description) {
-      m_personalities.push_back(new Personality(footprint, description));
-    }
-
-    uint8_t PersonalityCount() const { return m_personalities.size(); }
-
-    bool SetActivePersonality(uint8_t personality) {
-      if (personality == 0 || personality > m_personalities.size())
-        return false;
-      m_active_personality = personality;
-      return true;
-    }
-
-    uint8_t ActivePersonalityNumber() const { return m_active_personality; }
-
-    const Personality *ActivePersonality() const {
-      return Lookup(m_active_personality);
-    }
-
-    uint16_t ActivePersonalityFootprint() const {
-      const Personality *personality = Lookup(m_active_personality);
-      return personality ? personality->footprint() : 0;
-    }
-
-    // Lookup a personality. Personalities are numbers from 1.
-    const Personality *Lookup(uint8_t personality) const {
-      if (personality == 0 || personality > m_personalities.size())
-        return NULL;
-      return m_personalities[personality - 1];
-    }
-
-  private:
-    std::vector<Personality*> m_personalities;
-    uint8_t m_active_personality;
-};
-
-
-class SPIBackend: public ola::rdm::DiscoverableRDMControllerInterface {
-  public:
+/**
+ * A HardwareBackend which uses GPIO pins and an external de-multiplexer
+ */
+class HardwareBackend : public ola::thread::Thread,
+                        public SPIBackendInterface {
+ public:
     struct Options {
-      uint8_t pixel_count;
-      uint32_t spi_speed;
-
-      Options()
-          : pixel_count(25),  // For the https://www.adafruit.com/products/738
-            spi_speed(1000000) {
-      }
+      // Which GPIO bits to use to select the output. The number of outputs
+      // will be 2 ** gpio_pins.size();
+      std::vector<uint8_t> gpio_pins;
     };
 
-    SPIBackend(const string &spi_device,
-               const UID &uid, const Options &options);
-    ~SPIBackend();
+    HardwareBackend(const Options &options,
+                    SPIWriterInterface *writer,
+                    ExportMap *export_map);
+    ~HardwareBackend();
 
-    uint8_t GetPersonality() const;
-    bool SetPersonality(uint16_t personality);
-    uint16_t GetStartAddress() const;
-    bool SetStartAddress(uint16_t start_address);
-
-    string Description() const { return m_spi_device_name; }
     bool Init();
-    bool WriteDMX(const DmxBuffer &buffer, uint8_t priority);
 
-    void RunFullDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
-    void RunIncrementalDiscovery(ola::rdm::RDMDiscoveryCallback *callback);
-    void SendRDMRequest(const ola::rdm::RDMRequest *request,
-                        ola::rdm::RDMCallback *callback);
+    uint8_t *Checkout(uint8_t output, unsigned int length) {
+      return Checkout(output, length, 0);
+    }
 
-  private:
-    /**
-     * The RDM Operations for the MovingLightResponder.
-     */
-    class RDMOps : public ola::rdm::ResponderOps<SPIBackend> {
-      public:
-        static RDMOps *Instance() {
-          if (!instance)
-            instance = new RDMOps();
-          return instance;
-        }
+    uint8_t *Checkout(uint8_t output,
+                      unsigned int length,
+                      unsigned int latch_bytes);
+    void Commit(uint8_t output);
 
-      private:
-        RDMOps() : ola::rdm::ResponderOps<SPIBackend>(PARAM_HANDLERS) {}
+    std::string DevicePath() const { return m_spi_writer->DevicePath(); }
 
-        static RDMOps *instance;
+ protected:
+    void* Run();
+
+ private:
+    class OutputData {
+     public:
+      OutputData()
+          : m_data(NULL),
+            m_write_pending(false),
+            m_size(0),
+            m_actual_size(0),
+            m_latch_bytes(0) {
+      }
+
+      ~OutputData() { delete[] m_data; }
+
+      uint8_t *Resize(unsigned int length);
+      void SetLatchBytes(unsigned int latch_bytes);
+      void SetPending();
+      bool IsPending() const { return m_write_pending; }
+      void ResetPending() { m_write_pending = false; }
+      const uint8_t *GetData() const { return m_data; }
+      unsigned int Size() const { return m_size; }
+
+      OutputData& operator=(const OutputData &other);
+
+     private:
+      uint8_t *m_data;
+      bool m_write_pending;
+      unsigned int m_size;
+      unsigned int m_actual_size;
+      unsigned int m_latch_bytes;
+
+      OutputData(const OutputData&);
     };
 
-    const string m_device_path;
-    string m_spi_device_name;
-    const UID m_uid;
-    const unsigned int m_pixel_count;
-    uint32_t m_spi_speed;
-    int m_fd;
-    uint16_t m_start_address;  // starts from 1
-    bool m_identify_mode;
-    PersonalityManager m_personality_manager;
+    typedef std::vector<int> GPIOFds;
+    typedef std::vector<OutputData*> Outputs;
 
-    // DMX methods
-    void IndividualWS2801Control(const DmxBuffer &buffer);
-    void CombinedWS2801Control(const DmxBuffer &buffer);
-    void IndividualLPD8806Control(const DmxBuffer &buffer);
-    void CombinedLPD8806Control(const DmxBuffer &buffer);
-    unsigned int LPD8806BufferSize() const;
-    void WriteSPIData(const uint8_t *data, unsigned int length);
+    SPIWriterInterface *m_spi_writer;
+    UIntMap *m_drop_map;
+    const uint8_t m_output_count;
+    ola::thread::Mutex m_mutex;
+    ola::thread::ConditionVariable m_cond_var;
+    bool m_exit;
 
-    // RDM methods
-    const RDMResponse *GetDeviceInfo(const RDMRequest *request);
-    const RDMResponse *GetProductDetailList(const RDMRequest *request);
-    const RDMResponse *GetDeviceModelDescription(const RDMRequest *request);
-    const RDMResponse *GetManufacturerLabel(const RDMRequest *request);
-    const RDMResponse *GetDeviceLabel(const RDMRequest *request);
-    const RDMResponse *GetSoftwareVersionLabel(const RDMRequest *request);
-    const RDMResponse *GetDmxPersonality(const RDMRequest *request);
-    const RDMResponse *SetDmxPersonality(const RDMRequest *request);
-    const RDMResponse *GetPersonalityDescription(const RDMRequest *request);
-    const RDMResponse *GetDmxStartAddress(const RDMRequest *request);
-    const RDMResponse *SetDmxStartAddress(const RDMRequest *request);
-    const RDMResponse *GetIdentify(const RDMRequest *request);
-    const RDMResponse *SetIdentify(const RDMRequest *request);
+    Outputs m_output_data;
 
-    static const uint8_t SPI_MODE;
-    static const uint8_t SPI_BITS_PER_WORD;
-    static const uint16_t SPI_DELAY;
-    static const uint32_t SPI_SPEED;
-    static const uint16_t WS2801_SLOTS_PER_PIXEL;
-    static const uint16_t LPD8806_SLOTS_PER_PIXEL;
+    // GPIO members
+    GPIOFds m_gpio_fds;
+    const std::vector<uint8_t> m_gpio_pins;
+    std::vector<bool> m_gpio_pin_state;
 
-    static const ola::rdm::ResponderOps<SPIBackend>::ParamHandler
-        PARAM_HANDLERS[];
+    void SetupOutputs(Outputs *outputs);
+    void WriteOutput(uint8_t output_id, OutputData *output);
+    bool SetupGPIO();
+    void CloseGPIOFDs();
+};
+
+
+/**
+ * An SPI Backend which uses a software multipliexer. This accumulates all data
+ * into a single buffer and then writes it to the SPI bus.
+ */
+class SoftwareBackend : public SPIBackendInterface,
+                        public ola::thread::Thread {
+ public:
+    struct Options {
+      /*
+       * The number of outputs.
+       */
+      uint8_t outputs;
+       /*
+       * Controls if we designate one of the outputs as the 'sync' output.
+       * If set >= 0, it denotes the output which triggers the SPI write.
+       * If set to -1, we perform an SPI write on each update.
+       */
+      int16_t sync_output;
+
+      explicit Options() : outputs(1), sync_output(0) {}
+    };
+
+    SoftwareBackend(const Options &options,
+                    SPIWriterInterface *writer,
+                    ExportMap *export_map);
+    ~SoftwareBackend();
+
+    bool Init();
+
+    uint8_t *Checkout(uint8_t output, unsigned int length) {
+      return Checkout(output, length, 0);
+    }
+
+    uint8_t *Checkout(uint8_t output,
+                      unsigned int length,
+                      unsigned int latch_bytes);
+    void Commit(uint8_t output);
+
+    std::string DevicePath() const { return m_spi_writer->DevicePath(); }
+
+ protected:
+    void* Run();
+
+ private:
+    SPIWriterInterface *m_spi_writer;
+    UIntMap *m_drop_map;
+    ola::thread::Mutex m_mutex;
+    ola::thread::ConditionVariable m_cond_var;
+    bool m_write_pending;
+    bool m_exit;
+
+    const int16_t m_sync_output;
+    std::vector<unsigned int> m_output_sizes;
+    std::vector<unsigned int> m_latch_bytes;
+    uint8_t *m_output;
+    unsigned int m_length;
+};
+
+
+/**
+ * A fake backend used for testing. If we had gmock this would be much
+ * easier...
+ */
+class FakeSPIBackend : public SPIBackendInterface {
+ public:
+    explicit FakeSPIBackend(unsigned int outputs);
+    ~FakeSPIBackend();
+
+    uint8_t *Checkout(uint8_t output, unsigned int length) {
+      return Checkout(output, length, 0);
+    }
+
+    uint8_t *Checkout(uint8_t output,
+                      unsigned int length,
+                      unsigned int latch_bytes);
+
+    void Commit(uint8_t output);
+    const uint8_t *GetData(uint8_t output, unsigned int *length);
+
+    std::string DevicePath() const { return "/dev/test"; }
+
+    bool Init() { return true; }
+
+    unsigned int Writes(uint8_t output) const;
+
+ private:
+    class Output {
+     public:
+      Output() : data(NULL), length(0), writes(0) {}
+      ~Output() { delete[] data; }
+
+      uint8_t *data;
+      unsigned int length;
+      unsigned int writes;
+    };
+
+    typedef std::vector<Output*> Outputs;
+    Outputs m_outputs;
 };
 }  // namespace spi
 }  // namespace plugin

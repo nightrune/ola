@@ -30,6 +30,8 @@
 
 namespace ola {
 
+using std::string;
+
 /*
  * Create a new basic input port
  */
@@ -38,8 +40,8 @@ BasicInputPort::BasicInputPort(AbstractDevice *parent,
                                const PluginAdaptor *plugin_adaptor,
                                bool supports_rdm):
     m_port_id(port_id),
-    m_priority(DmxSource::PRIORITY_DEFAULT),
-    m_priority_mode(PRIORITY_MODE_INHERIT),
+    m_priority(ola::dmx::SOURCE_PRIORITY_DEFAULT),
+    m_priority_mode(PRIORITY_MODE_STATIC),
     m_port_string(""),
     m_universe(NULL),
     m_device(parent),
@@ -75,7 +77,7 @@ string BasicInputPort::UniqueId() const {
 
 
 bool BasicInputPort::SetPriority(uint8_t priority) {
-  if (priority > DmxSource::PRIORITY_MAX)
+  if (priority > ola::dmx::SOURCE_PRIORITY_MAX)
     return false;
 
   m_priority = priority;
@@ -143,7 +145,7 @@ BasicOutputPort::BasicOutputPort(AbstractDevice *parent,
                                  bool supports_rdm):
     m_port_id(port_id),
     m_discover_on_patch(start_rdm_discovery_on_patch),
-    m_priority(DmxSource::PRIORITY_DEFAULT),
+    m_priority(ola::dmx::SOURCE_PRIORITY_DEFAULT),
     m_priority_mode(PRIORITY_MODE_INHERIT),
     m_port_string(""),
     m_universe(NULL),
@@ -181,7 +183,7 @@ string BasicOutputPort::UniqueId() const {
 
 
 bool BasicOutputPort::SetPriority(uint8_t priority) {
-  if (priority > DmxSource::PRIORITY_MAX)
+  if (priority > ola::dmx::SOURCE_PRIORITY_MAX)
     return false;
 
   m_priority = priority;

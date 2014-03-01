@@ -32,6 +32,8 @@ namespace ola {
 namespace plugin {
 namespace ftdidmx {
 
+using std::string;
+using std::vector;
 
 const char FtdiDmxPlugin::DEFAULT_FREQUENCY[] = "30";
 const char FtdiDmxPlugin::K_FREQUENCY[] = "frequency";
@@ -120,7 +122,7 @@ bool FtdiDmxPlugin::SetDefaultPreferences() {
     return false;
 
   if (m_preferences->SetDefaultValue(FtdiDmxPlugin::K_FREQUENCY,
-                                     IntValidator(1, 44),
+                                     UIntValidator(1, 44),
                                      DEFAULT_FREQUENCY))
     m_preferences->Save();
 

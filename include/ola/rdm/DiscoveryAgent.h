@@ -21,7 +21,7 @@
 /**
  * @addtogroup rdm_controller
  * @{
- * @file DiscoveryAgent.h
+ * @file include/ola/rdm/DiscoveryAgent.h
  * @brief Implements the RDM Discovery algorithm
  * @}
  */
@@ -40,16 +40,13 @@
 namespace ola {
 namespace rdm {
 
-
-using std::queue;
-
 /**
  * This is the interface for classes which want to act as a discovery
  * controller. Such clases must implement the Mute, UnMute & Discovery Unique
  * Branch (DUB) methods.
  */
 class DiscoveryTargetInterface {
-  public:
+ public:
     // Argument is true if the device responded
     typedef ola::BaseCallback1<void, bool> MuteDeviceCallback;
     typedef ola::BaseCallback0<void> UnMuteDeviceCallback;
@@ -77,7 +74,7 @@ class DiscoveryTargetInterface {
  * This class controls the discovery algorithm.
  */
 class DiscoveryAgent {
-  public:
+ public:
     explicit DiscoveryAgent(DiscoveryTargetInterface *target);
     ~DiscoveryAgent();
 
@@ -88,7 +85,7 @@ class DiscoveryAgent {
     void StartFullDiscovery(DiscoveryCompleteCallback *on_complete);
     void StartIncrementalDiscovery(DiscoveryCompleteCallback *on_complete);
 
-  private:
+ private:
     /**
      * Represents a range of UIDs (a branch of the UID tree)
      */

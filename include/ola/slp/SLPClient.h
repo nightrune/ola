@@ -23,6 +23,7 @@
 
 #include <ola/Callback.h>
 #include <ola/OlaClientWrapper.h>
+#include <ola/base/Macro.h>
 #include <ola/network/IPV4Address.h>
 #include <ola/network/Socket.h>
 #include <ola/network/SocketAddress.h>
@@ -36,24 +37,20 @@
 namespace ola {
 namespace slp {
 
-using std::auto_ptr;
-using std::string;
-using ola::network::IPV4SocketAddress;
-using ola::network::IPV4Address;
 
 // Information about the server
 class ServerInfo {
-  public:
+ public:
     bool da_enabled;
     uint16_t port;
-    vector<string> scopes;
+    std::vector<std::string> scopes;
 
     ServerInfo() : da_enabled(false), port(0) {}
 };
 
 // Used to communicate with the local SLP server.
 class SLPClient {
-  public:
+ public:
     explicit SLPClient(ola::io::ConnectedDescriptor *descriptor);
     ~SLPClient();
 
@@ -66,59 +63,60 @@ class SLPClient {
      * Register a service
      */
     bool RegisterService(
-        const vector<string> &scopes,
-        const string &service,
+        const std::vector<std::string> &scopes,
+        const std::string &service,
         uint16_t lifetime,
-        SingleUseCallback2<void, const string&, uint16_t> *callback);
+        SingleUseCallback2<void, const std::string&, uint16_t> *callback);
 
     /**
      * Register a service that persists beyond the lifetime of this client.
      */
     bool RegisterPersistentService(
-        const vector<string> &scopes,
-        const string &service,
+        const std::vector<std::string> &scopes,
+        const std::string &service,
         uint16_t lifetime,
-        SingleUseCallback2<void, const string&, uint16_t> *callback);
+        SingleUseCallback2<void, const std::string&, uint16_t> *callback);
 
     /**
      * DeRegister a service
      */
     bool DeRegisterService(
-        const vector<string> &scopes,
-        const string &service,
-        SingleUseCallback2<void, const string&, uint16_t> *callback);
+        const std::vector<std::string> &scopes,
+        const std::string &service,
+        SingleUseCallback2<void, const std::string&, uint16_t> *callback);
 
     /**
      * Find a service.
      */
     bool FindService(
-        const vector<string> &scopes,
-        const string &service,
-        SingleUseCallback2<void, const string&,
-                           const vector<URLEntry> &> *callback);
+        const std::vector<std::string> &scopes,
+        const std::string &service,
+        SingleUseCallback2<void, const std::string&,
+                           const std::vector<URLEntry> &> *callback);
 
     /**
      * Get info about the server
      */
     bool GetServerInfo(
-        SingleUseCallback2<void, const string&, const ServerInfo&> *callback);
+        SingleUseCallback2<void,
+                           const std::string&,
+                           const ServerInfo&> *callback);
 
-  private:
-    SLPClient(const SLPClient&);
-    SLPClient operator=(const SLPClient&);
+ private:
+    std::auto_ptr<class SLPClientCore> m_core;
 
-    auto_ptr<class SLPClientCore> m_core;
+    DISALLOW_COPY_AND_ASSIGN(SLPClient);
 };
 
 
-class SLPClientWrapper: public BaseClientWrapper {
-  public:
+class SLPClientWrapper: public ola::client::BaseClientWrapper {
+ public:
     SLPClientWrapper() : BaseClientWrapper() {}
 
     SLPClient *GetClient() const { return m_client.get(); }
 
-  private:
-    auto_ptr<SLPClient> m_client;
+ private:
+    std::auto_ptr<SLPClient> m_client;
 
     void CreateClient() {
       if (!m_client.get()) {
@@ -135,9 +133,13 @@ class SLPClientWrapper: public BaseClientWrapper {
     }
 
     void InitSocket() {
-      m_socket.reset(TCPSocket::Connect(
-            IPV4SocketAddress(IPV4Address::Loopback(), OLA_SLP_DEFAULT_PORT)));
+      m_socket.reset(ola::network::TCPSocket::Connect(
+            ola::network::IPV4SocketAddress(
+                ola::network::IPV4Address::Loopback(),
+                OLA_SLP_DEFAULT_PORT)));
     }
+
+    DISALLOW_COPY_AND_ASSIGN(SLPClientWrapper);
 };
 }  // namespace slp
 }  // namespace ola

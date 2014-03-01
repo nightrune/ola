@@ -101,7 +101,9 @@ void ListPorts(const vector<PortClass> &ports, bool input) {
     else
       cout << "OUT";
 
-    cout << " " << port_iter->Description();
+    if (!port_iter->Description().empty()) {
+      cout << " " << port_iter->Description();
+    }
 
     switch (port_iter->PriorityCapability()) {
       case ola::CAPABILITY_STATIC:
@@ -129,7 +131,7 @@ void ListPorts(const vector<PortClass> &ports, bool input) {
 
 
 /*
- * This is called when we recieve universe results from the client
+ * This is called when we receive universe results from the client
  * @param list_ids_only show ids only
  * @param universes a vector of OlaUniverses
  */
@@ -513,7 +515,7 @@ int ParseSetPriorityOptions(int argc, char *argv[], options *opts) {
         opts->port_direction = ola::INPUT_PORT;
         break;
       case 'o':
-        opts->priority_mode = ola::PRIORITY_MODE_OVERRIDE;
+        opts->priority_mode = ola::PRIORITY_MODE_STATIC;
         opts->priority_value = atoi(optarg);
         break;
       case 'p':
@@ -864,7 +866,7 @@ void SetPortPriority(OlaCallbackClientWrapper *wrapper, const options &opts) {
     client->SetPortPriorityInherit(
         opts.device_id, opts.port_id, opts.port_direction,
         NewSingleCallback(&SetPortPriorityComplete, ss));
-  } else if (opts.priority_mode == ola::PRIORITY_MODE_OVERRIDE) {
+  } else if (opts.priority_mode == ola::PRIORITY_MODE_STATIC) {
     client->SetPortPriorityOverride(
         opts.device_id, opts.port_id, opts.port_direction, opts.priority_value,
         NewSingleCallback(&SetPortPriorityComplete, ss));

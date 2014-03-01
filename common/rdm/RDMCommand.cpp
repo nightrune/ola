@@ -35,6 +35,8 @@
 namespace ola {
 namespace rdm {
 
+using std::string;
+
 /**
  * @addtogroup rdm_command
  * @{
@@ -349,7 +351,7 @@ RDMRequest* RDMRequest::InflateFromData(const uint8_t *data,
 /**
  * Inflate from some data
  */
-RDMRequest* RDMRequest::InflateFromData(const string &data) {
+RDMRequest* RDMRequest::InflateFromData(const std::string &data) {
   return InflateFromData(reinterpret_cast<const uint8_t*>(data.data()),
                          data.size());
 }
@@ -357,10 +359,10 @@ RDMRequest* RDMRequest::InflateFromData(const string &data) {
 
 /**
  * Inflate a request from some data
- * @param the request data
+ * @param data the request data
  * @param length the length of the request data
+ * @param response_code a pointer to a rdm_response_code to set
  * @param request an optional RDMRequest object that this response is for
- * @param a pointer to a rdm_response_code to set
  * @returns a new RDMResponse object, or NULL is this response is invalid
  */
 RDMResponse* RDMResponse::InflateFromData(const uint8_t *data,
@@ -517,7 +519,7 @@ RDMResponse* RDMResponse::InflateFromData(const uint8_t *data,
 /**
  * Inflate from some data
  */
-RDMResponse* RDMResponse::InflateFromData(const string &data,
+RDMResponse* RDMResponse::InflateFromData(const std::string &data,
                                           rdm_response_code *response_code,
                                           const RDMRequest *request) {
   return InflateFromData(reinterpret_cast<const uint8_t*>(data.data()),
@@ -530,7 +532,7 @@ RDMResponse* RDMResponse::InflateFromData(const string &data,
 /**
  * Inflate from some data
  */
-RDMResponse* RDMResponse::InflateFromData(const string &data,
+RDMResponse* RDMResponse::InflateFromData(const std::string &data,
                                           rdm_response_code *response_code,
                                           const RDMRequest *request,
                                           uint8_t transaction_number) {
@@ -546,7 +548,7 @@ RDMResponse* RDMResponse::InflateFromData(const string &data,
  * This combines two RDMResponses into one. It's used to combine the data from
  * two responses in an ACK_OVERFLOW session together.
  * @param response1 the first response.
- * @param response1 the second response.
+ * @param response2 the second response.
  * @return A new response with the data from the first and second combined or
  * NULL if the size limit is reached.
  */
@@ -609,7 +611,7 @@ RDMResponse* RDMResponse::CombineResponses(const RDMResponse *response1,
  * Guess the type of an RDM message, so we know whether we should unpack it as
  * a request or response. This doesn't perform any data checking (that's left
  * to the Inflate* methods).
- * @param type a pointer to a rdm_message_type variable which is set to
+ * @param type_arg a pointer to a rdm_message_type variable which is set to
  * RDM_REQUEST or RDM_RESPONSE.
  * @param data a pointer to the rdm message (excluding the start code)
  * @param length length of the rdm data
@@ -807,7 +809,8 @@ RDMDiscoveryRequest* RDMDiscoveryRequest::InflateFromData(
 /*
  * Inflate a discovery request from some data.
  */
-RDMDiscoveryRequest* RDMDiscoveryRequest::InflateFromData(const string &data) {
+RDMDiscoveryRequest* RDMDiscoveryRequest::InflateFromData(
+    const std::string &data) {
   return InflateFromData(reinterpret_cast<const uint8_t*>(data.data()),
                          data.size());
 }
@@ -835,7 +838,7 @@ RDMDiscoveryRequest *NewDiscoveryUniqueBranchRequest(
                                  PID_DISC_UNIQUE_BRANCH,
                                  param_data,
                                  length);
-};
+}
 
 
 /*
@@ -854,7 +857,7 @@ RDMDiscoveryRequest *NewMuteRequest(const UID &source,
                                  PID_DISC_MUTE,
                                  NULL,
                                  0);
-};
+}
 
 
 /**
@@ -873,7 +876,7 @@ RDMDiscoveryRequest *NewUnMuteRequest(const UID &source,
                                    PID_DISC_UN_MUTE,
                                    NULL,
                                    0);
-};
+}
 
 
 /**
@@ -917,7 +920,7 @@ RDMDiscoveryResponse* RDMDiscoveryResponse::InflateFromData(
  * Inflate a discovery response from some data.
  */
 RDMDiscoveryResponse* RDMDiscoveryResponse::InflateFromData(
-    const string &data) {
+    const std::string &data) {
   return InflateFromData(reinterpret_cast<const uint8_t*>(data.data()),
                          data.size());
 }

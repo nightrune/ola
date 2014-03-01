@@ -13,9 +13,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  ShowPlayer.h
- *  A simple show playback system.
- *  Copyright (C) 2011 Simon Newton
+ * ShowPlayer.h
+ * A simple show playback system.
+ * Copyright (C) 2011 Simon Newton
  */
 
 #include <ola/DmxBuffer.h>
@@ -26,34 +26,46 @@
 
 #include "examples/ShowLoader.h"
 
-
-using std::string;
-
-
 #ifndef EXAMPLES_SHOWPLAYER_H_
 #define EXAMPLES_SHOWPLAYER_H_
 
 /**
- * The show player class
+ * @brief A class which plays back recorded show files.
  */
 class ShowPlayer {
-  public:
-    explicit ShowPlayer(const string &filename);
+ public:
+    /**
+     * @brief Create a new ShowPlayer
+     * @param filename the show file to play
+     */
+    explicit ShowPlayer(const std::string &filename);
     ~ShowPlayer();
 
+    /**
+     * @brief Initialize the show player.
+     * @return EXIT_OK if successfull.
+     */
     int Init();
+
+    /**
+     * @brief Playback the show
+     * @param iterations the number of iterations of the show to play.
+     * @param duration the duration in seconds after which playback is stopped.
+     * @param delay the hold time at the end of a show before playback starts
+     * from the beginning again.
+     */
     int Playback(unsigned int iterations,
+                 unsigned int duration,
                  unsigned int delay);
 
-    void SendNextFrame();
-
-  private:
+ private:
     ola::OlaCallbackClientWrapper m_client;
     ShowLoader m_loader;
-    bool m_infinte_loop;
+    bool m_infinite_loop;
     unsigned int m_iteration_remaining;
     unsigned int m_loop_delay;
 
+    void SendNextFrame();
     ShowLoader::State RegisterNextTimeout();
     bool ReadNextFrame(unsigned int *universe, ola::DmxBuffer *data);
     void HandleEndOfFile();

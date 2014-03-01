@@ -31,12 +31,10 @@ namespace ola {
 namespace plugin {
 namespace kinet {
 
-using ola::network::IPV4Address;
-
 class KiNetOutputPort: public BasicOutputPort {
-  public:
+ public:
     KiNetOutputPort(KiNetDevice *device,
-                    const IPV4Address &target,
+                    const ola::network::IPV4Address &target,
                     KiNetNode *node,
                     unsigned int port_id)
         : BasicOutputPort(device, port_id),
@@ -49,13 +47,13 @@ class KiNetOutputPort: public BasicOutputPort {
       (void) priority;
     }
 
-    string Description() const {
+    std::string Description() const {
       return "Power Supply: " + m_target.ToString();
     }
 
-  private:
+ private:
     KiNetNode *m_node;
-    const IPV4Address m_target;
+    const ola::network::IPV4Address m_target;
 };
 }  // namespace kinet
 }  // namespace plugin

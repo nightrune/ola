@@ -30,22 +30,20 @@ namespace ola {
 namespace plugin {
 namespace karate {
 
-using ola::PluginAdaptor;
-
 class KarateDevice;
 
 class KaratePlugin: public Plugin {
-  public:
+ public:
     explicit KaratePlugin(PluginAdaptor *plugin_adaptor)
         : Plugin(plugin_adaptor) {
     }
 
-    string Name() const { return PLUGIN_NAME; }
-    string Description() const;
+    std::string Name() const { return PLUGIN_NAME; }
+    std::string Description() const;
     ola_plugin_id Id() const { return OLA_PLUGIN_KARATE; }
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();

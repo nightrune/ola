@@ -25,11 +25,11 @@
 #include "plugins/e131/E131Port.h"
 #include "plugins/e131/E131Device.h"
 
-
 namespace ola {
 namespace plugin {
 namespace e131 {
 
+using std::string;
 
 bool E131PortHelper::PreSetUniverse(Universe *old_universe,
                                     Universe *new_universe) {
@@ -97,7 +97,7 @@ bool E131OutputPort::WriteDMX(const DmxBuffer &buffer, uint8_t priority) {
   if (!universe)
     return false;
 
-  if (GetPriorityMode() == PRIORITY_MODE_OVERRIDE)
+  if (GetPriorityMode() == PRIORITY_MODE_STATIC)
     priority = GetPriority();
 
   return m_node->SendDMX(universe->UniverseId(),

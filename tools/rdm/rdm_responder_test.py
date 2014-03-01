@@ -23,6 +23,7 @@ __author__ = 'nomis52@gmail.com (Simon Newton)'
 from ola.testing.rdm import TestDefinitions, TestRunner
 from ola.testing.rdm.DMXSender import DMXSender
 from ola.testing.rdm.TestState import TestState
+import datetime
 import logging
 import re
 import sys
@@ -59,7 +60,7 @@ def ParseOptions():
                     help='Also log to the file named FILE.uid.timestamp.')
   parser.add_option('--list-tests', action='store_true',
                     help='Display a list of all tests')
-  parser.add_option('-p', '--pid-store', metavar='FILE',
+  parser.add_option('-p', '--pid-location', metavar='DIR',
                     help='The location of the PID definitions.')
   parser.add_option('-s', '--skip-check', action='store_true',
                     help='Skip the check for multiple devices.')
@@ -76,6 +77,9 @@ def ParseOptions():
   parser.add_option('-u', '--universe', default=0,
                     type='int',
                     help='The universe number to use, default is universe 0.')
+  parser.add_option('--inter-test-delay', default=0,
+                    type='int',
+                    help='The delay in ms to wait between tests, defaults to 0.')
 
   options, args = parser.parse_args()
 
@@ -124,7 +128,7 @@ def SetupLogging(options):
     logging.getLogger('').addHandler(file_handler)
 
 
-def DisplaySummary(tests):
+def DisplaySummary(uid, tests, device):
   """Print a summary of the tests."""
   by_category = {}
   warnings = []
@@ -141,6 +145,25 @@ def DisplaySummary(tests):
         by_category[test.category].get(state, 0))
 
   total = sum(count_by_state.values())
+
+  logging.info('------------------- Summary --------------------')
+  now = datetime.datetime.now()
+  logging.info('Test Run: %s' % now.strftime('%F %r %z'))
+  logging.info('UID: %s' % uid)
+
+  manufacturer_label = getattr(device, 'manufacturer_label', None)
+  if manufacturer_label:
+    logging.info('Manufacturer: %s' %
+                 manufacturer_label.encode('string-escape'))
+
+  model_description = getattr(device, 'model_description', None)
+  if model_description:
+    logging.info('Model Description: %s' %
+                 model_description.encode('string-escape'))
+
+  software_version = getattr(device, 'software_version', None)
+  if software_version:
+    logging.info('Software Version: %s' % software_version)
 
   logging.info('------------------- Warnings --------------------')
   for warning in sorted(warnings):
@@ -181,7 +204,8 @@ def main():
 
   SetupLogging(options)
   logging.info('OLA Responder Tests Version %s' % Version.version)
-  pid_store = PidStore.GetStore(options.pid_store, ('pids.proto',))
+  pid_store = PidStore.GetStore(options.pid_location,
+                                ('pids.proto','draft_pids.proto'))
   wrapper = ClientWrapper()
 
   global uid_ok
@@ -237,7 +261,8 @@ def main():
                                  options.broadcast_write_delay,
                                  pid_store,
                                  wrapper,
-                                 options.timestamp)
+                                 options.timestamp,
+                                 options.inter_test_delay)
 
   for test_class in test_classes:
     runner.RegisterTest(test_class)
@@ -248,7 +273,7 @@ def main():
                          options.slot_count)
 
   tests, device = runner.RunTests(test_filter, options.no_factory_defaults)
-  DisplaySummary(tests)
+  DisplaySummary(options.uid, tests, device)
 
 
 if __name__ == '__main__':

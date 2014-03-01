@@ -40,6 +40,7 @@
 
 #include "slp/SLPServer.h"
 #include "slp/SLP.pb.h"
+#include "slp/SLPService.pb.h"
 
 using ola::network::IPV4Address;
 using ola::network::IPV4SocketAddress;
@@ -62,7 +63,7 @@ class SLPServiceImpl;
  * An SLP Daemon.
  */
 class SLPDaemon {
-  public:
+ public:
     struct SLPDaemonOptions: public SLPServer::SLPServerOptions {
       // IP to multicast on
       bool enable_http;  // enable the HTTP server
@@ -91,46 +92,46 @@ class SLPDaemon {
 
     void Input(char c);
 
-  private:
+ private:
     /**
      * The implementation of the SLP Service.
      */
     class SLPServiceImpl : public ola::slp::proto::SLPService {
-      public:
-        explicit SLPServiceImpl(SLPServer *server)
-            : m_slp_server(server) {
-        }
-        ~SLPServiceImpl() {}
+     public:
+      explicit SLPServiceImpl(SLPServer *server)
+          : m_slp_server(server) {
+      }
+      ~SLPServiceImpl() {}
 
-        void FindService(::google::protobuf::RpcController* controller,
-                         const ola::slp::proto::ServiceRequest* request,
-                         ola::slp::proto::ServiceReply* response,
-                         ::google::protobuf::Closure* done);
+      void FindService(ola::rpc::RpcController* controller,
+                       const ola::slp::proto::ServiceRequest* request,
+                       ola::slp::proto::ServiceReply* response,
+                       CompletionCallback* done);
 
-        void RegisterService(
-            ::google::protobuf::RpcController* controller,
-            const ola::slp::proto::ServiceRegistration* request,
-            ola::slp::proto::ServiceAck* response,
-            ::google::protobuf::Closure* done);
+      void RegisterService(
+          ola::rpc::RpcController* controller,
+          const ola::slp::proto::ServiceRegistration* request,
+          ola::slp::proto::ServiceAck* response,
+          CompletionCallback* done);
 
-        void DeRegisterService(
-            ::google::protobuf::RpcController* controller,
-            const ola::slp::proto::ServiceDeRegistration* request,
-            ola::slp::proto::ServiceAck* response,
-            ::google::protobuf::Closure* done);
+      void DeRegisterService(
+          ola::rpc::RpcController* controller,
+          const ola::slp::proto::ServiceDeRegistration* request,
+          ola::slp::proto::ServiceAck* response,
+          CompletionCallback* done);
 
-        void GetServerInfo(
-            ::google::protobuf::RpcController* controller,
-            const ola::slp::proto::ServerInfoRequest* request,
-            ola::slp::proto::ServerInfoReply* response,
-            ::google::protobuf::Closure* done);
+      void GetServerInfo(
+          ola::rpc::RpcController* controller,
+          const ola::slp::proto::ServerInfoRequest* request,
+          ola::slp::proto::ServerInfoReply* response,
+          CompletionCallback* done);
 
-      private:
-        SLPServer *m_slp_server;
+     private:
+       SLPServer *m_slp_server;
 
-        void FindServiceHandler(ola::slp::proto::ServiceReply* response,
-                                ::google::protobuf::Closure* done,
-                                const URLEntries &urls);
+       void FindServiceHandler(ola::slp::proto::ServiceReply* response,
+                               CompletionCallback* done,
+                               const URLEntries &urls);
     };
 
     typedef vector<class ConnectedClient*> DisconnectedClients;

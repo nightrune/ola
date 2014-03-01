@@ -36,15 +36,13 @@ namespace rdm {
  */
 DimmerResponder::DimmerResponder(const UID &uid,
                                  uint16_t number_of_subdevices) {
-  uint16_t sub_devices = std::min(MAX_SUBDEVICE_NUMBER,
-                                  number_of_subdevices);
+  uint16_t sub_devices = std::min(MAX_SUBDEVICE_NUMBER, number_of_subdevices);
   for (uint16_t i = 1; i <= sub_devices; i++) {
-    DimmerSubDevice *sub_device = new DimmerSubDevice(uid, i);
+    DimmerSubDevice *sub_device = new DimmerSubDevice(uid, i, sub_devices);
     STLInsertIfNotPresent(&m_sub_devices, i, sub_device);
     m_dispatcher.AddSubDevice(i, sub_device);
   }
   m_root_device.reset(new DimmerRootDevice(uid, m_sub_devices));
-  m_dispatcher.AddSubDevice(ROOT_RDM_DEVICE, m_root_device.get());
 }
 
 /**
@@ -60,7 +58,11 @@ DimmerResponder::~DimmerResponder() {
  */
 void DimmerResponder::SendRDMRequest(const RDMRequest *request,
                                      RDMCallback *callback) {
-  m_dispatcher.SendRDMRequest(request, callback);
+  if (request->SubDevice() == ROOT_RDM_DEVICE) {
+    m_root_device->SendRDMRequest(request, callback);
+  } else {
+    m_dispatcher.SendRDMRequest(request, callback);
+  }
 }
 }  // namespace rdm
 }  // namespace ola

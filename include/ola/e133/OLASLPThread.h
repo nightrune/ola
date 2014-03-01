@@ -23,6 +23,7 @@
 #define INCLUDE_OLA_E133_OLASLPTHREAD_H_
 
 #include <ola/Callback.h>
+#include <ola/base/Macro.h>
 #include <ola/e133/SLPThread.h>
 #include <ola/network/Socket.h>
 #include <ola/network/TCPSocket.h>
@@ -41,7 +42,7 @@ using std::string;
 using std::auto_ptr;
 
 class OLASLPThread: public BaseSLPThread {
-  public:
+ public:
     // Ownership of the discovery_callback is transferred.
     OLASLPThread(
         ola::thread::ExecutorInterface *ss,
@@ -51,7 +52,7 @@ class OLASLPThread: public BaseSLPThread {
     bool Init();
     void Cleanup();
 
-  protected:
+ protected:
     void RunDiscovery(InternalDiscoveryCallback *callback,
                       const string &service);
     void RegisterSLPService(RegistrationCallback *callback,
@@ -63,7 +64,7 @@ class OLASLPThread: public BaseSLPThread {
 
     void ThreadStopping();
 
-  private:
+ private:
     bool m_init_ok;
     ola::BackoffGenerator m_backoff_generator;
     auto_ptr<ola::network::TCPSocket> m_slp_socket;
@@ -85,6 +86,8 @@ class OLASLPThread: public BaseSLPThread {
     void ShutdownClient();
     bool ConnectAndSetupClient();
     void AttemptSLPConnection();
+
+    DISALLOW_COPY_AND_ASSIGN(OLASLPThread);
 };
 }  // namespace e133
 }  // namespace ola

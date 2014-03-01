@@ -33,7 +33,7 @@ namespace messaging {
  * This visitor prints the schema as a string.
  */
 class SchemaPrinter: public FieldDescriptorVisitor {
-  public:
+ public:
     SchemaPrinter(bool include_intervals = true,
                   bool include_labels = true,
                   unsigned int indent_size = DEFAULT_INDENT)
@@ -45,11 +45,12 @@ class SchemaPrinter: public FieldDescriptorVisitor {
     ~SchemaPrinter() {}
 
     bool Descend() const { return true; }
-    string AsString() { return m_str.str(); }
+    std::string AsString() { return m_str.str(); }
     void Reset() { m_str.str(""); }
 
     void Visit(const BoolFieldDescriptor*);
     void Visit(const IPV4FieldDescriptor*);
+    void Visit(const MACFieldDescriptor*);
     void Visit(const UIDFieldDescriptor*);
     void Visit(const StringFieldDescriptor*);
     void Visit(const UInt8FieldDescriptor*);
@@ -61,12 +62,12 @@ class SchemaPrinter: public FieldDescriptorVisitor {
     void Visit(const FieldDescriptorGroup*);
     void PostVisit(const FieldDescriptorGroup*);
 
-  private:
+ private:
     bool m_include_intervals, m_include_labels;
     std::stringstream m_str;
     unsigned int m_indent, m_indent_size;
 
-    void AppendHeading(const string &name, const string &type);
+    void AppendHeading(const std::string &name, const std::string &type);
 
     template<class vector_class>
     void MaybeAppendIntervals(const vector_class &intervals) {
@@ -91,7 +92,7 @@ class SchemaPrinter: public FieldDescriptorVisitor {
         return;
       typename map_class::const_iterator iter = labels.begin();
       for (; iter != labels.end(); ++iter) {
-        m_str << std::endl << string(m_indent + m_indent_size, ' ') <<
+        m_str << std::endl << std::string(m_indent + m_indent_size, ' ') <<
             iter->first << ": " << static_cast<int64_t>(iter->second);
       }
     }

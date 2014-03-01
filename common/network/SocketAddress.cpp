@@ -31,6 +31,13 @@ namespace network {
 
 using std::string;
 
+
+string IPV4SocketAddress::ToString() const {
+  std::ostringstream str;
+  str << Host() << ":" << Port();
+  return str.str();
+}
+
 /**
  * Copy this IPV4SocketAddress into a sockaddr.
  */
@@ -75,6 +82,11 @@ IPV4SocketAddress IPV4SocketAddress::FromStringOrDie(
   IPV4SocketAddress socket_address;
   assert(FromString(address, &socket_address));
   return socket_address;
+}
+
+
+bool GenericSocketAddress::IsValid() const {
+  return Family() != AF_UNSPEC;
 }
 
 

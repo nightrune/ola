@@ -5,6 +5,7 @@
 *.log
 *.o
 *.pb.cc
+*.pb.cpp
 *.pb.h
 *.pc
 *.pyc
@@ -12,6 +13,7 @@
 *.tar.gz
 *.trs
 *_pb2.py
+Doxyfile
 INSTALL
 Makefile
 Makefile.in
@@ -44,6 +46,7 @@ config/lt~obsolete.m4
 config/missing
 config/py-compile
 *Tester
+data/rdm/PidDataTest.sh
 debian/files
 debian/*.debhelper.log
 debian/*.substvars
@@ -65,6 +68,7 @@ examples/ola_dev_info
 examples/ola_dmxconsole
 examples/ola_dmxmonitor
 examples/ola_e131
+examples/ola_latency
 examples/ola_plugin_info
 examples/ola_plugin_state
 examples/ola_rdm_discover
@@ -84,15 +88,16 @@ include/ola/timecode/TimeCodeEnums.h
 java/src/main/java/ola/rpc/Rpc.java
 javascript/compiler.jar
 javascript/trunk/
-ola/common.h
-ola/stamp-common
-olad/OlaVersion.h
 olad/olad
+olad/ola-output.conf
 olad/testdata/ola-output.conf
+plugins/artnet/artnet_loadtest
 plugins/e131/e131/e131_loadtest
 plugins/e131/e131/e131_transmit_test
+protoc/ola_protoc
 python/ola/PidStoreLocation.py
 python/ola/Version.py
+python/ola/rpc/SimpleRpcControllerTest.sh
 slp/slp_client
 slp/slp_server
 tools/e133/e133_controller

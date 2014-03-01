@@ -28,11 +28,8 @@
 namespace ola {
 namespace rdm {
 
-using std::string;
-
-
 class CommandPrinter {
-  public:
+ public:
     CommandPrinter(std::ostream *output,
                    class PidStoreHelper *pid_helper);
     ~CommandPrinter() {}
@@ -70,7 +67,7 @@ class CommandPrinter {
                                   bool summarize = false,
                                   bool unpack_param_data = true);
 
-  private:
+ private:
     std::ostream *m_output;
     PidStoreHelper *m_pid_helper;
 

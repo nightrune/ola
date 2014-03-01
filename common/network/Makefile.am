@@ -1,26 +1,33 @@
 include $(top_srcdir)/common.mk
 
-EXTRA_DIST = PosixInterfacePicker.h SocketHelper.h WindowsInterfacePicker.h
-
+# LIBRARIES
+##################################################
 noinst_LTLIBRARIES = libolanetwork.la
 libolanetwork_la_SOURCES = AdvancedTCPConnector.cpp \
+                           FakeInterfacePicker.h \
                            HealthCheckedConnection.cpp \
                            IPV4Address.cpp \
                            Interface.cpp \
                            InterfacePicker.cpp \
                            NetworkUtils.cpp \
+                           MACAddress.cpp \
                            Socket.cpp \
                            SocketAddress.cpp \
                            SocketHelper.cpp \
+                           SocketHelper.h \
                            TCPConnector.cpp \
                            TCPSocket.cpp
+libolanetwork_la_LIBADD = -lresolv
+
 
 if USING_WIN32
-libolanetwork_la_SOURCES += WindowsInterfacePicker.cpp
+libolanetwork_la_SOURCES += WindowsInterfacePicker.h WindowsInterfacePicker.cpp
 else
-libolanetwork_la_SOURCES += PosixInterfacePicker.cpp
+libolanetwork_la_SOURCES += PosixInterfacePicker.h PosixInterfacePicker.cpp
 endif
 
+# TESTS
+##################################################
 if BUILD_TESTS
 TESTS = HealthCheckedConnectionTester NetworkTester TCPConnectorTester
 endif
@@ -37,6 +44,7 @@ HealthCheckedConnectionTester_LDADD = $(COMMON_TEST_LDADD)
 NetworkTester_SOURCES = IPAddressTest.cpp \
                         InterfacePickerTest.cpp \
                         InterfaceTest.cpp \
+                        MACAddressTest.cpp \
                         NetworkUtilsTest.cpp \
                         SocketAddressTest.cpp \
                         SocketTest.cpp
@@ -44,7 +52,8 @@ NetworkTester_CXXFLAGS = $(COMMON_TESTING_FLAGS)
 NetworkTester_LDADD = $(COMMON_TEST_LDADD)
 
 if USING_WIN32
-  NetworkTester_LDFLAGS = -no-undefined -liphlpapi -lnetapi32 -lcap -lws2_32 -ldpnet -lwsock32
+NetworkTester_LDFLAGS = -no-undefined -liphlpapi -lnetapi32 -lcap -lws2_32 \
+                        -ldpnet -lwsock32
 endif
 
 TCPConnectorTester_SOURCES = AdvancedTCPConnectorTest.cpp \

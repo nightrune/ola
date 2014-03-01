@@ -51,12 +51,20 @@
 #include "plugins/kinet/KiNetPlugin.h"
 #endif
 
+#ifdef USE_MILINST
+#include "plugins/milinst/MilInstPlugin.h"
+#endif
+
 #ifdef USE_OPENDMX
 #include "plugins/opendmx/OpenDmxPlugin.h"
 #endif
 
 #ifdef USE_PATHPORT
 #include "plugins/pathport/PathportPlugin.h"
+#endif
+
+#ifdef USE_RENARD
+#include "plugins/renard/RenardPlugin.h"
 #endif
 
 #ifdef USE_SANDNET
@@ -149,6 +157,11 @@ void DynamicPluginLoader::PopulatePlugins() {
   m_plugins.push_back(new ola::plugin::kinet::KiNetPlugin(m_plugin_adaptor));
 #endif
 
+#ifdef USE_MILINST
+  m_plugins.push_back(
+      new ola::plugin::milinst::MilInstPlugin(m_plugin_adaptor));
+#endif
+
 #ifdef USE_OPENDMX
   m_plugins.push_back(
       new ola::plugin::opendmx::OpenDmxPlugin(m_plugin_adaptor));
@@ -157,6 +170,11 @@ void DynamicPluginLoader::PopulatePlugins() {
 #ifdef HAVE_LIBLO
   m_plugins.push_back(
       new ola::plugin::osc::OSCPlugin(m_plugin_adaptor));
+#endif
+
+#ifdef USE_RENARD
+  m_plugins.push_back(
+      new ola::plugin::renard::RenardPlugin(m_plugin_adaptor));
 #endif
 
 #ifdef USE_SANDNET

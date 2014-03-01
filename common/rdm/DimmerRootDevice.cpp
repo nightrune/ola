@@ -106,8 +106,10 @@ const RDMResponse *DimmerRootDevice::GetDeviceInfo(const RDMRequest *request) {
   }
 
   return ResponderHelper::GetDeviceInfo(
-      request, OLA_DUMMY_DIMMER_MODEL, PRODUCT_CATEGORY_DIMMER, 1, 0, 1,
-      1, 0, m_sub_devices.size(), 0);
+      request, OLA_DUMMY_DIMMER_MODEL, PRODUCT_CATEGORY_DIMMER, 1, 0,
+      1, 1,  // personality
+      0xffff,  // start address
+      m_sub_devices.size(), 0);
 }
 
 const RDMResponse *DimmerRootDevice::GetProductDetailList(
@@ -145,7 +147,7 @@ const RDMResponse *DimmerRootDevice::SetIdentify(const RDMRequest *request) {
   bool old_value = m_identify_on;
   const RDMResponse *response = ResponderHelper::SetBoolValue(
       request, &m_identify_on);
-  if (m_identify_mode != old_value) {
+  if (m_identify_on != old_value) {
     OLA_INFO << "Dimmer Root Device " << m_uid << ", identify mode "
              << (m_identify_on ? "on" : "off");
   }
@@ -239,9 +241,8 @@ const RDMResponse *DimmerRootDevice::SetIdentifyMode(
       new_identify_mode != IDENTIFY_MODE_LOUD)
     return NackWithReason(request, NR_DATA_OUT_OF_RANGE);
 
-  m_identify_mode = new_identify_mode;
-
-  return GetResponseFromData(request, NULL, 0);
+  m_identify_mode = static_cast<rdm_identify_mode>(new_identify_mode);
+  return ResponderHelper::EmptySetResponse(request);
 }
 
 }  // namespace rdm

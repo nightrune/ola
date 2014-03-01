@@ -23,9 +23,10 @@
 #include <map>
 #include <string>
 #include "ola/Logging.h"
-#include "ola/network/IPV4Address.h"
-#include "ola/network/NetworkUtils.h"
 #include "ola/network/InterfacePicker.h"
+#include "ola/network/IPV4Address.h"
+#include "ola/network/MACAddress.h"
+#include "ola/network/NetworkUtils.h"
 #include "plugins/espnet/EspNetNode.h"
 
 
@@ -33,7 +34,6 @@ namespace ola {
 namespace plugin {
 namespace espnet {
 
-using std::string;
 using std::map;
 using ola::network::HostToNetwork;
 using ola::network::IPV4Address;
@@ -49,7 +49,7 @@ const char EspNetNode::NODE_NAME[] = "OLA Node";
  * @param ip_address the IP address to prefer to listen on, if NULL we choose
  * one.
  */
-EspNetNode::EspNetNode(const string &ip_address)
+EspNetNode::EspNetNode(const std::string &ip_address)
     : m_running(false),
       m_options(DEFAULT_OPTIONS),
       m_tos(DEFAULT_TOS),
@@ -380,7 +380,7 @@ bool EspNetNode::SendEspPollReply(const IPV4Address &dst) {
   espnet_packet_union_t packet;
   packet.reply.head = HostToNetwork((uint32_t) ESPNET_REPLY);
 
-  memcpy(packet.reply.mac, m_interface.hw_address, ola::network::MAC_LENGTH);
+  m_interface.hw_address.Get(packet.reply.mac);
   packet.reply.type = HostToNetwork((uint32_t) m_type);
   packet.reply.version = FIRMWARE_VERSION;
   packet.reply.sw = SWITCH_SETTINGS;

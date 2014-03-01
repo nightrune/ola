@@ -22,13 +22,13 @@
 #define INCLUDE_OLA_MESSAGING_DESCRIPTOR_H_
 
 #include <ola/messaging/DescriptorVisitor.h>
+#include <ola/network/IPV4Address.h>
+#include <ola/network/MACAddress.h>
+#include <ola/rdm/UID.h>
 #include <map>
 #include <string>
 #include <vector>
 #include <utility>
-
-using std::string;
-using std::vector;
 
 namespace ola {
 namespace messaging {
@@ -39,11 +39,11 @@ class FieldDescriptorVisitor;
  * Describes a field, which may be a group of sub fields.
  */
 class FieldDescriptorInterface {
-  public:
+ public:
     virtual ~FieldDescriptorInterface() {}
 
     // Returns the name of this field
-    virtual const string& Name() const = 0;
+    virtual const std::string& Name() const = 0;
 
     // Call back into a FieldDescriptorVisitor
     virtual void Accept(FieldDescriptorVisitor *visitor) const = 0;
@@ -64,17 +64,17 @@ class FieldDescriptorInterface {
  * The base implementation of a field.
  */
 class FieldDescriptor: public FieldDescriptorInterface {
-  public:
-    explicit FieldDescriptor(const string &name)
+ public:
+    explicit FieldDescriptor(const std::string &name)
         : m_name(name) {
     }
     virtual ~FieldDescriptor() {}
 
     // Returns the name of this field
-    const string& Name() const { return m_name; }
+    const std::string& Name() const { return m_name; }
 
-  private:
-    string m_name;
+ private:
+    std::string m_name;
 };
 
 
@@ -82,8 +82,8 @@ class FieldDescriptor: public FieldDescriptorInterface {
  * A FieldDescriptor that represents a bool
  */
 class BoolFieldDescriptor: public FieldDescriptor {
-  public:
-    explicit BoolFieldDescriptor(const string &name)
+ public:
+    explicit BoolFieldDescriptor(const std::string &name)
         : FieldDescriptor(name) {
     }
 
@@ -101,14 +101,33 @@ class BoolFieldDescriptor: public FieldDescriptor {
  * A FieldDescriptor that represents a IPv4 Address
  */
 class IPV4FieldDescriptor: public FieldDescriptor {
-  public:
-    explicit IPV4FieldDescriptor(const string &name)
+ public:
+    explicit IPV4FieldDescriptor(const std::string &name)
         : FieldDescriptor(name) {
     }
 
     bool FixedSize() const { return true; }
     bool LimitedSize() const { return true; }
-    unsigned int MaxSize() const { return 4; }
+    unsigned int MaxSize() const { return ola::network::IPV4Address::LENGTH; }
+
+    void Accept(FieldDescriptorVisitor *visitor) const {
+      visitor->Visit(this);
+    }
+};
+
+
+/**
+ * A FieldDescriptor that represents a MAC Address
+ */
+class MACFieldDescriptor: public FieldDescriptor {
+ public:
+    explicit MACFieldDescriptor(const std::string &name)
+        : FieldDescriptor(name) {
+    }
+
+    bool FixedSize() const { return true; }
+    bool LimitedSize() const { return true; }
+    unsigned int MaxSize() const { return ola::network::MACAddress::LENGTH; }
 
     void Accept(FieldDescriptorVisitor *visitor) const {
       visitor->Visit(this);
@@ -120,14 +139,14 @@ class IPV4FieldDescriptor: public FieldDescriptor {
  * A FieldDescriptor that represents a UID
  */
 class UIDFieldDescriptor: public FieldDescriptor {
-  public:
-    explicit UIDFieldDescriptor(const string &name)
+ public:
+    explicit UIDFieldDescriptor(const std::string &name)
         : FieldDescriptor(name) {
     }
 
     bool FixedSize() const { return true; }
     bool LimitedSize() const { return true; }
-    unsigned int MaxSize() const { return 6; }
+    unsigned int MaxSize() const { return ola::rdm::UID::LENGTH; }
 
     void Accept(FieldDescriptorVisitor *visitor) const {
       visitor->Visit(this);
@@ -139,8 +158,8 @@ class UIDFieldDescriptor: public FieldDescriptor {
  * A FieldDescriptor that represents a string
  */
 class StringFieldDescriptor: public FieldDescriptor {
-  public:
-    StringFieldDescriptor(const string &name,
+ public:
+    StringFieldDescriptor(const std::string &name,
                           uint8_t min_size,
                           uint8_t max_size)
         : FieldDescriptor(name),
@@ -157,7 +176,7 @@ class StringFieldDescriptor: public FieldDescriptor {
       visitor->Visit(this);
     }
 
-  private:
+ private:
     uint8_t m_min_size, m_max_size;
 };
 
@@ -169,12 +188,12 @@ class StringFieldDescriptor: public FieldDescriptor {
  */
 template <typename type>
 class IntegerFieldDescriptor: public FieldDescriptor {
-  public:
+ public:
     typedef std::pair<type, type> Interval;
-    typedef vector<std::pair<type, type> > IntervalVector;
-    typedef std::map<string, type> LabeledValues;
+    typedef std::vector<std::pair<type, type> > IntervalVector;
+    typedef std::map<std::string, type> LabeledValues;
 
-    IntegerFieldDescriptor(const string &name,
+    IntegerFieldDescriptor(const std::string &name,
                            bool little_endian = false,
                            int8_t multiplier = 0)
         : FieldDescriptor(name),
@@ -182,7 +201,7 @@ class IntegerFieldDescriptor: public FieldDescriptor {
           m_multipler(multiplier) {
     }
 
-    IntegerFieldDescriptor(const string &name,
+    IntegerFieldDescriptor(const std::string &name,
                            const IntervalVector &intervals,
                            const LabeledValues &labels,
                            bool little_endian = false,
@@ -216,7 +235,7 @@ class IntegerFieldDescriptor: public FieldDescriptor {
 
     const LabeledValues &Labels() const { return m_labels; }
 
-    bool LookupLabel(const string &label, type *value) const {
+    bool LookupLabel(const std::string &label, type *value) const {
       typename LabeledValues::const_iterator iter = m_labels.find(label);
       if (iter == m_labels.end())
         return false;
@@ -224,7 +243,7 @@ class IntegerFieldDescriptor: public FieldDescriptor {
       return true;
     }
 
-    const string LookupValue(type value) const {
+    const std::string LookupValue(type value) const {
       typename LabeledValues::const_iterator iter = m_labels.begin();
       for (; iter != m_labels.end(); ++iter) {
         if (iter->second == value)
@@ -237,7 +256,7 @@ class IntegerFieldDescriptor: public FieldDescriptor {
       visitor->Visit(this);
     }
 
-  private:
+ private:
     bool m_little_endian;
     int8_t m_multipler;
     IntervalVector m_intervals;
@@ -299,11 +318,11 @@ typedef IntegerFieldDescriptor<int32_t> Int32FieldDescriptor;
  * (true, "foo") & (true, 1000) are the blocks.
  */
 class FieldDescriptorGroup: public FieldDescriptor {
-  public:
+ public:
     static const int16_t UNLIMITED_BLOCKS;
 
-    FieldDescriptorGroup(const string &name,
-                         const vector<const FieldDescriptor*> &fields,
+    FieldDescriptorGroup(const std::string &name,
+                         const std::vector<const FieldDescriptor*> &fields,
                          uint16_t min_blocks,
                          int16_t max_blocks)
       : FieldDescriptor(name),
@@ -360,10 +379,10 @@ class FieldDescriptorGroup: public FieldDescriptor {
 
     virtual void Accept(FieldDescriptorVisitor *visitor) const;
 
-  protected:
-    vector<const class FieldDescriptor *> m_fields;
+ protected:
+    std::vector<const class FieldDescriptor *> m_fields;
 
-  private:
+ private:
     uint16_t m_min_blocks;
     int16_t m_max_blocks;
     mutable bool m_populated;
@@ -378,9 +397,9 @@ class FieldDescriptorGroup: public FieldDescriptor {
  * A descriptor is a group of fields which can't be repeated
  */
 class Descriptor: public FieldDescriptorGroup {
-  public:
-    Descriptor(const string &name,
-               const vector<const FieldDescriptor*> &fields)
+ public:
+    Descriptor(const std::string &name,
+               const std::vector<const FieldDescriptor*> &fields)
         : FieldDescriptorGroup(name, fields, 1, 1) {}
 
     void Accept(FieldDescriptorVisitor *visitor) const;

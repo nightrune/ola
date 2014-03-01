@@ -193,14 +193,13 @@ bool RDMAPI::ClearCommStatus(
 
 /**
  * Send a queued message request.
- *
  */
 bool RDMAPI::GetQueuedMessage(
         unsigned int universe,
         const UID &uid,
         rdm_status_type status_type,
         QueuedMessageHandler *handler,
-        string *error) {
+        std::string *error) {
   if (!handler) {
     if (error)
       *error = "Callback is null, this is a programming error";
@@ -235,8 +234,8 @@ bool RDMAPI::GetQueuedMessage(
         SingleUseCallback3<void,
                            const ResponseStatus&,
                            uint16_t,
-                           const string&> *callback,
-        string *error) {
+                           const std::string&> *callback,
+        std::string *error) {
   if (CheckCallback(error, callback))
     return false;
   uint8_t type = status_type;
@@ -267,7 +266,7 @@ bool RDMAPI::GetStatusMessage(
     SingleUseCallback2<void,
                        const ResponseStatus&,
                        const vector<StatusMessage>&> *callback,
-  string *error) {
+    std::string *error) {
   if (CheckCallback(error, callback))
     return false;
   if (CheckNotBroadcast(uid, error, callback))
@@ -2360,6 +2359,44 @@ bool RDMAPI::SetPowerState(
 
 
 /*
+ * Set the reset device for a device.
+ * @param uid the UID to fetch the outstanding message count for
+ * @param sub_device the sub device to use
+ * @param reset_device the new reset device
+ * @param callback the callback to invoke when this request completes
+ * @param error a pointer to a string which it set if an error occurs
+ * @return true if the request is sent correctly, false otherwise
+*/
+bool RDMAPI::SetResetDevice(
+    unsigned int universe,
+    const UID &uid,
+    uint16_t sub_device,
+    rdm_reset_device_mode reset_device,
+    SingleUseCallback1<void, const ResponseStatus&> *callback,
+    string *error) {
+  if (CheckCallback(error, callback))
+    return false;
+  if (CheckValidSubDevice(sub_device, true, error, callback))
+    return false;
+
+  RDMAPIImplInterface::rdm_callback *cb = NewSingleCallback(
+    this,
+    &RDMAPI::_HandleEmptyResponse,
+    callback);
+  uint8_t option = static_cast<uint8_t>(reset_device);
+  return CheckReturnStatus(
+    m_impl->RDMSet(cb,
+                   universe,
+                   uid,
+                   sub_device,
+                   PID_RESET_DEVICE,
+                   &option,
+                   sizeof(option)),
+    error);
+}
+
+
+/*
  * Check if a device is in self test mode.
  * @param uid the UID to fetch the outstanding message count for
  * @param sub_device the sub device to use
@@ -2987,7 +3024,8 @@ void RDMAPI::_HandleGetParameterDescriptor(
     if (data_size >= min && data_size <= max) {
       memcpy(&raw_description, data.data(),
              std::min(static_cast<unsigned int>(data.size()), max));
-      description.description[LABEL_SIZE] = 0;
+      raw_description.description[LABEL_SIZE] = 0;
+
       description.pid = NetworkToHost(raw_description.pid);
       description.pdl_size = raw_description.pdl_size;
       description.data_type = raw_description.data_type;

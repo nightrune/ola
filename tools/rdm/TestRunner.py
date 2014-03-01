@@ -21,6 +21,7 @@ __author__ = 'nomis52@gmail.com (Simon Newton)'
 import datetime
 import inspect
 import logging
+import time
 from ola.testing.rdm import ResponderTest
 from ola.RDMAPI import RDMAPI
 from ola.OlaClient import OlaClient, RDMNack
@@ -70,6 +71,9 @@ class DeviceProperties(object):
       logging.warning('Multiple sets of property %s' % property)
     self._properties[property] = value
 
+  def AsDict(self):
+    return dict(self._properties)
+
 
 class QueuedMessageFetcher(object):
   """This class sends Get QUEUED_MESSAGE until all Ack Timers have expired and
@@ -103,7 +107,7 @@ class QueuedMessageFetcher(object):
 
     store = PidStore.GetStore()
     self._queued_message_pid = store.GetName('QUEUED_MESSAGE')
-    self._status_message_pid = store.GetName('STATUS_MESSAGE')
+    self._status_messages_pid = store.GetName('STATUS_MESSAGES')
 
   def FetchAllMessages(self):
     self._counter = 0
@@ -162,7 +166,7 @@ class QueuedMessageFetcher(object):
     # Stop if we get a message with no status messages in it.
     if (response.response_type == OlaClient.RDM_ACK and
         response.command_class == OlaClient.RDM_GET_RESPONSE and
-        response.pid == self._status_message_pid.value and
+        response.pid == self._status_messages_pid.value and
         unpacked_data is not None and
         unpacked_data.get('messages', []) == []):
       if (self._outstanding_ack_timers == 0):
@@ -203,11 +207,10 @@ def GetTestClasses(module):
       classes.append(cls)
   return classes
 
-
 class TestRunner(object):
   """The Test Runner executes the tests."""
   def __init__(self, universe, uid, broadcast_write_delay, pid_store,
-               wrapper, timestamp = False):
+               wrapper, timestamp = False, delay = 0):
     """Create a new TestRunner.
 
     Args:
@@ -217,6 +220,7 @@ class TestRunner(object):
       pid_store: A PidStore object
       wrapper: A ClientWrapper object
       timestamp: true to print timestamps with each test
+      delay: Delay in ms inbetween tests
     """
     self._universe = universe
     self._uid = uid
@@ -225,6 +229,7 @@ class TestRunner(object):
     self._pid_store = pid_store
     self._api = RDMAPI(wrapper.Client(), pid_store, strict_checks=False)
     self._wrapper = wrapper
+    self._delay = delay
 
     # maps device properties to the tests that provide them
     self._property_map = {}
@@ -256,8 +261,8 @@ class TestRunner(object):
     """Run all the tests.
 
     Args:
-      filter: If not None, limit the tests to those in the list and their
-        dependancies.
+      whitelist: If not None, limit the tests to those in the list and their
+        dependencies.
       no_factory_defaults: Avoid running the SET factory defaults test.
       update_cb: This is called between each test to update the progress. It
         takes two args, one is the number of test complete, the other is the
@@ -271,7 +276,15 @@ class TestRunner(object):
     if whitelist is None:
       tests_to_run = self._all_tests
     else:
-      tests_to_run = [t for t in self._all_tests if t.__name__ in whitelist]
+      tests_to_run = []
+      matched_tests = []
+      for t in self._all_tests:
+        if t.__name__ in whitelist:
+          tests_to_run.append(t)
+          matched_tests.append(t.__name__)
+      invalid_tests = whitelist.difference(matched_tests)
+      for t in invalid_tests:
+        logging.error("Test %s doesn't exist, skipping" % t)
 
     if no_factory_defaults:
       factory_default_tests = set(['ResetFactoryDefaults',
@@ -315,12 +328,14 @@ class TestRunner(object):
 
       test.Run()
 
+      time.sleep(self._delay / 1000)
+      
       logging.info('%s%s: %s' % (end_header, test, test.state.ColorString()))
       tests_completed += 1
     return tests, device
 
   def _InstantiateTests(self, device, tests_to_run):
-    """Instantiate the required tests and calculate the dependancies.
+    """Instantiate the required tests and calculate the dependencies.
 
     Args:
       device: A DeviceProperties object
@@ -338,7 +353,7 @@ class TestRunner(object):
   def _AddTest(self, device, class_name_to_object, deps_map, test_class,
                parents = []):
     """Add a test class, recursively adding all REQUIRES.
-       This also checks for circular dependancies.
+       This also checks for circular dependencies.
 
     Args:
       device: A DeviceProperties object which is passed to each test.

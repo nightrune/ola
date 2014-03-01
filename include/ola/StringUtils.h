@@ -33,9 +33,6 @@
 
 namespace ola {
 
-using std::string;
-using std::vector;
-
 /**
  * @brief Split a string into pieces.
  *
@@ -45,21 +42,21 @@ using std::vector;
  * @param[out] tokens the parts of the string
  * @param delimiters the delimiiter to use for splitting. Defaults to ' '
  */
-void StringSplit(const string &input,
-                 vector<string> &tokens,
-                 const string &delimiters=" ");
+void StringSplit(const std::string &input,
+                 std::vector<std::string> &tokens,  // NOLINT
+                 const std::string &delimiters=" ");
 
 /**
  * @brief Trim leading and trailing whitespace from a string
  * @param input the string to trim.
  */
-void StringTrim(string *input);
+void StringTrim(std::string *input);
 
 /**
  * @brief Truncate the string based on the presence of \0 characters.
  * @param input the string to shorten
  */
-void ShortenString(string *input);
+void ShortenString(std::string *input);
 
 /**
  * @brief Check if one string is a suffix of another.
@@ -67,21 +64,21 @@ void ShortenString(string *input);
  * @param suffix the suffix to check for
  * @returns true if s ends with suffix, false otherwise.
  */
-bool StringEndsWith(const string &s, const string &suffix);
+bool StringEndsWith(const std::string &s, const std::string &suffix);
 
 /**
  * @brief Convert an int to a string.
  * @param i the int to convert
  * @return the string representation of the int
  */
-string IntToString(int i);
+std::string IntToString(int i);
 
 /**
  * Convert an unsigned int to a string.
  * @param i the unsigned int to convert
  * @return The string representation of the unsigned int
  */
-string IntToString(unsigned int i);
+std::string IntToString(unsigned int i);
 
 /**
  * @brief Escape a string with \\ .
@@ -98,7 +95,7 @@ string IntToString(unsigned int i);
  *  - \\t
  * @param original the string to escape
  */
-void Escape(string *original);
+void Escape(std::string *original);
 
 /**
  * @brief Escape a string, returning a copy.
@@ -106,7 +103,37 @@ void Escape(string *original);
  * @returns The escaped string.
  * @sa Escape()
  */
-string EscapeString(const string &original);
+std::string EscapeString(const std::string &original);
+
+/**
+ * @brief Replace all instances of the find string with the replace string.
+ * @param original the string to operate on.
+ * @param find the string to find
+ * @param replace what to replace it with
+ */
+void ReplaceAll(std::string *original,
+                const std::string &find,
+                const std::string &replace);
+
+/**
+ * @brief Encode any unprintable characters in a string as hex, returning a
+ * copy.
+ *
+ * "foo\\nbar" becomes "foo\\\\x0abar"
+ * "foo\\x01test" becomes "foo\\\\x01test"
+ * @param original the string to encode.
+ * @returns The encoded string.
+ */
+std::string EncodeString(const std::string &original);
+
+/**
+ * @brief Convert a string to a bool. The string can be 'true' or 'false'.
+ * @param[in] value the string to convert
+ * @param[out] output a pointer where the value will be stored.
+ * @returns true if the value was converted, false if the string was not a
+ * bool.
+ */
+bool StringToBool(const std::string &value, bool *output);
 
 /**
  * @brief Convert a string to a unsigned int.
@@ -116,7 +143,7 @@ string EscapeString(const string &original);
  * @returns true if the value was converted, false if the string was not an int
  * or the value was too large / small for the type.
  */
-bool StringToInt(const string &value,
+bool StringToInt(const std::string &value,
                  unsigned int *output,
                  bool strict = false);
 
@@ -129,7 +156,9 @@ bool StringToInt(const string &value,
  * or the value was too large / small for the type.
  * @sa StringToInt.
  */
-bool StringToInt(const string &value, uint16_t *output, bool strict = false);
+bool StringToInt(const std::string &value,
+                 uint16_t *output,
+                 bool strict = false);
 
 /**
  * @brief Convert a string to a uint8_t.
@@ -140,7 +169,9 @@ bool StringToInt(const string &value, uint16_t *output, bool strict = false);
  * or the value was too large / small for the type.
  * @sa StringToInt.
  */
-bool StringToInt(const string &value, uint8_t *output, bool strict = false);
+bool StringToInt(const std::string &value,
+                 uint8_t *output,
+                 bool strict = false);
 
 /**
  * @brief Convert a string to a int.
@@ -151,7 +182,7 @@ bool StringToInt(const string &value, uint8_t *output, bool strict = false);
  * or the value was too large / small for the type.
  * @sa StringToInt.
  */
-bool StringToInt(const string &value, int *output, bool strict = false);
+bool StringToInt(const std::string &value, int *output, bool strict = false);
 
 /**
  * @brief Convert a string to a int16_t.
@@ -162,7 +193,9 @@ bool StringToInt(const string &value, int *output, bool strict = false);
  * or the value was too large / small for the type.
  * @sa StringToInt.
  */
-bool StringToInt(const string &value, int16_t *output, bool strict = false);
+bool StringToInt(const std::string &value,
+                 int16_t *output,
+                 bool strict = false);
 
 /**
  * @brief Convert a string to a int8_t.
@@ -173,7 +206,7 @@ bool StringToInt(const string &value, int16_t *output, bool strict = false);
  * or the value was too large / small for the type.
  * @sa StringToInt.
  */
-bool StringToInt(const string &value, int8_t *output, bool strict = false);
+bool StringToInt(const std::string &value, int8_t *output, bool strict = false);
 
 /**
  * @brief Convert a hex string to a uint8_t.
@@ -184,7 +217,7 @@ bool StringToInt(const string &value, int8_t *output, bool strict = false);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, uint8_t *output);
+bool HexStringToInt(const std::string &value, uint8_t *output);
 
 /**
  * @brief Convert a hex string to a uint16_t.
@@ -195,7 +228,7 @@ bool HexStringToInt(const string &value, uint8_t *output);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, uint16_t *output);
+bool HexStringToInt(const std::string &value, uint16_t *output);
 
 /**
  * @brief Convert a hex string to a uint32_t.
@@ -206,7 +239,7 @@ bool HexStringToInt(const string &value, uint16_t *output);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, uint32_t *output);
+bool HexStringToInt(const std::string &value, uint32_t *output);
 
 /**
  * @brief Convert a hex string to a int8_t.
@@ -217,7 +250,7 @@ bool HexStringToInt(const string &value, uint32_t *output);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, int8_t *output);
+bool HexStringToInt(const std::string &value, int8_t *output);
 
 /**
  * @brief Convert a hex string to a int16_t.
@@ -228,7 +261,7 @@ bool HexStringToInt(const string &value, int8_t *output);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, int16_t *output);
+bool HexStringToInt(const std::string &value, int16_t *output);
 
 /**
  * @brief Convert a hex string to a int32_t.
@@ -239,19 +272,19 @@ bool HexStringToInt(const string &value, int16_t *output);
  *
  * The string can contain upper or lower case hex characters.
  */
-bool HexStringToInt(const string &value, int32_t *output);
+bool HexStringToInt(const std::string &value, int32_t *output);
 
 /**
  * @brief Convert a string to lower case.
  * @param s the string to convert to lower case.
  */
-void ToLower(string *s);
+void ToLower(std::string *s);
 
 /**
  * @brief Convert a string to upper case.
  * @param s the string to convert to upper case.
  */
-void ToUpper(string *s);
+void ToUpper(std::string *s);
 
 /**
  * @brief Transform a string to a pretty-printed form.
@@ -261,7 +294,7 @@ void ToUpper(string *s);
  * "my_label" becomes "My Label"
  * @param s a string to transform.
  */
-void CapitalizeLabel(string *s);
+void CapitalizeLabel(std::string *s);
 
 /**
  * @brief Similar to CapitalizeLabel() but this also capitalized known
@@ -272,7 +305,7 @@ void CapitalizeLabel(string *s);
  *   - ip
  *   - dmx
  */
-void CustomCapitalizeLabel(string *s);
+void CustomCapitalizeLabel(std::string *s);
 
 /**
  * @brief Write binary data to an ostream in a human readable form.
@@ -293,22 +326,23 @@ void FormatData(std::ostream *out,
                 unsigned int byte_per_line = 8);
 
 /**
- * Convert a hex string, prefixed with 0x to an int type.
+ * Convert a hex string, prefixed with 0x or 0X to an int type.
  */
 template <typename int_type>
-bool PrefixedHexStringToInt(const string &input, int_type *output) {
-  if (input.find("0x") != 0)
+bool PrefixedHexStringToInt(const std::string &input, int_type *output) {
+  if ((input.find("0x") != 0) && (input.find("0X") != 0))
     return false;
-  string modified_input = input.substr(2);
+  std::string modified_input = input.substr(2);
   return HexStringToInt(modified_input, output);
 }
 
 /**
  * @brief Join a vector of a type.
- * @param T can be any type for which the << operator is defined
+ * @param delim the delimiter to use between items in the vector
+ * @param input T can be any type for which the << operator is defined
  */
 template<typename T>
-string StringJoin(const string &delim, const T &input) {
+std::string StringJoin(const std::string &delim, const T &input) {
   std::ostringstream str;
   typename T::const_iterator iter = input.begin();
   while (iter != input.end()) {

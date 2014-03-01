@@ -202,7 +202,7 @@ void RobeWidgetImpl::SetDmxCallback(Callback0<void> *callback) {
 /**
  * Mute a responder
  * @param target the UID to mute
- * @param MuteDeviceCallback the callback to run once the mute request
+ * @param mute_complete the callback to run once the mute request
  * completes.
  */
 void RobeWidgetImpl::MuteDevice(const UID &target,
@@ -219,7 +219,7 @@ void RobeWidgetImpl::MuteDevice(const UID &target,
 
 /**
  * Unmute all responders
- * @param UnMuteDeviceCallback the callback to run once the unmute request
+ * @param unmute_complete the callback to run once the unmute request
  * completes.
  */
 void RobeWidgetImpl::UnMuteAll(UnMuteDeviceCallback *unmute_complete) {
@@ -317,7 +317,7 @@ void RobeWidgetImpl::HandleRDMResponse(const uint8_t *data,
   }
 
   if (length == RDM_PADDING_BYTES) {
-    // this indicates that no request was recieved
+    // this indicates that no request was received
     callback->Run(ola::rdm::RDM_TIMEOUT, NULL, packets);
     return;
   }
@@ -357,7 +357,7 @@ void RobeWidgetImpl::HandleDiscoveryResponse(const uint8_t *data,
     m_pending_request = NULL;
 
     if (length <= RDM_PADDING_BYTES) {
-      // this indicates that no request was recieved
+      // this indicates that no request was received
       callback->Run(ola::rdm::RDM_TIMEOUT, NULL, packets);
     } else {
       packets.push_back(

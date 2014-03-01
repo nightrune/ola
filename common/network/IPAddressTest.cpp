@@ -15,11 +15,12 @@
  *
  * IPAddressTest.cpp
  * Test fixture for the IPV4Address class
- * Copyright (C) 2011 Simon Newton
+ * Copyright (C) 2011-2014 Simon Newton
  */
 
 #include <cppunit/extensions/HelperMacros.h>
 
+#include <stdint.h>
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -42,7 +43,7 @@ class IPAddressTest: public CppUnit::TestFixture {
   CPPUNIT_TEST(testLoopback);
   CPPUNIT_TEST_SUITE_END();
 
-  public:
+ public:
     void testIPV4Address();
     void testWildcard();
     void testBroadcast();
@@ -62,7 +63,7 @@ void IPAddressTest::testIPV4Address() {
   OLA_ASSERT_TRUE(wildcard_address.IsWildcard());
 
   struct in_addr in_addr1;
-  OLA_ASSERT_TRUE(ola::network::StringToAddress("192.168.1.1", in_addr1));
+  OLA_ASSERT_TRUE(ola::network::StringToAddress("192.168.1.1", &in_addr1));
   IPV4Address address1(in_addr1);
   OLA_ASSERT_EQ(in_addr1.s_addr, address1.Address().s_addr);
   OLA_ASSERT_NE(wildcard_address, address1);
@@ -118,6 +119,35 @@ void IPAddressTest::testIPV4Address() {
     OLA_ASSERT_EQ(string("192.168.1.1"), addresses[1].ToString());
     OLA_ASSERT_EQ(string("172.16.4.1"), addresses[2].ToString());
   }
+
+  uint8_t mask = 255;  // UINT8_MAX;
+  OLA_ASSERT_TRUE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("0.0.0.0"), &mask));
+  OLA_ASSERT_EQ(0, static_cast<int>(mask));
+
+  OLA_ASSERT_TRUE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("255.0.0.0"),
+                              &mask));
+  OLA_ASSERT_EQ(8, static_cast<int>(mask));
+
+  OLA_ASSERT_TRUE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("255.255.255.0"),
+                              &mask));
+  OLA_ASSERT_EQ(24, static_cast<int>(mask));
+
+  OLA_ASSERT_TRUE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("255.255.255.252"),
+                              &mask));
+  OLA_ASSERT_EQ(30, static_cast<int>(mask));
+
+  OLA_ASSERT_TRUE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("255.255.255.255"),
+                              &mask));
+  OLA_ASSERT_EQ(32, static_cast<int>(mask));
+
+  OLA_ASSERT_FALSE(
+      IPV4Address::ToCIDRMask(IPV4Address::FromStringOrDie("255.0.0.255"),
+                              &mask));
 }
 
 

@@ -30,22 +30,20 @@ namespace ola {
 namespace plugin {
 namespace opendmx {
 
-using ola::PluginAdaptor;
-
 class OpenDmxDevice;
 
 class OpenDmxPlugin: public Plugin {
-  public:
+ public:
     explicit OpenDmxPlugin(PluginAdaptor *plugin_adaptor):
       Plugin(plugin_adaptor) {
     }
 
-    string Name() const { return PLUGIN_NAME; }
-    string Description() const;
+    std::string Name() const { return PLUGIN_NAME; }
+    std::string Description() const;
     ola_plugin_id Id() const { return OLA_PLUGIN_OPENDMX; }
-    string PluginPrefix() const { return PLUGIN_PREFIX; }
+    std::string PluginPrefix() const { return PLUGIN_PREFIX; }
 
-  private:
+ private:
     bool StartHook();
     bool StopHook();
     bool SetDefaultPreferences();

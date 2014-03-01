@@ -33,12 +33,12 @@ namespace plugin {
 namespace sandnet {
 
 class SandNetDevice: public ola::Device {
-  public:
+ public:
     SandNetDevice(class SandNetPlugin *owner,
                   class Preferences *prefs,
                   class PluginAdaptor *plugin_adaptor);
 
-    string DeviceId() const { return "1"; }
+    std::string DeviceId() const { return "1"; }
     SandNetNode *GetNode() { return m_node; }
 
     bool SendAdvertisement();
@@ -46,12 +46,12 @@ class SandNetDevice: public ola::Device {
     static const char IP_KEY[];
     static const char NAME_KEY[];
 
-  protected:
+ protected:
     bool StartHook();
     void PrePortStop();
     void PostPortStop();
 
-  private:
+ private:
     class Preferences *m_preferences;
     class PluginAdaptor *m_plugin_adaptor;
     SandNetNode *m_node;
