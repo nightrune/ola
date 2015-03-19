@@ -10,8 +10,8 @@ protoc_ola_protoc_plugin_SOURCES = \
     protoc/CppGenerator.h \
     protoc/GeneratorHelpers.cpp \
     protoc/GeneratorHelpers.h \
-    protoc/ServiceGenerator.cpp \
-    protoc/ServiceGenerator.h \
+    protoc/CppServiceGenerator.cpp \
+    protoc/CppServiceGenerator.h \
     protoc/StrUtil.cpp \
     protoc/StrUtil.h \
   protoc/ola-protoc-generator-plugin.cpp

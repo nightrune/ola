@@ -40,7 +40,7 @@
 #include <string>
 
 #include "protoc/GeneratorHelpers.h"
-#include "protoc/ServiceGenerator.h"
+#include "protoc/CppServiceGenerator.h"
 #include "protoc/StrUtil.h"
 
 namespace ola {
@@ -51,7 +51,7 @@ using google::protobuf::io::Printer;
 using std::map;
 using std::string;
 
-ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
+CppServiceGenerator::CppServiceGenerator(const ServiceDescriptor* descriptor,
                                    const Options& options)
   : descriptor_(descriptor) {
   vars_["classname"] = descriptor_->name();
@@ -63,9 +63,9 @@ ServiceGenerator::ServiceGenerator(const ServiceDescriptor* descriptor,
   }
 }
 
-ServiceGenerator::~ServiceGenerator() {}
+CppServiceGenerator::~CppServiceGenerator() {}
 
-void ServiceGenerator::GenerateDeclarations(Printer* printer) {
+void CppServiceGenerator::GenerateDeclarations(Printer* printer) {
   // Forward-declare the stub type.
   printer->Print(vars_,
     "class $classname$_Stub;\n"
@@ -75,7 +75,7 @@ void ServiceGenerator::GenerateDeclarations(Printer* printer) {
   GenerateStubDefinition(printer);
 }
 
-void ServiceGenerator::GenerateInterface(Printer* printer) {
+void CppServiceGenerator::GenerateInterface(Printer* printer) {
   printer->Print(vars_,
     "class $dllexport$$classname$ : public ola::rpc::RpcService {\n"
     " protected:\n"
@@ -116,7 +116,7 @@ void ServiceGenerator::GenerateInterface(Printer* printer) {
     "\n");
 }
 
-void ServiceGenerator::GenerateStubDefinition(Printer* printer) {
+void CppServiceGenerator::GenerateStubDefinition(Printer* printer) {
   printer->Print(vars_,
     "class $dllexport$$classname$_Stub : public $classname$ {\n"
     " public:\n");
@@ -147,7 +147,7 @@ void ServiceGenerator::GenerateStubDefinition(Printer* printer) {
     "\n");
 }
 
-void ServiceGenerator::GenerateMethodSignatures(
+void CppServiceGenerator::GenerateMethodSignatures(
     VirtualOrNon virtual_or_non, Printer* printer) {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
@@ -168,7 +168,7 @@ void ServiceGenerator::GenerateMethodSignatures(
 
 // ===================================================================
 
-void ServiceGenerator::GenerateDescriptorInitializer(
+void CppServiceGenerator::GenerateDescriptorInitializer(
     Printer* printer, int index) {
   map<string, string> vars;
   vars["classname"] = descriptor_->name();
@@ -180,7 +180,7 @@ void ServiceGenerator::GenerateDescriptorInitializer(
 
 // ===================================================================
 
-void ServiceGenerator::GenerateImplementation(Printer* printer) {
+void CppServiceGenerator::GenerateImplementation(Printer* printer) {
   printer->Print(vars_,
     "$classname$::~$classname$() {}\n"
     "\n"
@@ -220,7 +220,7 @@ void ServiceGenerator::GenerateImplementation(Printer* printer) {
   GenerateStubMethods(printer);
 }
 
-void ServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
+void CppServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;
@@ -243,7 +243,7 @@ void ServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
   }
 }
 
-void ServiceGenerator::GenerateCallMethod(Printer* printer) {
+void CppServiceGenerator::GenerateCallMethod(Printer* printer) {
   printer->Print(vars_,
     "void $classname$::CallMethod(const ::google::protobuf::MethodDescriptor* "
     "method,\n"
@@ -285,7 +285,7 @@ void ServiceGenerator::GenerateCallMethod(Printer* printer) {
     "\n");
 }
 
-void ServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
+void CppServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
                                             Printer* printer) {
   if (which == REQUEST) {
     printer->Print(vars_,
@@ -325,7 +325,7 @@ void ServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
     "\n");
 }
 
-void ServiceGenerator::GenerateStubMethods(Printer* printer) {
+void CppServiceGenerator::GenerateStubMethods(Printer* printer) {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;

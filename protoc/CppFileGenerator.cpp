@@ -43,7 +43,7 @@
 
 #include "protoc/CppFileGenerator.h"
 #include "protoc/GeneratorHelpers.h"
-#include "protoc/ServiceGenerator.h"
+#include "protoc/CppServiceGenerator.h"
 #include "protoc/StrUtil.h"
 
 namespace ola {
@@ -61,10 +61,10 @@ FileGenerator::FileGenerator(const FileDescriptor *file,
       m_output_name(output_name) {
   SplitStringUsing(file->package(), ".", &package_parts_);
 
-  ServiceGenerator::Options options;
+  CppServiceGenerator::Options options;
   for (int i = 0; i < file->service_count(); i++) {
     m_service_generators.push_back(
-      new ServiceGenerator(file->service(i), options));
+      new CppServiceGenerator(file->service(i), options));
   }
 }
 

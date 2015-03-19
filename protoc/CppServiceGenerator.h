@@ -34,8 +34,8 @@
 //
 // Edited by Simon Newton for OLA
 
-#ifndef PROTOC_SERVICEGENERATOR_H_
-#define PROTOC_SERVICEGENERATOR_H_
+#ifndef PROTOC_CPPSERVICEGENERATOR_H_
+#define PROTOC_CPPSERVICEGENERATOR_H_
 
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/io/printer.h>
@@ -50,7 +50,7 @@ using google::protobuf::ServiceDescriptor;
 using google::protobuf::io::Printer;
 using std::string;
 
-class ServiceGenerator {
+class CppServiceGenerator {
  public:
   // Generator options:
   struct Options {
@@ -61,9 +61,9 @@ class ServiceGenerator {
   };
 
   // See generator.cc for the meaning of dllexport_decl.
-  explicit ServiceGenerator(const ServiceDescriptor* descriptor,
+  explicit CppServiceGenerator(const ServiceDescriptor* descriptor,
                             const Options& options);
-  ~ServiceGenerator();
+  ~CppServiceGenerator();
 
   // Header stuff.
 
@@ -114,8 +114,8 @@ class ServiceGenerator {
   const ServiceDescriptor* descriptor_;
   std::map<string, string> vars_;
 
-  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(ServiceGenerator);
+  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(CppServiceGenerator);
 };
 
 }  // namespace ola
-#endif  // PROTOC_SERVICEGENERATOR_H_
+#endif  // PROTOC_CPPSERVICEGENERATOR_H_

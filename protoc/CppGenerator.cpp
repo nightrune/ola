@@ -27,7 +27,7 @@
 #include "protoc/CppGenerator.h"
 #include "protoc/CppFileGenerator.h"
 #include "protoc/GeneratorHelpers.h"
-#include "protoc/ServiceGenerator.h"
+#include "protoc/CppServiceGenerator.h"
 #include "protoc/StrUtil.h"
 
 namespace ola {

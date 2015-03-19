@@ -42,7 +42,7 @@
 #include <string>
 #include <vector>
 
-#include "protoc/ServiceGenerator.h"
+#include "protoc/CppServiceGenerator.h"
 
 namespace ola {
 
@@ -58,7 +58,7 @@ class FileGenerator {
     void GenerateImplementation(Printer *printer);
 
  private:
-    typedef std::vector<ServiceGenerator*> ServiceGenerators;
+    typedef std::vector<CppServiceGenerator*> ServiceGenerators;
 
     const google::protobuf::FileDescriptor *m_file;
     const std::string m_output_name;
