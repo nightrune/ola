@@ -42,7 +42,7 @@
 #include <string>
 #include <vector>
 
-#include "protoc/ServiceGenerator.h"
+#include "protoc/GolangServiceGenerator.h"
 
 namespace ola {
 
@@ -57,12 +57,12 @@ class GolangFileGenerator {
     void GenerateImplementation(Printer *printer);
 
  private:
-    typedef std::vector<ServiceGenerator*> ServiceGenerators;
+    typedef std::vector<GolangServiceGenerator*> GolangServiceGenerators;
 
     const google::protobuf::FileDescriptor *m_file;
     const std::string m_output_name;
     std::vector<std::string> package_parts_;
-    ServiceGenerators m_service_generators;
+    GolangServiceGenerators m_service_generators;
 
     void GenerateBuildDescriptors(Printer* printer);
 };

@@ -27,7 +27,7 @@
 #include "protoc/GolangGenerator.h"
 #include "protoc/GolangFileGenerator.h"
 #include "protoc/GeneratorHelpers.h"
-#include "protoc/ServiceGenerator.h"
+#include "protoc/GolangServiceGenerator.h"
 #include "protoc/StrUtil.h"
 
 namespace ola {
@@ -46,7 +46,7 @@ bool GolangGenerator::Generate(const FileDescriptor *file,
   string basename = StripProto(file->name()) + "Service";
 
   string code_name = basename + ".pb.go";
-  FileGenerator file_generator(file, basename);
+  GolangFileGenerator file_generator(file, basename);
 
   auto_ptr<google::protobuf::io::ZeroCopyOutputStream> code_output(
     generator_context->Open(code_name));

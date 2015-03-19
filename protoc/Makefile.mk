@@ -1,7 +1,7 @@
 # Programs
 #########################
 if BUILD_OLA_PROTOC_PLUGIN
-noinst_PROGRAMS += protoc/ola_protoc_plugin
+noinst_PROGRAMS += protoc/ola_protoc_plugin protoc/ola_protoc_golang_plugin
 
 protoc_ola_protoc_plugin_SOURCES = \
     protoc/CppFileGenerator.cpp \
@@ -16,6 +16,21 @@ protoc_ola_protoc_plugin_SOURCES = \
     protoc/StrUtil.h \
   protoc/ola-protoc-generator-plugin.cpp
 protoc_ola_protoc_plugin_LDADD = $(libprotobuf_LIBS) -lprotoc
+
+protoc_ola_protoc_golang_plugin_SOURCES = \
+    protoc/GolangFileGenerator.cpp \
+    protoc/GolangFileGenerator.h \
+    protoc/GolangGenerator.cpp \
+    protoc/GolangGenerator.h \
+    protoc/GeneratorHelpers.cpp \
+    protoc/GeneratorHelpers.h \
+    protoc/GolangServiceGenerator.cpp \
+    protoc/GolangServiceGenerator.h \
+    protoc/StrUtil.cpp \
+    protoc/StrUtil.h \
+  protoc/ola-protoc-golang-generator-plugin.cpp
+
+protoc_ola_protoc_golang_plugin_LDADD = $(libprotobuf_LIBS) -lprotoc
 
 else
 

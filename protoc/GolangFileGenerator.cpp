@@ -43,7 +43,7 @@
 
 #include "protoc/GolangFileGenerator.h"
 #include "protoc/GeneratorHelpers.h"
-#include "protoc/ServiceGenerator.h"
+#include "protoc/GolangServiceGenerator.h"
 #include "protoc/StrUtil.h"
 
 namespace ola {
@@ -61,15 +61,15 @@ GolangFileGenerator::GolangFileGenerator(const FileDescriptor *file,
       m_output_name(output_name) {
   SplitStringUsing(file->package(), ".", &package_parts_);
 
-  ServiceGenerator::Options options;
+  GolangServiceGenerator::Options options;
   for (int i = 0; i < file->service_count(); i++) {
     m_service_generators.push_back(
-      new ServiceGenerator(file->service(i), options));
+      new GolangServiceGenerator(file->service(i), options));
   }
 }
 
 GolangFileGenerator::~GolangFileGenerator() {
-  ServiceGenerators::iterator iter = m_service_generators.begin();
+  GolangServiceGenerators::iterator iter = m_service_generators.begin();
   for (; iter != m_service_generators.end(); ++iter) {
     delete *iter;
   }
@@ -107,7 +107,7 @@ void FileGenerator::GenerateHeader(Printer *printer) {
 
   GenerateNamespaceOpeners(printer);
 
-  ServiceGenerators::iterator iter = m_service_generators.begin();
+  GolangGolangServiceGenerators::iterator iter = m_service_generators.begin();
   for (; iter != m_service_generators.end(); ++iter) {
     (*iter)->GenerateDeclarations(printer);
   }
@@ -136,7 +136,7 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
     "file", m_output_name,
     "filename", m_file->name());
 
-  GenerateNamespaceOpeners(printer);
+  //GenerateNamespaceOpeners(printer);
 
   printer->Print(
     "\n"
@@ -161,12 +161,12 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
   printer->Print(kThickSeparator);
   printer->Print("\n");
 
-  ServiceGenerators::iterator iter = m_service_generators.begin();
+  GolangServiceGenerators::iterator iter = m_service_generators.begin();
   for (; iter != m_service_generators.end(); ++iter) {
     (*iter)->GenerateImplementation(printer);
   }
 
-  GenerateNamespaceClosers(printer);
+  //GenerateNamespaceClosers(printer);
 }
 
 void GolangFileGenerator::GenerateBuildDescriptors(Printer* printer) {
