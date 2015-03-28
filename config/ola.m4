@@ -81,7 +81,7 @@ if test "$with_ola_protoc_plugin" != "no"; then
   OLA_PROTOC="$PROTOC --plugin=protoc-gen-cppservice=${with_ola_protoc_plugin}";
   echo "set ola_protoc to $OLA_PROTOC"
 else
-  OLA_PROTOC="$PROTOC --plugin=protoc-gen-cppservice=\$(top_builddir)/protoc/ola_protoc_plugin${EXEEXT}";
+  OLA_PROTOC="$PROTOC --plugin=protoc-gen-cppservice=\$(top_builddir)/protoc/ola_protoc_plugin${EXEEXT} --plugin=protoc-gen-goservice=\$(top_builddir)/protoc/ola_protoc_golang_plugin${EXEEXT}";
   AC_CHECK_HEADER(
       [google/protobuf/compiler/command_line_interface.h],
       [],

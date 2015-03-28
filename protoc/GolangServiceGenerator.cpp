@@ -32,7 +32,7 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 //
-// Edited by Simon Newton for OLA
+// Based on Simon Newton's updated CppServiceGenerator
 
 #include <google/protobuf/io/printer.h>
 

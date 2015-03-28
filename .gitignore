@@ -10,6 +10,7 @@
 *.pb.cc
 *.pb.cpp
 *.pb.h
+*.pb.go
 *.pc
 *.pyc
 *.swp
