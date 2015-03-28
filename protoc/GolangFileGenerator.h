@@ -63,8 +63,6 @@ class GolangFileGenerator {
     const std::string m_output_name;
     std::vector<std::string> package_parts_;
     GolangServiceGenerators m_service_generators;
-
-    void GenerateBuildDescriptors(Printer* printer);
 };
 
 }  // namespace ola

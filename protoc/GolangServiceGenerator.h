@@ -65,14 +65,6 @@ class GolangServiceGenerator {
                             const Options& options);
   ~GolangServiceGenerator();
 
-  // Header stuff.
-
-  // Generate the class definitions for the service's interface and the
-  // stub implementation.
-  void GenerateDeclarations(Printer* printer);
-
-  // Source file stuff.
-
   // Generate code that initializes the global variable storing the service's
   // descriptor.
   void GenerateDescriptorInitializer(Printer* printer, int index);
@@ -80,23 +72,17 @@ class GolangServiceGenerator {
   // Generate implementations of everything declared by GenerateDeclarations().
   void GenerateImplementation(Printer* printer);
 
- private:
-  enum RequestOrResponse { REQUEST, RESPONSE };
-  enum VirtualOrNon { VIRTUAL, NON_VIRTUAL };
-
-  // Header stuff.
-
   // Generate the service abstract interface.
   void GenerateInterface(Printer* printer);
+
+ private:
+  enum RequestOrResponse { REQUEST, RESPONSE };
 
   // Generate the stub class definition.
   void GenerateStubDefinition(Printer* printer);
 
   // Prints signatures for all methods in the
-  void GenerateMethodSignatures(VirtualOrNon virtual_or_non,
-                                Printer* printer);
-
-  // Source file stuff.
+  void GenerateMethodSignatures(Printer* printer);
 
   // Generate the default implementations of the service methods, which
   // produce a "not implemented" error.

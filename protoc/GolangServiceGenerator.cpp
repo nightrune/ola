@@ -51,46 +51,21 @@ using google::protobuf::io::Printer;
 using std::map;
 using std::string;
 
-GolangServiceGenerator::GolangServiceGenerator(const ServiceDescriptor* descriptor,
-                                   const Options& options)
+GolangServiceGenerator::GolangServiceGenerator(
+    const ServiceDescriptor* descriptor, const Options& options)
   : descriptor_(descriptor) {
   vars_["classname"] = descriptor_->name();
   vars_["full_name"] = descriptor_->full_name();
-  if (options.dllexport_decl.empty()) {
-    vars_["dllexport"] = "";
-  } else {
-    vars_["dllexport"] = options.dllexport_decl + " ";
-  }
+  (void)options;
 }
 
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
-void GolangServiceGenerator::GenerateDeclarations(Printer* printer) {
-  // Forward-declare the stub type.
-  printer->Print(vars_,
-    "class $classname$_Stub;\n"
-    "\n");
-
-  GenerateInterface(printer);
-  GenerateStubDefinition(printer);
-}
-
 void GolangServiceGenerator::GenerateInterface(Printer* printer) {
-  printer->Print(vars_,
-    "class $dllexport$$classname$ : public ola::rpc::RpcService {\n"
-    " protected:\n"
-    "  // This class should be treated as an abstract interface.\n"
-    "  inline $classname$() {};\n"
-    " public:\n"
-    "  virtual ~$classname$();\n");
+  printer->Print(vars_, "type $classname$ interface {\n");
   printer->Indent();
 
-  printer->Print(vars_,
-    "\n"
-    "static const ::google::protobuf::ServiceDescriptor* descriptor();\n"
-    "\n");
-
-  GenerateMethodSignatures(VIRTUAL, printer);
+  GenerateMethodSignatures(printer);
 
   printer->Print(
     "\n"
@@ -108,12 +83,7 @@ void GolangServiceGenerator::GenerateInterface(Printer* printer) {
     "  const ::google::protobuf::MethodDescriptor* method) const;\n");
 
   printer->Outdent();
-  printer->Print(vars_,
-    "\n"
-    " private:\n"
-    "  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS($classname$);\n"
-    "};\n"
-    "\n");
+  printer->Print(vars_, "}\n");
 }
 
 void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {
@@ -135,7 +105,7 @@ void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {
     "// implements $classname$ ------------------------------------------\n"
     "\n");
 
-  GenerateMethodSignatures(NON_VIRTUAL, printer);
+  GenerateMethodSignatures(printer);
 
   printer->Outdent();
   printer->Print(vars_,
@@ -147,22 +117,17 @@ void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {
     "\n");
 }
 
-void GolangServiceGenerator::GenerateMethodSignatures(
-    VirtualOrNon virtual_or_non, Printer* printer) {
+void GolangServiceGenerator::GenerateMethodSignatures(Printer* printer) {
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
-    sub_vars["input_type"] = ClassName(method->input_type(), true);
-    sub_vars["output_type"] = ClassName(method->output_type(), true);
-    sub_vars["virtual"] = virtual_or_non == VIRTUAL ? "virtual " : "";
+    sub_vars["input_type"] = method->input_type()->full_name();
+    sub_vars["output_type"] = method->output_type()->full_name();
 
     printer->Print(sub_vars,
-      "$virtual$void $name$(ola::rpc::RpcController* controller,\n"
-      "                     const $input_type$* request,\n"
-      "                     $output_type$* response,\n"
-      "                     ola::rpc::RpcService::CompletionCallback* done"
-      ");\n");
+      "$name$(request $input_type$*)\n"
+      "\t\t*$output_type$ response;\n");
   }
 }
 
