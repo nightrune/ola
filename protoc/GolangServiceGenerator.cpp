@@ -62,28 +62,8 @@ GolangServiceGenerator::GolangServiceGenerator(
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
 void GolangServiceGenerator::GenerateInterface(Printer* printer) {
-  printer->Print(vars_, "type $classname$ interface {\n");
-  printer->Indent();
-
-  GenerateMethodSignatures(printer);
-
-  printer->Print(
-    "\n"
-    "// implements Service ----------------------------------------------\n"
-    "\n"
-    "const ::google::protobuf::ServiceDescriptor* GetDescriptor();\n"
-    "void CallMethod(const ::google::protobuf::MethodDescriptor* method,\n"
-    "                ola::rpc::RpcController* controller,\n"
-    "                const ::google::protobuf::Message* request,\n"
-    "                ::google::protobuf::Message* response,\n"
-    "                ola::rpc::RpcService::CompletionCallback* done);\n"
-    "const ::google::protobuf::Message& GetRequestPrototype(\n"
-    "  const ::google::protobuf::MethodDescriptor* method) const;\n"
-    "const ::google::protobuf::Message& GetResponsePrototype(\n"
-    "  const ::google::protobuf::MethodDescriptor* method) const;\n");
-
-  printer->Outdent();
-  printer->Print(vars_, "}\n");
+  printer->Print(vars_, "type $classname$ struct {\n");
+  printer->Print("}\n");
 }
 
 void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {
@@ -126,8 +106,8 @@ void GolangServiceGenerator::GenerateMethodSignatures(Printer* printer) {
     sub_vars["output_type"] = method->output_type()->full_name();
 
     printer->Print(sub_vars,
-      "$name$(request $input_type$*)\n"
-      "\t\t*$output_type$ response;\n");
+      "$name$(request *$input_type$) (\n"
+      "    response *$output_type$, err error)\n");
   }
 }
 
@@ -146,21 +126,6 @@ void GolangServiceGenerator::GenerateDescriptorInitializer(
 // ===================================================================
 
 void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
-  printer->Print(vars_,
-    "$classname$::~$classname$() {}\n"
-    "\n"
-    "const ::google::protobuf::ServiceDescriptor* $classname$::descriptor() {\n"
-    "  protobuf_AssignDescriptorsOnce();\n"
-    "  return $classname$_descriptor_;\n"
-    "}\n"
-    "\n"
-    "const ::google::protobuf::ServiceDescriptor* $classname$::GetDescriptor()"
-    " {\n"
-    "  protobuf_AssignDescriptorsOnce();\n"
-    "  return $classname$_descriptor_;\n"
-    "}\n"
-    "\n");
-
   // Generate methods of the interface.
   GenerateNotImplementedMethods(printer);
   GenerateCallMethod(printer);
@@ -169,18 +134,13 @@ void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
 
   // Generate stub implementation.
   printer->Print(vars_,
-    "$classname$_Stub::$classname$_Stub(ola::rpc::RpcChannel* channel)\n"
-    "  : channel_(channel), owns_channel_(false) {}\n"
-    "$classname$_Stub::$classname$_Stub(\n"
-    "    ola::rpc::RpcChannel* channel,\n"
-    "    ::google::protobuf::Service::ChannelOwnership ownership)\n"
-    "  : channel_(channel),\n"
-    "    owns_channel_(ownership == "
-    "::google::protobuf::Service::STUB_OWNS_CHANNEL) {}\n"
-    "$classname$_Stub::~$classname$_Stub() {\n"
-    "  if (owns_channel_) delete channel_;\n"
+    "type $classname$Stub struct {\n"
+    "  ola.rpc.Channel _channel\n"
     "}\n"
-    "\n");
+    "\n"
+    "func (m *$classname$Stub) SetChannel(channel *ola.rpc.Channel) {\n"
+    "  m._channel = channel\n"
+    "}\n\n");
 
   GenerateStubMethods(printer);
 }
@@ -192,60 +152,46 @@ void GolangServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
     sub_vars["classname"] = descriptor_->name();
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = ClassName(method->input_type(), true);
-    sub_vars["output_type"] = ClassName(method->output_type(), true);
+    sub_vars["input_type"] = method->input_type()->full_name();
+    sub_vars["output_type"] = method->output_type()->full_name();
 
     printer->Print(sub_vars,
-      "void $classname$::$name$(ola::rpc::RpcController* controller,\n"
-      "                         const $input_type$*,\n"
-      "                         $output_type$*,\n"
-      "                         ola::rpc::RpcService::CompletionCallback* done"
-      ") {\n"
-      "  controller->SetFailed(\"Method $name$() not implemented.\");\n"
-      "  done->Run();\n"
-      "}\n"
-      "\n");
+      "func (m *$classname$) $name$(\n"
+      "    request *$input_type$) (\n"
+      "    response *$output_type$, err error) {\n"
+      "  return (nil, new(ola.rpc.NotImplemented))\n"
+      "}\n\n");
   }
 }
 
 void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
   printer->Print(vars_,
-    "void $classname$::CallMethod(const ::google::protobuf::MethodDescriptor* "
-    "method,\n"
-    "                             ola::rpc::RpcController* controller,\n"
-    "                             const ::google::protobuf::Message* request,\n"
-    "                             ::google::protobuf::Message* response,\n"
-    "                             ola::rpc::RpcService::CompletionCallback* "
-    "done) {\n"
-    "  GOOGLE_DCHECK_EQ(method->service(), $classname$_descriptor_);\n"
-    "  switch(method->index()) {\n");
+    "func (m *$classname$) CallMethod(method *MethodDescriptor,\n"
+    "    request *proto.Message) (\n"
+    "    response *proto.Message, err error)){\n"
+    "  switch method.index() {\n");
 
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = ClassName(method->input_type(), true);
-    sub_vars["output_type"] = ClassName(method->output_type(), true);
+    sub_vars["input_type"] = method->input_type()->full_name();
+    sub_vars["output_type"] = method->output_type()->full_name();
 
     // Note:  down_cast does not work here because it only works on pointers,
     //   not references.
     printer->Print(sub_vars,
       "    case $index$:\n"
-      "      $name$(controller,\n"
-      "             ::google::protobuf::down_cast<const $input_type$*>(request"
-      "),\n"
-      "             ::google::protobuf::down_cast< $output_type$*>(response),\n"
-      "             done);\n"
-      "      break;\n");
+      "      return $name$(request)\n");
   }
 
   printer->Print(vars_,
     "    default:\n"
-    "      GOOGLE_LOG(FATAL) << \"Bad method index; this should never "
-    "happen.\";\n"
+    "      //TODO(Sean) Add some logging here\n"
     "      break;\n"
     "  }\n"
+    "  return (nil, new(InvalidMethod))\n"
     "}\n"
     "\n");
 }
@@ -254,17 +200,15 @@ void GolangServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
                                             Printer* printer) {
   if (which == REQUEST) {
     printer->Print(vars_,
-      "const ::google::protobuf::Message& $classname$::GetRequestPrototype(\n");
+      "func (m *$classname$) GetRequestPrototype(\n");
   } else {
     printer->Print(vars_,
-      "const ::google::protobuf::Message& $classname$::GetResponsePrototype"
-      "(\n");
+      "const (m *$classname$) GetResponsePrototype(\n");
   }
 
   printer->Print(vars_,
-    "    const ::google::protobuf::MethodDescriptor* method) const {\n"
-    "  GOOGLE_DCHECK_EQ(method->service(), descriptor());\n"
-    "  switch(method->index()) {\n");
+    "    method *MethodDescriptor) *proto.Message {\n"
+    "  switch method.index() {\n");
 
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
@@ -273,18 +217,17 @@ void GolangServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
 
     map<string, string> sub_vars;
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["type"] = ClassName(type, true);
+    sub_vars["type"] = type->full_name();
 
     printer->Print(sub_vars,
       "    case $index$:\n"
-      "      return $type$::default_instance();\n");
+      "      return new($type$)\n");
   }
 
   printer->Print(vars_,
     "    default:\n"
-    "      GOOGLE_LOG(FATAL) << \"Bad method index; this should never happen."
-    "\";\n"
-    "      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);\n"
+    "      //TODO(Sean) Add some logging\n"
+    "      return nil\n"
     "  }\n"
     "}\n"
     "\n");
@@ -297,18 +240,18 @@ void GolangServiceGenerator::GenerateStubMethods(Printer* printer) {
     sub_vars["classname"] = descriptor_->name();
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = ClassName(method->input_type(), true);
-    sub_vars["output_type"] = ClassName(method->output_type(), true);
+    sub_vars["input_type"] = method->input_type()->full_name();
+    sub_vars["output_type"] = method->output_type()->full_name();
 
     printer->Print(sub_vars,
-      "void $classname$_Stub::$name$(ola::rpc::RpcController* controller,\n"
-      "                              const $input_type$* request,\n"
-      "                              $output_type$* response,\n"
-      "                              ola::rpc::RpcService::CompletionCallback*"
-      " done) {\n"
-      "  channel_->CallMethod(descriptor()->method($index$),\n"
-      "                       controller, request, response, done);\n"
-      "}\n");
+      "func (m *$classname$Stub) $name$(\n"
+      "    request *$input_type$) (\n"
+      "    response *$output_type$, err error) {\n"
+      "  c := channel->CallMethod(GetMethodDescriptor($index$),\n"
+      "      request);\n"
+      "  respData <- c\n"
+      "  return respData\n"
+      "}\n\n");
   }
 }
 }  // namespace ola
