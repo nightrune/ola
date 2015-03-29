@@ -3,7 +3,7 @@
  *
  */
 
-package senddmx
+package main
 
 import "fmt"
 
