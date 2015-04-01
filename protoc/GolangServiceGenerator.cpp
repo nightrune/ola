@@ -63,7 +63,7 @@ GolangServiceGenerator::~GolangServiceGenerator() {}
 
 void GolangServiceGenerator::GenerateInterface(Printer* printer) {
   printer->Print(vars_, "type $classname$ struct {\n");
-  printer->Print("}\n");
+  printer->Print("}\n\n");
 }
 
 void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {

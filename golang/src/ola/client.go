@@ -1,11 +1,11 @@
-package ola
-
 /**
  * @file ola.go
  *
  *
  *
  */
+package ola
+
 type NotImplemented struct {
 }
 

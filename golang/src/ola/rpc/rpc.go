@@ -1,33 +1,33 @@
 /**
- * This implements the rpc channel for go. 
+ * This implements the rpc channel for go.
  *
  */
-package ola.rpc
+package rpc
 
 import "net"
 
 type ResponseData struct {
 	data []byte
-	err error
+	err  error
 }
 
 type OutstandingResponse struct {
 	ret chan ResponseData
-	id int
+	id  int
 }
 
 type Channel struct {
-	net.Conn sock
+	sock                  net.Conn
 	outstanding_responses map[int]OutstandingResponse
-	closer chan bool
+	closer                chan bool
 }
 
 func NewChannel(sock net.Conn) *Channel {
 	// Start a go closure to read and send the
-  rpc_channel := new(Channel)
+	rpc_channel := new(Channel)
 	rpc_channel.closer = make(chan bool)
-  rpc_channel.outstanding_responses = make(map[int]OutstandingResponse)
-	return &rpc_channel
+	rpc_channel.outstanding_responses = make(map[int]OutstandingResponse)
+	return rpc_channel
 }
 
 func (self *Channel) PendingRPCs() bool {
@@ -43,5 +43,5 @@ func (self *Channel) Close() {
 }
 
 func (self *Channel) _read_forever() {
-  for self.
+	//
 }
