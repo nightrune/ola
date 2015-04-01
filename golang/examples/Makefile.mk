@@ -4,8 +4,12 @@
 # Should get updated in configure.ac later
 
 # These are actually binaries to be built
+if BUILD_GO_LIBS
+
 built_sources += \
     golang/examples/ola_send_dmx
 
 golang/examples/ola_send_dmx: golang/examples/ola_send_dmx.go
 	./go_helper.sh -o golang/examples/ola_send_dmx golang/examples/ola_send_dmx.go
+
+endif

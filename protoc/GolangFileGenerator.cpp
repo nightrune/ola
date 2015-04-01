@@ -81,7 +81,7 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
     "// source: $filename$\n"
     "\n"
     "package ola\n"
-    "import \"rpc\"\n"
+    "import \"ola/rpc\"\n"
     "\n",
     "file", m_output_name,
     "filename", m_file->name());
