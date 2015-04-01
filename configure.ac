@@ -496,6 +496,16 @@ AS_IF([test "x$enable_java_libs" = xyes],
        MAVEN_SUPPORT([2.2.1])])
 AM_CONDITIONAL([BUILD_JAVA_LIBS], [test "x$enable_java_libs" = xyes])
 
+# Enable the Go API
+AC_ARG_ENABLE(
+  [go-libs],
+  [AS_HELP_STRING([--enable-go-libs], [Build the Golang interface])],
+  enable_go_libs="yes",
+  enable_go_libs="no")
+AS_IF([test "x$enable_go_libs" = xyes],
+      [AC_CHECK_PROG(GO, [go version], go)])
+AM_CONDITIONAL([BUILD_GO_LIBS], [test "x$enable_go_libs" = xyes])
+
 # Optionally build the Ja Rule tool
 AC_ARG_ENABLE(
   [ja-rule],
