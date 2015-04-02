@@ -166,6 +166,7 @@ python/examples/ola_rdm_set.py
 python/ola/PidStoreLocation.py
 python/ola/Version.py
 python/ola/rpc/SimpleRpcControllerTest.sh
+scripts/ola_go.sh
 slp/slp_client
 slp/slp_client.exe
 slp/slp_server

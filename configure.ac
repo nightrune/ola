@@ -497,13 +497,17 @@ AS_IF([test "x$enable_java_libs" = xyes],
 AM_CONDITIONAL([BUILD_JAVA_LIBS], [test "x$enable_java_libs" = xyes])
 
 # Enable the Go API
+OLA_GO=""
 AC_ARG_ENABLE(
   [go-libs],
   [AS_HELP_STRING([--enable-go-libs], [Build the Golang interface])],
   enable_go_libs="yes",
   enable_go_libs="no")
 AS_IF([test "x$enable_go_libs" = xyes],
-      [AC_CHECK_PROG(GO, [go version], go)])
+      [AC_CHECK_PROG(GO, [go version], go)
+       AC_CONFIG_FILES([scripts/ola_go.sh:scripts/ola_go.sh.in],
+                       [chmod +x scripts/ola_go.sh])
+       OLA_GO="./scripts/ola_go.sh"])
 AM_CONDITIONAL([BUILD_GO_LIBS], [test "x$enable_go_libs" = xyes])
 
 # Optionally build the Ja Rule tool
