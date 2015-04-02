@@ -4,7 +4,7 @@
 # This needs to be generated to set the export path correctly
 
 OLD_GOPATH=$GOPATH
-export GOPATH=@abs_builddir@/golang/
+export GOPATH=@abs_top_builddir@/golang/
 go build $@
 rc=$?
 export GOPATH=$OLD_GOPATH
