@@ -138,7 +138,8 @@ examples/ola_usbpro
 examples/ola_usbpro.exe
 examples/RecorderVerifyTest.sh
 golang/examples/ola_send_dmx
-golang/.gocode
+golang/pkg/
+golang/src/github.com/
 include/ola/base/Version.h
 include/ola/plugin_id.h
 include/ola/rdm/RDMResponseCodes.h

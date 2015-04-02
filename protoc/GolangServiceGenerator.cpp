@@ -102,8 +102,8 @@ void GolangServiceGenerator::GenerateMethodSignatures(Printer* printer) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
-    sub_vars["input_type"] = method->input_type()->full_name();
-    sub_vars["output_type"] = method->output_type()->full_name();
+    sub_vars["input_type"] = GoTypeName(method->input_type());
+    sub_vars["output_type"] = GoTypeName(method->output_type());
 
     printer->Print(sub_vars,
       "$name$(request *$input_type$) (\n"
@@ -135,10 +135,10 @@ void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
   // Generate stub implementation.
   printer->Print(vars_,
     "type $classname$Stub struct {\n"
-    "  ola.rpc.Channel _channel\n"
+    "  _channel rpc.Channel\n"
     "}\n"
     "\n"
-    "func (m *$classname$Stub) SetChannel(channel *ola.rpc.Channel) {\n"
+    "func (m *$classname$Stub) SetChannel(channel *rpc.Channel) {\n"
     "  m._channel = channel\n"
     "}\n\n");
 
@@ -152,14 +152,14 @@ void GolangServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
     sub_vars["classname"] = descriptor_->name();
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = method->input_type()->full_name();
-    sub_vars["output_type"] = method->output_type()->full_name();
+    sub_vars["input_type"] = GoTypeName(method->input_type());
+    sub_vars["output_type"] = GoTypeName(method->output_type());
 
     printer->Print(sub_vars,
       "func (m *$classname$) $name$(\n"
       "    request *$input_type$) (\n"
       "    response *$output_type$, err error) {\n"
-      "  return (nil, new(ola.rpc.NotImplemented))\n"
+      "  return nil, new(ola.rpc.NotImplemented)\n"
       "}\n\n");
   }
 }
@@ -168,7 +168,7 @@ void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
   printer->Print(vars_,
     "func (m *$classname$) CallMethod(method *MethodDescriptor,\n"
     "    request *proto.Message) (\n"
-    "    response *proto.Message, err error)){\n"
+    "    response *proto.Message, err error) {\n"
     "  switch method.index() {\n");
 
   for (int i = 0; i < descriptor_->method_count(); i++) {
@@ -176,8 +176,8 @@ void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = method->input_type()->full_name();
-    sub_vars["output_type"] = method->output_type()->full_name();
+    sub_vars["input_type"] = GoTypeName(method->input_type());
+    sub_vars["output_type"] = GoTypeName(method->output_type());
 
     // Note:  down_cast does not work here because it only works on pointers,
     //   not references.
@@ -191,7 +191,7 @@ void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
     "      //TODO(Sean) Add some logging here\n"
     "      break;\n"
     "  }\n"
-    "  return (nil, new(InvalidMethod))\n"
+    "  return nil, new(InvalidMethod)\n"
     "}\n"
     "\n");
 }
@@ -203,7 +203,7 @@ void GolangServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
       "func (m *$classname$) GetRequestPrototype(\n");
   } else {
     printer->Print(vars_,
-      "const (m *$classname$) GetResponsePrototype(\n");
+      "func (m *$classname$) GetResponsePrototype(\n");
   }
 
   printer->Print(vars_,
@@ -217,7 +217,7 @@ void GolangServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
 
     map<string, string> sub_vars;
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["type"] = type->full_name();
+    sub_vars["type"] = GoTypeName(type);
 
     printer->Print(sub_vars,
       "    case $index$:\n"
@@ -240,14 +240,14 @@ void GolangServiceGenerator::GenerateStubMethods(Printer* printer) {
     sub_vars["classname"] = descriptor_->name();
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    sub_vars["input_type"] = method->input_type()->full_name();
-    sub_vars["output_type"] = method->output_type()->full_name();
+    sub_vars["input_type"] = GoTypeName(method->input_type());
+    sub_vars["output_type"] = GoTypeName(method->output_type());
 
     printer->Print(sub_vars,
       "func (m *$classname$Stub) $name$(\n"
       "    request *$input_type$) (\n"
       "    response *$output_type$, err error) {\n"
-      "  c := channel->CallMethod(GetMethodDescriptor($index$),\n"
+      "  c := m._channel.CallMethod(GetMethodDescriptor($index$),\n"
       "      request);\n"
       "  respData <- c\n"
       "  return respData\n"

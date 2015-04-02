@@ -35,9 +35,8 @@
 // Edited by Simon Newton for OLA
 
 #include <google/protobuf/stubs/common.h>
-
+#include <iostream>
 #include <string>
-
 #include "protoc/GeneratorHelpers.h"
 #include "protoc/StrUtil.h"
 
@@ -77,6 +76,11 @@ string ClassName(const Descriptor* descriptor, bool qualified) {
   } else {
     return outer->name() + DotsToUnderscores(inner_name);
   }
+}
+
+string GoTypeName(const Descriptor* descriptor) {
+  const string& package_name = descriptor->file()->package();
+  return DotsToUnderscores(package_name) + '.' + descriptor->name();
 }
 
 string StripProto(const string& filename) {

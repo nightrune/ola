@@ -5,7 +5,7 @@
 
 OLD_GOPATH=$GOPATH
 export GOPATH=@abs_top_builddir@/golang/
-go build $@
+go $@
 rc=$?
 export GOPATH=$OLD_GOPATH
 exit $rc

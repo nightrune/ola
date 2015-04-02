@@ -82,6 +82,9 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
     "\n"
     "package ola\n"
     "import \"ola/rpc\"\n"
+    "import \"ola/ola_proto\"\n"
+    "import \"ola/ola_rpc\"\n"
+    "import \"github.com/golang/protobuf/proto\"\n"
     "\n",
     "file", m_output_name,
     "filename", m_file->name());

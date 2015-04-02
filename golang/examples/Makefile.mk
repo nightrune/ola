@@ -10,6 +10,6 @@ built_sources += \
     golang/examples/ola_send_dmx
 
 golang/examples/ola_send_dmx: golang/examples/ola_send_dmx.go
-	$(OLA_GO) -o golang/examples/ola_send_dmx golang/examples/ola_send_dmx.go
+	$(OLA_GO) build -o golang/examples/ola_send_dmx golang/examples/ola_send_dmx.go
 
 endif

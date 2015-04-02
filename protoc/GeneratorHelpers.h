@@ -32,7 +32,7 @@
 //  Based on original Protocol Buffers design by
 //  Sanjay Ghemawat, Jeff Dean, and others.
 //
-// Edited by Simon Newton for OLA
+// Edited by Simon Newton and Sean Sill for OLA
 
 #ifndef PROTOC_GENERATORHELPERS_H_
 #define PROTOC_GENERATORHELPERS_H_
@@ -60,6 +60,8 @@ extern const char kThinSeparator[];
 //   Baz_Qux
 string ClassName(const google::protobuf::Descriptor* descriptor,
                  bool qualified);
+
+string GoTypeName(const google::protobuf::Descriptor* descriptor);
 
 // Strips ".proto" or ".protodevel" from the end of a filename.
 string StripProto(const string& filename);
