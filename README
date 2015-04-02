@@ -42,6 +42,12 @@ Java Library
 There is an experimental Java library which can be built by running configure
 with --enable-java-libs.
 
+Go Library (experimental)
+-------------------------------------------------------------------------------
+
+There is an experimental Go library which can be built by running configure
+with --enable-go-libs. When building it overwrites your GOPATH to allow it to
+build locally without affecting external GOPATHS that might be global.
 
 Credits
 -------------------------------------------------------------------------------
