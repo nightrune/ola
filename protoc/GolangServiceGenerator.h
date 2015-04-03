@@ -72,14 +72,11 @@ class GolangServiceGenerator {
   // Generate implementations of everything declared by GenerateDeclarations().
   void GenerateImplementation(Printer* printer);
 
-  // Generate the service abstract interface.
-  void GenerateInterface(Printer* printer);
+  // Generate the initial ServerService Type
+  void GenerateType(Printer* printer);
 
  private:
   enum RequestOrResponse { REQUEST, RESPONSE };
-
-  // Generate the stub class definition.
-  void GenerateStubDefinition(Printer* printer);
 
   // Prints signatures for all methods in the
   void GenerateMethodSignatures(Printer* printer);

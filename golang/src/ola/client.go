@@ -6,6 +6,10 @@
  */
 package ola
 
+// Consider moving this to another file
+type MethodDescriptor struct {
+}
+
 type NotImplemented struct {
 }
 

@@ -85,15 +85,18 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
     "import \"ola/ola_proto\"\n"
     "import \"ola/ola_rpc\"\n"
     "import \"github.com/golang/protobuf/proto\"\n"
-    "\n",
+    "\n\n"
+    "// These are here in case something doesn't use them\n"
+    "var _ = ola_rpc.Type_name\n"
+    "var _ = rpc.NewChannel\n"
+    "var _ = ola_proto.RegisterAction_name\n\n",
     "file", m_output_name,
     "filename", m_file->name());
 
 
   GolangServiceGenerators::iterator iter = m_service_generators.begin();
   for (; iter != m_service_generators.end(); ++iter) {
-    (*iter)->GenerateInterface(printer);
-    (*iter)->GenerateImplementation(printer);
+        (*iter)->GenerateImplementation(printer);
   }
 }
 

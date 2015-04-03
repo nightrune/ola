@@ -61,40 +61,9 @@ GolangServiceGenerator::GolangServiceGenerator(
 
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
-void GolangServiceGenerator::GenerateInterface(Printer* printer) {
+void GolangServiceGenerator::GenerateType(Printer* printer) {
   printer->Print(vars_, "type $classname$ struct {\n");
   printer->Print("}\n\n");
-}
-
-void GolangServiceGenerator::GenerateStubDefinition(Printer* printer) {
-  printer->Print(vars_,
-    "class $dllexport$$classname$_Stub : public $classname$ {\n"
-    " public:\n");
-
-  printer->Indent();
-
-  printer->Print(vars_,
-    "$classname$_Stub(ola::rpc::RpcChannel* channel);\n"
-    "$classname$_Stub(ola::rpc::RpcChannel* channel,\n"
-    "                 ::google::protobuf::Service::ChannelOwnership ownership"
-    ");\n"
-    "~$classname$_Stub();\n"
-    "\n"
-    "inline ola::rpc::RpcChannel* channel() { return channel_; }\n"
-    "\n"
-    "// implements $classname$ ------------------------------------------\n"
-    "\n");
-
-  GenerateMethodSignatures(printer);
-
-  printer->Outdent();
-  printer->Print(vars_,
-    " private:\n"
-    "  ola::rpc::RpcChannel* channel_;\n"
-    "  bool owns_channel_;\n"
-    "  GOOGLE_DISALLOW_EVIL_CONSTRUCTORS($classname$_Stub);\n"
-    "};\n"
-    "\n");
 }
 
 void GolangServiceGenerator::GenerateMethodSignatures(Printer* printer) {
@@ -127,6 +96,7 @@ void GolangServiceGenerator::GenerateDescriptorInitializer(
 
 void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
   // Generate methods of the interface.
+  GenerateType(printer);
   GenerateNotImplementedMethods(printer);
   GenerateCallMethod(printer);
   GenerateGetPrototype(REQUEST, printer);
@@ -159,7 +129,7 @@ void GolangServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
       "func (m *$classname$) $name$(\n"
       "    request *$input_type$) (\n"
       "    response *$output_type$, err error) {\n"
-      "  return nil, new(ola.rpc.NotImplemented)\n"
+      "  return nil, rpc.NewNotImplemented(\"$name$ not implemented!\")\n"
       "}\n\n");
   }
 }
