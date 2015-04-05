@@ -84,7 +84,7 @@ void GolangServiceGenerator::GenerateMethodDescriptors(Printer *printer) {
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
 
-    printer->Print(sub_vars, "$index$:NewMethodDescriptor($index$, \"$name$\"),\n");
+    printer->Print(sub_vars, "$index$:MethodDescriptor{_index: $index$, _name: \"$name$\"},\n");
   }
   printer->Outdent();
   printer->Print("}\n\n");
@@ -218,9 +218,10 @@ void GolangServiceGenerator::GenerateStubMethods(Printer* printer) {
       "  if err != nil {\n"
       "    return nil, err\n"
       "  }\n"
-      "  c := m._channel.CallMethod(m.GetMethodDescriptor($index$),\n"
-      "      reqData);\n"
-      "  var respData ResponseData\n"
+      "  c := make(chan *ResponseData, 1)\n"
+      "  go m._channel.CallMethod(m.GetMethodDescriptor($index$),\n"
+      "      reqData, c);\n"
+      "  var respData *ResponseData\n"
       "  respData = <- c\n"
       "  if respData.err != nil {\n"
       "    return nil, respData.err\n"

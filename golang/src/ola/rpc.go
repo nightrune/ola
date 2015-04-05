@@ -42,27 +42,25 @@ type RpcChannel struct {
 func NewRpcChannel(sock net.Conn) *RpcChannel {
 	// Start a go closure to read and send the
 	rpc_channel := new(RpcChannel)
-	rpc_channel.closer = make(chan bool)
-	rpc_channel.outstanding_responses = make(map[int]OutstandingResponse)
+	rpc_channel.sock = sock
 	return rpc_channel
 }
 
-func (self *RpcChannel) PendingRPCs() bool {
+func (m *RpcChannel) PendingRPCs() bool {
 	return false
 }
 
-func (self *RpcChannel) CallMethod(method *MethodDescriptor,
-	request_data []byte) chan ResponseData {
-	c := make(chan ResponseData)
-	c <- ResponseData{data: nil, err: NewNotImplemented(
+func (m *RpcChannel) CallMethod(method *MethodDescriptor,
+	request_data []byte, c chan *ResponseData) {
+	data := &ResponseData{data: nil, err: NewNotImplemented(
 		"This is currently not implemented")}
-	return c
+	c <- data
 }
 
-func (self *RpcChannel) Close() {
+func (m *RpcChannel) Close() {
 
 }
 
-func (self *RpcChannel) _read_forever() {
+func (m *RpcChannel) _read_forever() {
 	//
 }

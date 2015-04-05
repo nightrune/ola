@@ -6,6 +6,12 @@
  */
 package ola
 
+import (
+	"errors"
+	"net"
+	"ola/ola_proto"
+)
+
 type DmxData struct {
 }
 
@@ -37,7 +43,7 @@ type PluginState struct {
 }
 
 type Plugin struct {
-	_id     uint
+	_id     int32
 	_name   string
 	_active bool
 }
@@ -98,12 +104,38 @@ type DiscoveryType struct {
 }
 
 type Client struct {
-	_channel RpcChannel
+	_channel     *RpcChannel
+	_server_stub *OlaServerServiceStub
+}
+
+func NewClient(sock net.Conn) *Client {
+	client := new(Client)
+	client._channel = NewRpcChannel(sock)
+	client._server_stub = new(OlaServerServiceStub)
+	client._server_stub.SetChannel(client._channel)
+	return client
 }
 
 // Plugin methods
-func (self *Client) FetchPlugins() ([]Plugin, error) {
-	return nil, NewNotImplemented("Not implemented in client")
+func (m *Client) FetchPlugins() (plugins []*Plugin, err error) {
+	request := new(ola_proto.PluginListRequest)
+	response, err := m._server_stub.GetPlugins(request)
+	if err != nil {
+		return nil, err
+	}
+	pluginInfoList := response.GetPlugin()
+	if pluginInfoList == nil {
+		return nil, errors.New("No plugin list in PluginListReply")
+	}
+	// Preallocate plugins
+	plugins = make([]*Plugin, len(pluginInfoList))
+	for i := range pluginInfoList {
+		plugins[i] = new(Plugin)
+		plugins[i]._id = pluginInfoList[i].GetPluginId()
+		plugins[i]._name = pluginInfoList[i].GetName()
+		plugins[i]._active = pluginInfoList[i].GetActive()
+	}
+	return plugins, nil
 }
 
 func (self *Client) ReloadPlugins() (bool, error) {
