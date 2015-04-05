@@ -62,7 +62,30 @@ GolangServiceGenerator::GolangServiceGenerator(
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
 void GolangServiceGenerator::GenerateType(Printer* printer) {
-  printer->Print(vars_, "type $classname$ struct {\n");
+  printer->Print(vars_, "type $classname$ struct {\n"
+  "}\n\n"
+  "func (m *$classname$) GetMethodDescriptor(method_index uint32) (\n"
+  "    method *MethodDescriptor, err error) {\n"
+  "  if method_index >= uint32(len($classname$_method_descriptors)) {\n"
+  "    return nil, NewInvalidMethod(\"Requested method does not exist\")\n"
+  "  }\n"
+  "  return $classname$_method_descriptors[method_index], nil\n"
+  "}\n\n");
+}
+
+void GolangServiceGenerator::GenerateMethodDescriptors(Printer *printer) {
+  printer->Print(vars_,"\n"
+      "var $classname$_method_descriptors = map[uint32]*MethodDescriptor {\n");
+  printer->Indent();
+  for (int i = 0; i < descriptor_->method_count(); i++) {
+    const MethodDescriptor* method = descriptor_->method(i);
+    map<string, string> sub_vars;
+    sub_vars["name"] = method->name();
+    sub_vars["index"] = SimpleItoa(i);
+
+    printer->Print(sub_vars, "$index$:NewMethodDescriptor($index$, \"$name$\"),\n");
+  }
+  printer->Outdent();
   printer->Print("}\n\n");
 }
 
@@ -96,22 +119,21 @@ void GolangServiceGenerator::GenerateDescriptorInitializer(
 
 void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
   // Generate methods of the interface.
+  GenerateMethodDescriptors(printer);
   GenerateType(printer);
   GenerateNotImplementedMethods(printer);
   GenerateCallMethod(printer);
-  GenerateGetPrototype(REQUEST, printer);
-  GenerateGetPrototype(RESPONSE, printer);
 
   // Generate stub implementation.
   printer->Print(vars_,
     "type $classname$Stub struct {\n"
-    "  _channel rpc.Channel\n"
+    "  $classname$\n"
+    "  _channel *RpcChannel\n"
     "}\n"
     "\n"
-    "func (m *$classname$Stub) SetChannel(channel *rpc.Channel) {\n"
+    "func (m *$classname$Stub) SetChannel(channel *RpcChannel) {\n"
     "  m._channel = channel\n"
     "}\n\n");
-
   GenerateStubMethods(printer);
 }
 
@@ -129,7 +151,7 @@ void GolangServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
       "func (m *$classname$) $name$(\n"
       "    request *$input_type$) (\n"
       "    response *$output_type$, err error) {\n"
-      "  return nil, rpc.NewNotImplemented(\"$name$ not implemented!\")\n"
+      "  return nil, NewNotImplemented(\"$name$ not implemented!\")\n"
       "}\n\n");
   }
 }
@@ -137,9 +159,9 @@ void GolangServiceGenerator::GenerateNotImplementedMethods(Printer* printer) {
 void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
   printer->Print(vars_,
     "func (m *$classname$) CallMethod(method *MethodDescriptor,\n"
-    "    request *proto.Message) (\n"
-    "    response *proto.Message, err error) {\n"
-    "  switch method.index() {\n");
+    "    requestData []byte) (\n"
+    "    responseData []byte, err error) {\n"
+    "  switch method.Index() {\n");
 
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
@@ -153,7 +175,17 @@ void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
     //   not references.
     printer->Print(sub_vars,
       "    case $index$:\n"
-      "      return $name$(request)\n");
+      "      request := new($input_type$)\n"
+      "      err = proto.Unmarshal(requestData, request)\n"
+      "      if err != nil {\n"
+      "        return nil, err\n"
+      "      }\n"
+      "      response, err := m.$name$(request)\n"
+      "      if err != nil {\n"
+      "        return nil, err\n"
+      "      }\n"
+      "      responseData, err = proto.Marshal(response)\n"
+      "      return responseData, err\n");
   }
 
   printer->Print(vars_,
@@ -162,43 +194,6 @@ void GolangServiceGenerator::GenerateCallMethod(Printer* printer) {
     "      break;\n"
     "  }\n"
     "  return nil, new(InvalidMethod)\n"
-    "}\n"
-    "\n");
-}
-
-void GolangServiceGenerator::GenerateGetPrototype(RequestOrResponse which,
-                                            Printer* printer) {
-  if (which == REQUEST) {
-    printer->Print(vars_,
-      "func (m *$classname$) GetRequestPrototype(\n");
-  } else {
-    printer->Print(vars_,
-      "func (m *$classname$) GetResponsePrototype(\n");
-  }
-
-  printer->Print(vars_,
-    "    method *MethodDescriptor) *proto.Message {\n"
-    "  switch method.index() {\n");
-
-  for (int i = 0; i < descriptor_->method_count(); i++) {
-    const MethodDescriptor* method = descriptor_->method(i);
-    const google::protobuf::Descriptor* type =
-      (which == REQUEST) ? method->input_type() : method->output_type();
-
-    map<string, string> sub_vars;
-    sub_vars["index"] = SimpleItoa(i);
-    sub_vars["type"] = GoTypeName(type);
-
-    printer->Print(sub_vars,
-      "    case $index$:\n"
-      "      return new($type$)\n");
-  }
-
-  printer->Print(vars_,
-    "    default:\n"
-    "      //TODO(Sean) Add some logging\n"
-    "      return nil\n"
-    "  }\n"
     "}\n"
     "\n");
 }
@@ -217,10 +212,18 @@ void GolangServiceGenerator::GenerateStubMethods(Printer* printer) {
       "func (m *$classname$Stub) $name$(\n"
       "    request *$input_type$) (\n"
       "    response *$output_type$, err error) {\n"
-      "  c := m._channel.CallMethod(GetMethodDescriptor($index$),\n"
+      "  c := m._channel.CallMethod(m.GetMethodDescriptor($index$),\n"
       "      request);\n"
       "  respData <- c\n"
-      "  return respData\n"
+      "  if respData.err != nil {\n"
+      "    return nil, respData.err\n"
+      "  }\n"
+      "  response = new($output_type$)\n"
+      "  err = proto.Unmarshal(respData.data, response)\n"
+      "  if err != nil {\n"
+      "    return nil, err\n"
+      "  }\n"
+      "  return response, nil\n"
       "}\n\n");
   }
 }

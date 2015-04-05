@@ -64,7 +64,7 @@ class GolangServiceGenerator {
   explicit GolangServiceGenerator(const ServiceDescriptor* descriptor,
                             const Options& options);
   ~GolangServiceGenerator();
-
+ 
   // Generate code that initializes the global variable storing the service's
   // descriptor.
   void GenerateDescriptorInitializer(Printer* printer, int index);
@@ -76,7 +76,8 @@ class GolangServiceGenerator {
   void GenerateType(Printer* printer);
 
  private:
-  enum RequestOrResponse { REQUEST, RESPONSE };
+  // Generate a map for the MethodDescriptors
+  void GenerateMethodDescriptors(Printer* printer);
 
   // Prints signatures for all methods in the
   void GenerateMethodSignatures(Printer* printer);
@@ -87,9 +88,6 @@ class GolangServiceGenerator {
 
   // Generate the CallMethod() method of the service.
   void GenerateCallMethod(Printer* printer);
-
-  // Generate the Get{Request,Response}Prototype() methods.
-  void GenerateGetPrototype(RequestOrResponse which, Printer* printer);
 
   // Generate the stub's implementations of the service methods.
   void GenerateStubMethods(Printer* printer);

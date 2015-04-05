@@ -2,7 +2,7 @@
  * This implements the rpc channel for go.
  *
  */
-package rpc_channel
+package ola
 
 import "net"
 

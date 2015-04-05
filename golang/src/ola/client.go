@@ -6,17 +6,6 @@
  */
 package ola
 
-// Consider moving this to another file
-type MethodDescriptor struct {
-}
-
-type NotImplemented struct {
-}
-
-func (self *NotImplemented) String() string {
-	return "Method not implemented.."
-}
-
 type DmxData struct {
 }
 
@@ -34,10 +23,6 @@ type RDMRequest struct {
 }
 
 type RDMResponse struct {
-}
-
-type RpcChannel struct {
-	outstanding_requests map[int]int
 }
 
 type PluginState struct {

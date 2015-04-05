@@ -81,14 +81,13 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
     "// source: $filename$\n"
     "\n"
     "package ola\n"
-    "import \"ola/rpc\"\n"
+    "\n"
     "import \"ola/ola_proto\"\n"
     "import \"ola/ola_rpc\"\n"
     "import \"github.com/golang/protobuf/proto\"\n"
-    "\n\n"
-    "// These are here in case something doesn't use them\n"
+    "\n"
+    "// Import references incase they aren't used\n"
     "var _ = ola_rpc.Type_name\n"
-    "var _ = rpc.NewChannel\n"
     "var _ = ola_proto.RegisterAction_name\n\n",
     "file", m_output_name,
     "filename", m_file->name());
