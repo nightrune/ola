@@ -5,6 +5,9 @@
 package ola
 
 import "net"
+import "ola/ola_rpc"
+
+var _ = ola_rpc.Type_name // Here while we build the rpc channel, delete later
 
 type NotImplemented struct {
 	s string
@@ -48,8 +51,12 @@ func (self *RpcChannel) PendingRPCs() bool {
 	return false
 }
 
-func (self *RpcChannel) CallMethod() chan ResponseData {
-	return nil
+func (self *RpcChannel) CallMethod(method *MethodDescriptor,
+	request_data []byte) chan ResponseData {
+	c := make(chan ResponseData)
+	c <- ResponseData{data: nil, err: NewNotImplemented(
+		"This is currently not implemented")}
+	return c
 }
 
 func (self *RpcChannel) Close() {

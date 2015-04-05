@@ -9,6 +9,9 @@ package ola
 type DmxData struct {
 }
 
+type SendDMXArgs struct {
+}
+
 // RDM Data
 type UID struct {
 }
@@ -100,57 +103,57 @@ type Client struct {
 
 // Plugin methods
 func (self *Client) FetchPlugins() ([]Plugin, error) {
-	return new([]Plugin), new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) ReloadPlugins() (bool, error) {
-	return false, new(NotImplemented)
+	return false, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) FetchPluginDescription(plugin_id int) (string, error) {
-	return "", new(NotImplemented)
+	return "", NewNotImplemented("Not implemented in client")
 }
 
-func (self *Client) FetchPluginState(plugin_id int) (PluginState, error) {
-	return nil, new(NotImplemented)
+func (self *Client) FetchPluginState(plugin_id int) (*PluginState, error) {
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 // Device Methods
 func (self *Client) FetchDeviceInfo(plugin_id int) ([]Device, error) {
-	return new([]Device), new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) ConfigureDevice(device_alias uint, msg []byte) ([]byte,
 	error) {
-	return nil, new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 // Port Methods
 func (self *Client) SetPortPriorityInherit(device_alias uint, port uint,
 	direction PortDirection) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) SetPortPriorityOverride(device_alias uint, port uint,
 	direction PortDirection, value uint8) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 // Universe Methods
 func (self *Client) FetchUniverseList() ([]Universe, error) {
-	return new([]Universe), new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
-func (self *Client) FetchUniverseInfo(universe uint) (Universe, error) {
-	return new(Universe), new(NotImplemented)
+func (self *Client) FetchUniverseInfo(universe uint) (*Universe, error) {
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) SetUniverseName(universe uint, name string) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) SetUniverseMergeMode(universe uint, mode MergeMode) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) Patch(device_alias uint,
@@ -158,7 +161,7 @@ func (self *Client) Patch(device_alias uint,
 	direction PortDirection,
 	action PatchAction,
 	universe uint) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 // Dmx Functions
@@ -167,29 +170,29 @@ func (self *Client) Patch(device_alias uint,
  * idiomatic for golang
  */
 func (self *Client) RegisterUniverse(universe uint) (chan *DmxData, error) {
-	return nil, new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) DeregisterUniverse(universe uint) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) SendDMX(universe uint, data *DmxData, args SendDMXArgs) {
 }
 
 func (self *Client) FetchDMX(universe uint) (*DmxData, error) {
-	return nil, new(NotImplemented)
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 // RDM Functions
 // No sets in go?!
 func (self *Client) RunDiscovery(universe uint, disc_type DiscoveryType) ([]UID,
 	error) {
-	return new([]UID, new(NotImplemented))
+	return nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) SetSourceUID(uid UID) error {
-	return new(NotImplemented)
+	return NewNotImplemented("Not implemented in client")
 }
 
 /**
@@ -200,8 +203,8 @@ func (self *Client) RDMGet(universe uint,
 	sub_device uint16,
 	pid uint16,
 	data []byte,
-	args SendRDMArgs) (RDMMetadata, RDMResponse, error) {
-	return nil, nil, new(NotImplemented)
+	args SendRDMArgs) (*RDMMetadata, *RDMResponse, error) {
+	return nil, nil, NewNotImplemented("Not implemented in client")
 }
 
 func (self *Client) RDMSet(universe uint,
@@ -209,6 +212,6 @@ func (self *Client) RDMSet(universe uint,
 	sub_device uint16,
 	pid uint16,
 	data []byte,
-	args SendRDMArgs) (RDMMetadata, RDMResponse, error) {
-	return nil, nil, new(NotImplemented)
+	args SendRDMArgs) (*RDMMetadata, *RDMResponse, error) {
+	return nil, nil, NewNotImplemented("Not implemented in client")
 }

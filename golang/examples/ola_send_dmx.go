@@ -8,8 +8,8 @@ package main
 import "fmt"
 import "ola"
 
-var _ = ola
-
 func main() {
 	fmt.Printf("Hello World!\n")
+	var client = new(ola.Client)
+	_, _ = client.FetchPlugins()
 }

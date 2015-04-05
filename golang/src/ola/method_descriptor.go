@@ -6,11 +6,11 @@
 package ola
 
 type MethodDescriptor struct {
-	_index int
+	_index uint32
 	_name  string
 }
 
-func (m *MethodDescriptor) Index() int {
+func (m *MethodDescriptor) Index() uint32 {
 	return m._index
 }
 
@@ -33,7 +33,7 @@ func (m *InvalidMethod) Error() string {
 	return m._s
 }
 
-func NewInvalidMethod(err_string string) InvalidMethod {
+func NewInvalidMethod(err_string string) *InvalidMethod {
 	e := new(InvalidMethod)
 	e._s = err_string
 	return e
