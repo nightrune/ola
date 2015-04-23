@@ -64,7 +64,7 @@ class GolangServiceGenerator {
   explicit GolangServiceGenerator(const ServiceDescriptor* descriptor,
                             const Options& options);
   ~GolangServiceGenerator();
- 
+
   // Generate code that initializes the global variable storing the service's
   // descriptor.
   void GenerateDescriptorInitializer(Printer* printer, int index);
@@ -74,6 +74,9 @@ class GolangServiceGenerator {
 
   // Generate the initial ServerService Type
   void GenerateType(Printer* printer);
+
+  // Generate the file init
+  void GenerateInit(Printer* printer);
 
  private:
   // Generate a map for the MethodDescriptors

@@ -61,33 +61,37 @@ GolangServiceGenerator::GolangServiceGenerator(
 
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
+void GolangServiceGenerator::GenerateInit(Printer* printer) {
+  printer->Print(vars_,"\n"
+      "var method_descriptors map[uint32]*MethodDescriptor\n");
+  printer->Print("func init() {\n");
+  printer->Indent();
+  GenerateMethodDescriptors(printer);
+  printer->Outdent();
+  printer->Print("}\n\n");
+}
+
 void GolangServiceGenerator::GenerateType(Printer* printer) {
   printer->Print(vars_, "type $classname$ struct {\n"
   "}\n\n"
   "func (m *$classname$) GetMethodDescriptor(method_index uint32) *MethodDescriptor {\n"
   "  // We handle this because otherwise the golang map would return the 0 value\n"
-  "  if method_index >= uint32(len($classname$_method_descriptors)) {\n"
-  "    return NewMethodDescriptor(uint32(len($classname$_method_descriptors)),\n"
+  "  if method_index >= uint32(len(method_descriptors)) {\n"
+  "    return NewMethodDescriptor(uint32(len(method_descriptors)),\n"
   "        \"Invalid Method\")\n"
   "  }\n"
-  "  return $classname$_method_descriptors[method_index]\n"
+  "  return method_descriptors[method_index]\n"
   "}\n\n");
 }
 
 void GolangServiceGenerator::GenerateMethodDescriptors(Printer *printer) {
-  printer->Print(vars_,"\n"
-      "var $classname$_method_descriptors = map[uint32]*MethodDescriptor {\n");
-  printer->Indent();
   for (int i = 0; i < descriptor_->method_count(); i++) {
     const MethodDescriptor* method = descriptor_->method(i);
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-
-    printer->Print(sub_vars, "$index$:MethodDescriptor{_index: $index$, _name: \"$name$\"},\n");
+    printer->Print(sub_vars, "method_descriptors[$index$] = NewMethodDescriptor($index$, \"$name$\")\n");
   }
-  printer->Outdent();
-  printer->Print("}\n\n");
 }
 
 void GolangServiceGenerator::GenerateMethodSignatures(Printer* printer) {
@@ -120,7 +124,6 @@ void GolangServiceGenerator::GenerateDescriptorInitializer(
 
 void GolangServiceGenerator::GenerateImplementation(Printer* printer) {
   // Generate methods of the interface.
-  GenerateMethodDescriptors(printer);
   GenerateType(printer);
   GenerateNotImplementedMethods(printer);
   GenerateCallMethod(printer);
@@ -235,4 +238,5 @@ void GolangServiceGenerator::GenerateStubMethods(Printer* printer) {
       "}\n\n");
   }
 }
+
 }  // namespace ola

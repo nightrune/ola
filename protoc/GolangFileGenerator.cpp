@@ -94,6 +94,8 @@ void GolangFileGenerator::GenerateImplementation(Printer *printer) {
 
 
   GolangServiceGenerators::iterator iter = m_service_generators.begin();
+  // We only need to do this once
+  (*iter)->GenerateInit(printer);
   for (; iter != m_service_generators.end(); ++iter) {
         (*iter)->GenerateImplementation(printer);
   }
