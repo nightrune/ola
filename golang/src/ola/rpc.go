@@ -52,9 +52,9 @@ func (m *RpcChannel) PendingRPCs() bool {
 
 func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 	request_data []byte, c chan *ResponseData) {
-	data := &ResponseData{data: nil, err: NewNotImplemented(
+	data := ResponseData{data: make([]byte, 0), err: NewNotImplemented(
 		"This is currently not implemented")}
-	c <- data
+	c <- &data
 }
 
 func (m *RpcChannel) Close() {

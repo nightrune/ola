@@ -47,7 +47,7 @@ func TestRpcCallMethod(t *testing.T) {
 
 	sock := MockConn{}
 	rpc_chan := NewRpcChannel(sock)
-	rpc_chan.CallMethod(&MethodDescriptor{_index: 1, _name: "test"},
-		make([]byte, 0), messages)
-	fmt.Printf("%s\n", <-messages)
+	rpc_chan.CallMethod(NewMethodDescriptor(1, "test"), make([]byte, 0), messages)
+	<-messages
+	fmt.Printf("Done\n")
 }

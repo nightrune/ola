@@ -62,10 +62,12 @@ GolangServiceGenerator::GolangServiceGenerator(
 GolangServiceGenerator::~GolangServiceGenerator() {}
 
 void GolangServiceGenerator::GenerateInit(Printer* printer) {
-  printer->Print(vars_,"\n"
-      "var method_descriptors map[uint32]*MethodDescriptor\n");
+  printer->Print(vars_,
+      "var method_descriptors map[uint32]*MethodDescriptor\n\n");
   printer->Print("func init() {\n");
   printer->Indent();
+  printer->Print(vars_,
+      "method_descriptors = make(map[uint32]*MethodDescriptor)\n");
   GenerateMethodDescriptors(printer);
   printer->Outdent();
   printer->Print("}\n\n");
