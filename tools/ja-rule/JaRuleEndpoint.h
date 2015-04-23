@@ -37,7 +37,7 @@ typedef enum {
 /**
  * @brief Handles communication with a Ja Rule USB Endpoint.
  *
- * See https://github.com/OpenLightingProject/ja-rule
+ * @see https://github.com/OpenLightingProject/ja-rule
  */
 class JaRuleEndpoint {
  public:
@@ -45,22 +45,24 @@ class JaRuleEndpoint {
    * @brief The various Ja Rule commands
    */
   typedef enum {
-    ECHO_COMMAND = 0x80,
-    TX_DMX = 0x81,
-    GET_LOG = 0x82,
-    GET_FLAGS = 0x83,
-    WRITE_LOG = 0x84,
-    RESET_DEVICE = 0x85,
-    RDM_DUB = 0x86,
-    RDM_REQUEST = 0x87,
-    SET_BREAK_TIME = 0x88,
-    GET_BREAK_TIME = 0x89,
-    SET_MAB_TIME = 0x90,
-    GET_MAB_TIME = 0x91,
-    SET_RDM_BROADCAST_LISTEN = 0x92,
-    GET_RDM_BROADCAST_LISTEN = 0x93,
-    SET_RDM_WAIT_TIME = 0x94,
-    GET_RDM_WAIT_TIME = 0x95
+    RESET_DEVICE = 0x00,
+    SET_BREAK_TIME = 0x10,
+    GET_BREAK_TIME = 0x11,
+    SET_MAB_TIME = 0x12,
+    GET_MAB_TIME = 0x13,
+    SET_RDM_BROADCAST_LISTEN = 0x20,
+    GET_RDM_BROADCAST_LISTEN = 0x21,
+    SET_RDM_WAIT_TIME = 0x22,
+    GET_RDM_WAIT_TIME = 0x23,
+    TX_DMX = 0x30,
+    RDM_DUB = 0x40,
+    RDM_REQUEST = 0x41,
+    RDM_BROADCAST_REQUEST = 0x42,
+
+    ECHO_COMMAND = 0xf0,
+    GET_LOG = 0xf1,
+    GET_FLAGS = 0xf2,
+    WRITE_LOG = 0xf3
   } Command;
 
   /**
@@ -69,6 +71,7 @@ class JaRuleEndpoint {
   class MessageHandlerInterface {
    public:
     struct Message {
+      uint8_t token;  //!< The message token
       uint16_t command;  //!< The message command
       uint8_t return_code;  //!< The return code.
       uint8_t flags;  //!< The TransportFlags.
@@ -133,14 +136,14 @@ class JaRuleEndpoint {
   bool SendMessage(Command command, const uint8_t *data, unsigned int size);
 
   /**
-   * @brief Called by the libusb callback when the transfer completes or is
-   * cancelled.
+   * @brief Called by the libusb callback when the outbound transfer completes
+   * or is cancelled.
    */
   void _OutTransferComplete();
 
   /**
-   * @brief Called by libusb callback when the transfer completes or is
-   * cancelled.
+   * @brief Called by the libusb callback when the inbound transfer completes
+   * or is cancelled.
    */
   void _InTransferComplete();
 
@@ -176,6 +179,7 @@ class JaRuleEndpoint {
   libusb_transfer *m_out_transfer;  // GUARDED_BY(m_mutex);
   bool m_out_in_progress;  // GUARDED_BY(m_mutex);
   ola::TimeStamp m_out_sent_time;
+  uint8_t m_token;
 
   uint8_t m_in_buffer[IN_BUFFER_SIZE];  // GUARDED_BY(m_mutex);
   libusb_transfer *m_in_transfer;  // GUARDED_BY(m_mutex);
@@ -190,7 +194,7 @@ class JaRuleEndpoint {
   static const uint8_t EOF_IDENTIFIER = 0xa5;
   static const uint8_t SOF_IDENTIFIER = 0x5a;
   static const unsigned int MAX_PAYLOAD_SIZE = 513;
-  static const unsigned int MIN_RESPONSE_SIZE = 8;
+  static const unsigned int MIN_RESPONSE_SIZE = 9;
   static const unsigned int USB_PACKET_SIZE = 64;
   static const unsigned int MAX_IN_FLIGHT = 2;
   static const unsigned int INTERFACE_OFFSET = 2;
