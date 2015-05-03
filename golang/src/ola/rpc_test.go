@@ -48,5 +48,4 @@ func TestRpcCallMethod(t *testing.T) {
 	rpc_chan := NewRpcChannel(sock)
 	rpc_chan.CallMethod(NewMethodDescriptor(1, "test"), make([]byte, 0), messages)
 	<-messages
-	logger.Print("Test 1 Done")
 }

@@ -1,7 +1,7 @@
 package ola
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"runtime/debug"
 	"testing"
@@ -10,8 +10,10 @@ import (
 func TestMain(m *testing.M) {
 	defer func() {
 		if e := recover(); e != nil {
-			log.Printf("%s: %s", e, debug.Stack()) // line 20
+			logger.Debug(fmt.Sprintf("%s: %s", e, debug.Stack())) // line 20
 		}
 	}()
+	logger.SetLoggingLevel(OLA_LOG_DEBUG)
+	logger.Info("Running test for Ola Go Client Library... ")
 	os.Exit(m.Run())
 }
