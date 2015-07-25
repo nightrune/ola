@@ -53,6 +53,7 @@ func NewRpcChannel(sock net.Conn) *RpcChannel {
 	// Start a go closure to read and send the
 	rpc_channel := new(RpcChannel)
 	rpc_channel.sock = sock
+	rpc_channel.closer = make(chan bool, 1)
 	return rpc_channel
 }
 

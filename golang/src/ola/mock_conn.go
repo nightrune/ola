@@ -17,6 +17,7 @@ type MockConn struct {
 
 	// For Write
 	write_data     []byte
+	write_n        int
 	write_error    error
 	write_deadline time.Time
 	write_time     time.Time
@@ -36,7 +37,12 @@ func (m MockConn) SetRead(b []byte, err error) {
 }
 
 func (m MockConn) Write(b []byte) (n int, err error) {
-	return len(b), nil
+
+	return m.write_n, m.write_error
+}
+
+func (m MockConn) ExpectWrite(b []byte, return_n int, return_err error) {
+
 }
 
 func (m MockConn) Close() error {
