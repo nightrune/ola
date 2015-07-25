@@ -38,19 +38,20 @@
 #include "ola/network/NetworkUtils.h"
 #include "ola/rdm/RDMCommand.h"
 #include "ola/rdm/RDMEnums.h"
+#include "ola/rdm/RDMFrame.h"
 
 namespace ola {
 namespace client {
 
 using ola::io::ConnectedDescriptor;
 using ola::proto::OlaServerService_Stub;
+using ola::rdm::UID;
+using ola::rdm::UIDSet;
 using ola::rpc::RpcChannel;
 using ola::rpc::RpcController;
 using std::auto_ptr;
 using std::string;
 using std::vector;
-using ola::rdm::UID;
-using ola::rdm::UIDSet;
 
 const char OlaClientCore::NOT_CONNECTED_ERROR[] = "Not connected";
 
@@ -248,6 +249,28 @@ void OlaClientCore::ConfigureDevice(
   } else {
     controller->SetFailed(NOT_CONNECTED_ERROR);
     HandleDeviceConfig(controller, reply, callback);
+  }
+}
+
+void OlaClientCore::SetPluginState(ola_plugin_id plugin_id,
+                                   bool state,
+                                   SetCallback *callback) {
+  ola::proto::PluginStateChangeRequest request;
+  RpcController *controller = new RpcController();
+  ola::proto::Ack *reply = new ola::proto::Ack();
+
+  request.set_plugin_id(plugin_id);
+  request.set_enabled(state);
+
+  if (m_connected) {
+    CompletionCallback *cb = ola::NewSingleCallback(
+        this,
+        &OlaClientCore::HandleAck,
+        controller, reply, callback);
+    m_stub->SetPluginState(controller, &request, reply, cb);
+  } else {
+    controller->SetFailed(NOT_CONNECTED_ERROR);
+    HandleAck(controller, reply, callback);
   }
 }
 
@@ -900,7 +923,20 @@ void OlaClientCore::HandleRDM(RpcController *controller_ptr,
 
   if (!controller->Failed()) {
     response = BuildRDMResponse(reply.get(), &metadata.response_code);
+    for (int i = 0; i < reply->raw_frame_size(); i++) {
+      const ola::proto::RDMFrame &proto_frame = reply->raw_frame(i);
+
+      ola::rdm::RDMFrame frame(
+          reinterpret_cast<const uint8_t*>(proto_frame.raw_response().data()),
+          proto_frame.raw_response().size());
+      frame.timing.response_time = proto_frame.timing().response_delay();
+      frame.timing.break_time = proto_frame.timing().break_time();
+      frame.timing.mark_time = proto_frame.timing().mark_time();
+      frame.timing.data_time = proto_frame.timing().data_time();
+      metadata.frames.push_back(frame);
+    }
   }
+
   callback->Run(result, metadata, response);
 }
 
@@ -963,6 +999,10 @@ void OlaClientCore::SendRDMCommand(bool is_set,
   request.set_is_set(is_set);
   request.set_data(string(reinterpret_cast<const char*>(data), data_length));
 
+  if (args.include_raw_frames) {
+    request.set_include_raw_response(true);
+  }
+
   CompletionCallback *cb = NewSingleCallback(
       this,
       &OlaClientCore::HandleRDM,
@@ -977,12 +1017,12 @@ void OlaClientCore::SendRDMCommand(bool is_set,
  */
 ola::rdm::RDMResponse *OlaClientCore::BuildRDMResponse(
     ola::proto::RDMResponse *reply,
-    ola::rdm::rdm_response_code *response_code) {
+    ola::rdm::RDMStatusCode *status_code) {
   // Get the response code, if it's not RDM_COMPLETED_OK don't bother with the
   // rest of the response data.
-  *response_code = static_cast<ola::rdm::rdm_response_code>(
+  *status_code = static_cast<ola::rdm::RDMStatusCode>(
       reply->response_code());
-  if (*response_code != ola::rdm::RDM_COMPLETED_OK) {
+  if (*status_code != ola::rdm::RDM_COMPLETED_OK) {
     return NULL;
   }
 
