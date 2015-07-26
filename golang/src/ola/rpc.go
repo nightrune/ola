@@ -47,6 +47,7 @@ type RpcChannel struct {
 	sock                  net.Conn
 	outstanding_responses map[int]OutstandingResponse
 	closer                chan bool
+	running               bool
 }
 
 func NewRpcChannel(sock net.Conn) *RpcChannel {
@@ -54,10 +55,12 @@ func NewRpcChannel(sock net.Conn) *RpcChannel {
 	rpc_channel := new(RpcChannel)
 	rpc_channel.sock = sock
 	rpc_channel.closer = make(chan bool, 1)
+	rpc_channel.running = false
 	return rpc_channel
 }
 
 func (m *RpcChannel) Run() {
+	m.running = true
 	go m._read_forever()
 }
 
@@ -73,8 +76,12 @@ func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 }
 
 func (m *RpcChannel) Close() {
+	m.running = false
 	m.closer <- true
-	// need to go through and clean out on going connections
+}
+
+func (m *RpcChannel) IsClosed() bool {
+	return !m.running
 }
 
 func parseHeader(header []byte) (size uint32, version uint8) {
@@ -85,6 +92,11 @@ func parseHeader(header []byte) (size uint32, version uint8) {
 }
 
 func checkConnError(err error) bool {
+	if err == nil {
+		logger.Debug("Got a nil error in check ConnError")
+		return false
+	}
+
 	nerr, ok := err.(net.Error)
 	if ok == true {
 		if nerr.Timeout() {
@@ -95,7 +107,8 @@ func checkConnError(err error) bool {
 			return true
 		}
 	}
-	logger.Fatal("Error checking connection read error.. Stoping reading")
+	logger.Fatal(
+		"Unknown error checking connection read error.. Stopping reading")
 	return true
 }
 
@@ -114,11 +127,15 @@ func (m *RpcChannel) _read_forever() {
 	header = make([]byte, 4)
 	for {
 		bytes_read, err := m.read(header)
-		if err != nil || bytes_read != len(header) {
+		if err != nil {
 			if checkConnError(err) {
 				m.Close()
 				return
 			}
+		} else if bytes_read != len(header) {
+			logger.Fatal("Couldn't get header size..")
+			m.Close()
+			return
 		} else {
 			expected_size, protocol_version := parseHeader(header)
 			buf = make([]byte, expected_size, expected_size)

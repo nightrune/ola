@@ -52,10 +52,6 @@ func (m *OlaLogger) SetLoggingLevel(level uint) {
 	m.log_level = level
 }
 
-func (m *OlaLogger) Debug(msg string) {
-	m.log(OLA_LOG_DEBUG, msg)
-}
-
 func (m *OlaLogger) log(log_type uint, msg string) {
 	if log_type > m.log_level {
 		return
@@ -72,6 +68,10 @@ func (m *OlaLogger) log(log_type uint, msg string) {
 		buffer.WriteString(msg)
 		m.logger.Print(buffer.String())
 	}
+}
+
+func (m *OlaLogger) Debug(msg string) {
+	m.log(OLA_LOG_DEBUG, msg)
 }
 
 func (m *OlaLogger) Warn(msg string) {
