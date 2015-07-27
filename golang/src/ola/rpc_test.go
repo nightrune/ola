@@ -26,7 +26,7 @@ func CheckRpcClose(t *testing.T, chn *RpcChannel) {
 }
 
 func TestRpcClose(t *testing.T) {
-	sock := new(MockConn)
+	sock := NewMockConn(t)
 	rpc_chan := NewRpcChannel(sock)
 	defer CheckRpcClose(t, rpc_chan)
 	read_err := NewMockNetworkError(true, true,
@@ -39,20 +39,19 @@ func TestRpcClose(t *testing.T) {
 
 func TestRpcCallMethod(t *testing.T) {
 	messages := make(chan *ResponseData, 2)
-	sock := new(MockConn)
+	sock := NewMockConn(t)
 	rpc_chan := NewRpcChannel(sock)
 	rpc_chan.Run()
 	defer rpc_chan.Close()
-	read_err := new(MockNetworkError)
-	read_err.timeout = true
-	read_err.temp = true
-	read_err.err = errors.New("Socket read timed out")
+	read_err := NewMockNetworkError(true, true,
+		errors.New("Socket read timed out"))
 	sock.SetRead(make([]byte, 4), read_err)
 	sock.ExpectWrite([]byte{}, 0, nil)
 	rpc_chan.CallMethod(NewMethodDescriptor(1, "test"), make([]byte, 0), messages)
 	response := <-messages
 	if response.err != nil {
 		logger.Info("Got error from response")
+		logger.Debug(response.err.Error())
 		t.Fail()
 	}
 }

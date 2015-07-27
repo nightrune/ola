@@ -5,6 +5,7 @@ package ola
 
 import (
 	"net"
+	"testing"
 	"time"
 )
 
@@ -50,6 +51,13 @@ type MockConn struct {
 
 	local_addr  net.Addr
 	remote_addr net.Addr
+	test        *testing.T
+}
+
+func NewMockConn(t *testing.T) *MockConn {
+	mock := new(MockConn)
+	mock.test = t
+	return mock
 }
 
 func (m MockConn) Read(b []byte) (n int, err error) {
@@ -63,6 +71,7 @@ func (m *MockConn) SetRead(b []byte, err error) {
 }
 
 func (m MockConn) Write(b []byte) (n int, err error) {
+
 	return m.write_n, m.write_error
 }
 
