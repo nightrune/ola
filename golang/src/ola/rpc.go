@@ -9,7 +9,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	//"ola/ola_proto"
+	"github.com/golang/protobuf/proto"
 	"ola/ola_rpc"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,6 +21,11 @@ var _ = ola_rpc.Type_name // Here while we build the rpc channel, delete later
 const VERSION_MASK uint32 = 0xFF000000
 const SIZE_MASK uint32 = 0x00FFFFFF
 const PROTOCOL_VERSION = 1
+
+// todo(Sean) Find a better place to put this since there
+// is no static method provided by protobufs to get this
+// string....
+const STREAMING_NO_RESPONSE = "STREAMIN_NO_RESPONSE"
 
 type NotImplemented struct {
 	s string
@@ -48,6 +56,7 @@ type RpcChannel struct {
 	outstanding_responses map[int]OutstandingResponse
 	closer                chan bool
 	running               bool
+	sequence_number       uint32
 }
 
 func NewRpcChannel(sock net.Conn) *RpcChannel {
@@ -70,9 +79,50 @@ func (m *RpcChannel) PendingRPCs() bool {
 
 func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 	request_data []byte, c chan *ResponseData) {
-	data := ResponseData{data: make([]byte, 0), err: NewNotImplemented(
-		"This is currently not implemented")}
-	c <- &data
+	is_streaming := false
+	// Actual
+	message := new(ola_rpc.RpcMessage)
+	message.Type = new(ola_rpc.Type)
+	if method.OutputType() == STREAMING_NO_RESPONSE {
+		if c == nil {
+			logger.Fatal(fmt.Sprintf(
+				"Calling streaming method %s with a channel that is non-nul",
+				method.String()))
+			return
+		}
+		is_streaming = true
+	}
+
+	if is_streaming {
+		*message.Type = ola_rpc.Type_STREAM_REQUEST
+	} else {
+		*message.Type = ola_rpc.Type_REQUEST
+	}
+
+	id := atomic.AddUint32(&m.sequence_number, 1)
+	message.Id = &id
+	message.Buffer = request_data
+	data, err := proto.Marhall(message)
+	if err != nil {
+		ola.Fatal("Failed to marshal data in rpc...")
+		data := ResponseData{data: nil, err: errors.New(
+			"Failed to marshal the message")}
+		c <- &data
+		return
+	}
+
+	err = m._SendMsg(data)
+	if err != nil {
+		ola.Warn("Failed to send message...")
+		data := ResponseData{data: nil, err: errors.New("Failed to send message")}
+		c <- &data
+		return
+	}
+}
+
+func (m *RpcChannel) _SendMsg(data []byte) error {
+
+	return nil
 }
 
 func (m *RpcChannel) Close() {
@@ -154,12 +204,6 @@ func (m *RpcChannel) _read_forever() {
 					}
 				} else {
 					msg_bytes_read = msg_bytes_read + uint32(bytes_read)
-				}
-
-				select {
-				case <-m.closer:
-					logger.Info("Close recieved on channel.. closing channel")
-					return
 				}
 			}
 

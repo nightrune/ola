@@ -80,7 +80,7 @@ void GolangServiceGenerator::GenerateType(Printer* printer) {
   "  // We handle this because otherwise the golang map would return the 0 value\n"
   "  if method_index >= uint32(len(method_descriptors)) {\n"
   "    return NewMethodDescriptor(uint32(len(method_descriptors)),\n"
-  "        \"Invalid Method\")\n"
+  "        \"Invalid Method\", \"\", \"\")\n"
   "  }\n"
   "  return method_descriptors[method_index]\n"
   "}\n\n");
@@ -92,7 +92,11 @@ void GolangServiceGenerator::GenerateMethodDescriptors(Printer *printer) {
     map<string, string> sub_vars;
     sub_vars["name"] = method->name();
     sub_vars["index"] = SimpleItoa(i);
-    printer->Print(sub_vars, "method_descriptors[$index$] = NewMethodDescriptor($index$, \"$name$\")\n");
+    sub_vars["output_type"] = method->output_type()->name();
+    sub_vars["input_type"] = method->input_type()->name();
+    printer->Print(sub_vars,
+        "method_descriptors[$index$] = NewMethodDescriptor($index$, \"$name$\","
+        "\"$output_type$\", \"$input_type$\")\n");
   }
 }
 

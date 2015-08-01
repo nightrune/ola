@@ -47,7 +47,8 @@ func TestRpcCallMethod(t *testing.T) {
 		errors.New("Socket read timed out"))
 	sock.SetRead(make([]byte, 4), read_err)
 	sock.ExpectWrite([]byte{}, 0, nil)
-	rpc_chan.CallMethod(NewMethodDescriptor(1, "test"), make([]byte, 0), messages)
+	rpc_chan.CallMethod(NewMethodDescriptor(1, "test", "", ""), make([]byte, 0),
+		messages)
 	response := <-messages
 	if response.err != nil {
 		logger.Info("Got error from response")
