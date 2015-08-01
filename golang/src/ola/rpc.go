@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"net"
 	//"ola/ola_proto"
+	"errors"
 	"github.com/golang/protobuf/proto"
 	"ola/ola_rpc"
-	"sync/atomic"
 	"time"
 )
 
@@ -46,31 +46,47 @@ type ResponseData struct {
 	err  error
 }
 
-type OutstandingResponse struct {
-	ret chan ResponseData
-	id  int
+type OutstandingRequest struct {
+	ret chan *ResponseData
+	req *ola_rpc.RpcMessage
 }
 
 type RpcChannel struct {
-	sock                  net.Conn
-	outstanding_responses map[int]OutstandingResponse
-	closer                chan bool
-	running               bool
-	sequence_number       uint32
+	sock            net.Conn
+	closer          chan bool
+	running         bool
+	sequence_number uint32
+	new_request     chan *OutstandingRequest
+	new_response    chan []byte
+	write           chan []byte
 }
 
 func NewRpcChannel(sock net.Conn) *RpcChannel {
 	// Start a go closure to read and send the
 	rpc_channel := new(RpcChannel)
 	rpc_channel.sock = sock
-	rpc_channel.closer = make(chan bool, 1)
 	rpc_channel.running = false
 	return rpc_channel
 }
 
 func (m *RpcChannel) Run() {
+	if m.sock == nil {
+		logger.Warn("Can't Rpc Channel when it has a nil socket")
+		return
+	}
+	m.new_request = make(chan *OutstandingRequest)
+	m.new_response = make(chan []byte)
+	m.write = make(chan []byte)
+	m.closer = make(chan bool, 1)
 	m.running = true
 	go m._read_forever()
+	go m._write_forever()
+	go m._demux()
+}
+
+func (m *RpcChannel) Close() {
+	m.running = false
+	close(m.closer)
 }
 
 func (m *RpcChannel) PendingRPCs() bool {
@@ -80,17 +96,18 @@ func (m *RpcChannel) PendingRPCs() bool {
 func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 	request_data []byte, c chan *ResponseData) {
 	is_streaming := false
-	// Actual
 	message := new(ola_rpc.RpcMessage)
 	message.Type = new(ola_rpc.Type)
+	message.Id = new(uint32)
 	if method.OutputType() == STREAMING_NO_RESPONSE {
-		if c == nil {
-			logger.Fatal(fmt.Sprintf(
+		if c != nil {
+			logger.Warn(fmt.Sprintf(
 				"Calling streaming method %s with a channel that is non-nul",
 				method.String()))
 			return
 		}
 		is_streaming = true
+		c = nil
 	}
 
 	if is_streaming {
@@ -99,35 +116,11 @@ func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 		*message.Type = ola_rpc.Type_REQUEST
 	}
 
-	id := atomic.AddUint32(&m.sequence_number, 1)
-	message.Id = &id
 	message.Buffer = request_data
-	data, err := proto.Marhall(message)
-	if err != nil {
-		ola.Fatal("Failed to marshal data in rpc...")
-		data := ResponseData{data: nil, err: errors.New(
-			"Failed to marshal the message")}
-		c <- &data
-		return
-	}
-
-	err = m._SendMsg(data)
-	if err != nil {
-		ola.Warn("Failed to send message...")
-		data := ResponseData{data: nil, err: errors.New("Failed to send message")}
-		c <- &data
-		return
-	}
-}
-
-func (m *RpcChannel) _SendMsg(data []byte) error {
-
-	return nil
-}
-
-func (m *RpcChannel) Close() {
-	m.running = false
-	m.closer <- true
+	request := new(OutstandingRequest)
+	request.req = message
+	request.ret = c
+	m.new_request <- request
 }
 
 func (m *RpcChannel) IsClosed() bool {
@@ -150,7 +143,7 @@ func checkConnError(err error) bool {
 	nerr, ok := err.(net.Error)
 	if ok == true {
 		if nerr.Timeout() {
-			logger.Info("Read timed out..")
+			logger.Debug("Read timed out..")
 			return false
 		} else {
 			logger.Info("Connection was closed during read..\n")
@@ -167,6 +160,76 @@ func (m *RpcChannel) read(b []byte) (n int, err error) {
 	return m.sock.Read(b)
 }
 
+func (m *RpcChannel) _handle_request_timeout(request *OutstandingRequest) {
+	logger.Warn("Request timed out")
+	response := ResponseData{data: nil, err: errors.New("Request Timedout")}
+	request.ret <- &response
+}
+
+func (m *RpcChannel) _demux() {
+	outstanding_requests := make(map[uint32]*OutstandingRequest)
+	var sequence_number uint32 = 0
+	select {
+	case <-m.new_response:
+		// Deal with incoming messages
+	case request := <-m.new_request:
+		// Deal with new outgoing messagses
+		var id uint32
+		id = sequence_number
+		*request.req.Id = id
+		sequence_number = sequence_number + 1
+		data, err := proto.Marshal(request.req)
+		if err != nil {
+			logger.Fatal("Failed to marshal data in rpc...")
+			data := ResponseData{data: nil, err: errors.New(
+				"Failed to marshal the message")}
+			request.ret <- &data
+			return
+		}
+
+		v, ok := outstanding_requests[id]
+		if ok {
+			m._handle_request_timeout(v)
+			delete(outstanding_requests, id)
+		}
+		outstanding_requests[id] = request
+		m.write <- data
+	case <-time.After(10 * time.Millisecond):
+		// Timeout code, check on time outs
+	case <-m.closer:
+		logger.Debug("Timing out all other requests")
+		// Close out all other requests
+		for _, v := range outstanding_requests {
+			m._handle_request_timeout(v)
+		}
+		// force garbage collection
+		outstanding_requests = nil
+		return
+	}
+}
+
+func (m *RpcChannel) _write_forever() {
+	var current int
+	for {
+		select {
+		case data := <-m.write:
+			current = 0
+			for current < len(data) {
+				n, err := m.sock.Write(data[current:])
+				if err != nil {
+					logger.Fatal("Failed to write to rpc socket..")
+					m.Close()
+					return
+				}
+				current += n
+			}
+		case <-m.closer:
+			logger.Debug("Stopping write on socket")
+			return
+		}
+	}
+}
+
 func (m *RpcChannel) _read_forever() {
 	var header []byte
 	var buf []byte
@@ -175,17 +238,16 @@ func (m *RpcChannel) _read_forever() {
 	defer m.sock.Close()
 
 	header = make([]byte, 4)
+	logger.Debug("Starting read forever")
 	for {
 		bytes_read, err := m.read(header)
 		if err != nil {
 			if checkConnError(err) {
 				m.Close()
-				return
 			}
 		} else if bytes_read != len(header) {
-			logger.Fatal("Couldn't get header size..")
+			logger.Fatal("Couldn't read enough bytes to get rpc header..")
 			m.Close()
-			return
 		} else {
 			expected_size, protocol_version := parseHeader(header)
 			buf = make([]byte, expected_size, expected_size)
@@ -206,8 +268,7 @@ func (m *RpcChannel) _read_forever() {
 					msg_bytes_read = msg_bytes_read + uint32(bytes_read)
 				}
 			}
-
-			// Handle new message
+			m.new_response <- buf
 		}
 
 		select {

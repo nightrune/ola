@@ -18,7 +18,7 @@ func Check(err error) {
 
 func CheckRpcClose(t *testing.T, chn *RpcChannel) {
 	if chn.IsClosed() {
-		logger.Info("Closing Rpc Channel")
+		logger.Info("Rpc Channel is closed!")
 	} else {
 		logger.Debug("Failed to close the channel")
 		t.Fail()
@@ -26,6 +26,7 @@ func CheckRpcClose(t *testing.T, chn *RpcChannel) {
 }
 
 func TestRpcClose(t *testing.T) {
+	logger.Info("TestRpcClose")
 	sock := NewMockConn(t)
 	rpc_chan := NewRpcChannel(sock)
 	defer CheckRpcClose(t, rpc_chan)
@@ -49,7 +50,21 @@ func TestRpcCallMethod(t *testing.T) {
 	sock.ExpectWrite([]byte{}, 0, nil)
 	rpc_chan.CallMethod(NewMethodDescriptor(1, "test", "", ""), make([]byte, 0),
 		messages)
-	response := <-messages
+	var response *ResponseData
+	select {
+	case response = <-messages:
+	case <-time.After(time.Second):
+		logger.Info("Response Timed Out")
+		t.Fail()
+		return
+	}
+
+	if response == nil {
+		logger.Info("Response was nil..")
+		t.Fail()
+		return
+	}
+
 	if response.err != nil {
 		logger.Info("Got error from response")
 		logger.Debug(response.err.Error())
