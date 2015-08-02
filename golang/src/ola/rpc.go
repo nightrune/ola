@@ -54,7 +54,6 @@ type OutstandingRequest struct {
 type RpcChannel struct {
 	sock            net.Conn
 	closer          chan bool
-	running         bool
 	sequence_number uint32
 	new_request     chan *OutstandingRequest
 	new_response    chan []byte
@@ -65,7 +64,6 @@ func NewRpcChannel(sock net.Conn) *RpcChannel {
 	// Start a go closure to read and send the
 	rpc_channel := new(RpcChannel)
 	rpc_channel.sock = sock
-	rpc_channel.running = false
 	return rpc_channel
 }
 
@@ -78,15 +76,15 @@ func (m *RpcChannel) Run() {
 	m.new_response = make(chan []byte)
 	m.write = make(chan []byte)
 	m.closer = make(chan bool, 1)
-	m.running = true
 	go m._read_forever()
 	go m._write_forever()
 	go m._demux()
 }
 
 func (m *RpcChannel) Close() {
-	m.running = false
-	close(m.closer)
+	if m.IsClosed() == false {
+		close(m.closer)
+	}
 }
 
 func (m *RpcChannel) PendingRPCs() bool {
@@ -124,7 +122,16 @@ func (m *RpcChannel) CallMethod(method *MethodDescriptor,
 }
 
 func (m *RpcChannel) IsClosed() bool {
-	return !m.running
+	if m.closer == nil {
+		return true
+	}
+
+	select {
+	case <-m.closer:
+		return true
+	default:
+		return false
+	}
 }
 
 func parseHeader(header []byte) (size uint32, version uint8) {

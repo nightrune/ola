@@ -27,12 +27,12 @@ func CheckRpcClose(t *testing.T, chn *RpcChannel) {
 
 func TestRpcClose(t *testing.T) {
 	logger.Info("TestRpcClose")
-	sock := NewMockConn(t)
+	sock := NewMockConn(t, 2)
 	rpc_chan := NewRpcChannel(sock)
 	defer CheckRpcClose(t, rpc_chan)
 	read_err := NewMockNetworkError(true, true,
 		errors.New("Socket read timed out"))
-	sock.SetRead(make([]byte, 4), read_err)
+	sock.SetDefaultRead(make([]byte, 4), read_err)
 	rpc_chan.Run()
 	rpc_chan.Close()
 	time.Sleep(time.Duration(1) * time.Second)
@@ -40,13 +40,13 @@ func TestRpcClose(t *testing.T) {
 
 func TestRpcCallMethod(t *testing.T) {
 	messages := make(chan *ResponseData, 2)
-	sock := NewMockConn(t)
+	sock := NewMockConn(t, 2)
 	rpc_chan := NewRpcChannel(sock)
 	rpc_chan.Run()
 	defer rpc_chan.Close()
 	read_err := NewMockNetworkError(true, true,
 		errors.New("Socket read timed out"))
-	sock.SetRead(make([]byte, 4), read_err)
+	sock.SetDefaultRead(nil, read_err)
 	sock.ExpectWrite([]byte{}, 0, nil)
 	rpc_chan.CallMethod(NewMethodDescriptor(1, "test", "", ""), make([]byte, 0),
 		messages)
@@ -55,12 +55,6 @@ func TestRpcCallMethod(t *testing.T) {
 	case response = <-messages:
 	case <-time.After(time.Second):
 		logger.Info("Response Timed Out")
-		t.Fail()
-		return
-	}
-
-	if response == nil {
-		logger.Info("Response was nil..")
 		t.Fail()
 		return
 	}
